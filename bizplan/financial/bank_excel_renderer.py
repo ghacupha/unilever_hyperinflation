@@ -1,7 +1,7 @@
 """Bank financial model Excel renderer.
 
 Produces a fully formula-linked workbook: Cover, Summary, Assumptions, Scenarios, Model,
-Valuation. Every calculated cell on the Model sheet (Base Case) is a live Excel formula
+Output. Every calculated cell on the Model sheet (Base Case) is a live Excel formula
 string referencing other cells — Assumptions-sheet input cells for rates/opening balances,
 and prior-column-same-row for recurrences — not a Python-computed static value. Best/Worst
 on the Scenarios sheet remain Python-computed static values (existing convention).
@@ -19,12 +19,13 @@ later formulas can reference earlier rows by key instead of a hardcoded row numb
 import os
 
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
 
 from bizplan.financial.xl_helpers import (
     NAVY, MED_BLUE, LIGHT_BLUE, WHITE, DARK, MID_GRAY, ALT_ROW, GOLD, TOTAL_FILL,
     GREEN_DRK, RED_DARK, ORANGE, TEAL, BLUE_INPUT,
     fill, write, num, pct, header_row, section_header, year_header_row, blank_row,
-    data_row, total_row, set_col_widths, top_bottom_border,
+    data_row, total_row, set_col_widths, top_bottom_border, box_border, outline_range,
     _cell, _sum_f, _add_rows_f, _sub_f, _ratio_f, _ref_f, _model_ref,
 )
 
@@ -44,6 +45,14 @@ MASTER_HEADER_ROW = 11  # Model sheet's own top year-header row (written once in
 # matches the Blu Containers FMI reference's `Scenarios!$D$6` pattern exactly.
 SWITCH_CELL_REF = "'Scenarios'!$D$5"
 
+
+def _scenario_banner_formula():
+    """Top-right, per-page print banner: shows the live scenario and links back to the
+    Scenarios sheet's switch cell."""
+    return (f'=HYPERLINK("#\'Scenarios\'!D5","Currently running: "&'
+            f'UPPER(CHOOSE({SWITCH_CELL_REF},"Base","Best","Worst"))&" CASE")')
+
+
 PROVENANCE_LEGEND = [
     ("Disclosed fact (company filing)", BLUE_INPUT),
     ("Internal formula", DARK),
@@ -55,7 +64,7 @@ PROVENANCE_LEGEND = [
 def _col_widths(ws):
     set_col_widths(ws, {
         'A': 2, 'B': 2, 'C': 32, 'D': 16, 'E': 4, 'F': 12,
-        'G': 2, 'H': 14, 'I': 14, 'J': 14, 'K': 14, 'L': 14, 'M': 14, 'N': 14, 'O': 14,
+        'G': 2, 'H': 12, 'I': 12, 'J': 12, 'K': 12, 'L': 12, 'M': 12, 'N': 12, 'O': 12,
         'P': 4,
     })
 
@@ -78,33 +87,95 @@ def _assum_row(ws, row, label, value, color, refs=None, key=None, fmt='#,##0.00'
 
 
 def _scenario_row(ws, row, label, base_value, mult_best_ref, mult_worst_ref, refs, key, fmt='0.0%'):
-    """Writes Base (hardcoded)/Best/Worst (formula = Base x multiplier)/ACTIVE (CHOOSE on
-    the scenario switch) as 4 rows. `refs[key]` is set to the ACTIVE row, so every
-    downstream Model-sheet formula that references this assumption automatically follows
-    whichever scenario the switch is set to."""
-    base_row = row
-    write(ws, row, LABEL_COL, f"    {label} — Base")
-    num(ws, row, ASSUM_COL, base_value, fmt=fmt, txt_color=ORANGE)
+    """Compact scenario-metric block: a title row (label carries the metric name, written
+    once), a blank spacer, an outlined ACTIVE row (CHOOSE on the scenario switch), and plain
+    Base/Best/Worst rows below it. `refs[key]` is set to the ACTIVE row, so every downstream
+    Model-sheet formula that references this assumption automatically follows whichever
+    scenario the switch is set to. Row order/labels match the compact-table convention
+    used on the Scenarios sheet (see `_scenario_metric_block`)."""
+    write(ws, row, LABEL_COL, label, bold=True, txt_color=NAVY)
     row += 1
-
-    best_row = row
-    write(ws, row, LABEL_COL, f"    {label} — Best", txt_color=MID_GRAY, italic=True)
-    num(ws, row, ASSUM_COL, f"={_cell(base_row, ASSUM_COL)}*{mult_best_ref}", fmt=fmt, txt_color=DARK)
-    row += 1
-
-    worst_row = row
-    write(ws, row, LABEL_COL, f"    {label} — Worst", txt_color=MID_GRAY, italic=True)
-    num(ws, row, ASSUM_COL, f"={_cell(base_row, ASSUM_COL)}*{mult_worst_ref}", fmt=fmt, txt_color=DARK)
-    row += 1
+    row += 1  # blank spacer between the title row and the live/ACTIVE row
 
     active_row = row
-    write(ws, row, LABEL_COL, f"{label} (ACTIVE)", bold=True)
+    base_row = row + 1
+    best_row = row + 2
+    worst_row = row + 3
     active_formula = (f"=CHOOSE({SWITCH_CELL_REF},{_cell(base_row, ASSUM_COL)},"
                        f"{_cell(best_row, ASSUM_COL)},{_cell(worst_row, ASSUM_COL)})")
     num(ws, row, ASSUM_COL, active_formula, fmt=fmt, txt_color=TEAL, bold=True)
+    outline_range(ws, row, [ASSUM_COL])
+    row += 1
+
+    write(ws, row, LABEL_COL, "    Base", txt_color=MID_GRAY, italic=True)
+    num(ws, row, ASSUM_COL, base_value, fmt=fmt, txt_color=ORANGE)
+    row += 1
+
+    write(ws, row, LABEL_COL, "    Best", txt_color=MID_GRAY, italic=True)
+    num(ws, row, ASSUM_COL, f"={_cell(base_row, ASSUM_COL)}*{mult_best_ref}", fmt=fmt, txt_color=DARK)
+    row += 1
+
+    write(ws, row, LABEL_COL, "    Worst", txt_color=MID_GRAY, italic=True)
+    num(ws, row, ASSUM_COL, f"={_cell(base_row, ASSUM_COL)}*{mult_worst_ref}", fmt=fmt, txt_color=DARK)
     row += 1
 
     refs[key] = active_row
+    return row
+
+
+def _table_row(ws, row, label, values, cols, color, refs=None, keys=None, fmt='#,##0.00', note=""):
+    """One metric row spanning multiple category columns (loan segments, deposit types, ...)
+    — the table-clustered counterpart to `_assum_row`'s single-ASSUM_COL row. Used under a
+    category-name header row written once per section (see `build_assumptions`'s Loan Book/
+    Deposits sections). `refs[keys[i]] = (row, cols[i])` per column, so `_assum_ref` resolves
+    each category's own cell regardless of which physical column it landed in."""
+    write(ws, row, LABEL_COL, label, bg=WHITE)
+    for i, (col, value) in enumerate(zip(cols, values)):
+        num(ws, row, col, value, fmt=fmt, txt_color=color)
+        if refs is not None and keys is not None:
+            refs[keys[i]] = (row, col)
+    if note:
+        write(ws, row, 10, note, txt_color=MID_GRAY, italic=True, size=9)
+    return row + 1
+
+
+def _scenario_table_row(ws, row, label, base_values, mult_best_ref, mult_worst_ref, cols, refs, keys, fmt='0.0%'):
+    """The multi-column generalization of `_scenario_row`: one title row, a blank spacer, an
+    outlined ACTIVE row (one CHOOSE() per category column), then Base/Best/Worst rows — all
+    spanning `cols` instead of the single ASSUM_COL. `refs[keys[i]] = (active_row, cols[i])`
+    per column."""
+    write(ws, row, LABEL_COL, label, bold=True, txt_color=NAVY)
+    row += 1
+    row += 1  # blank spacer between the title row and the live/ACTIVE row
+
+    active_row = row
+    base_row = row + 1
+    best_row = row + 2
+    worst_row = row + 3
+    for col in cols:
+        formula = (f"=CHOOSE({SWITCH_CELL_REF},{_cell(base_row, col)},"
+                   f"{_cell(best_row, col)},{_cell(worst_row, col)})")
+        num(ws, active_row, col, formula, fmt=fmt, txt_color=TEAL, bold=True)
+    outline_range(ws, active_row, cols)
+    row += 1
+
+    write(ws, row, LABEL_COL, "    Base", txt_color=MID_GRAY, italic=True)
+    for col, value in zip(cols, base_values):
+        num(ws, row, col, value, fmt=fmt, txt_color=ORANGE)
+    row += 1
+
+    write(ws, row, LABEL_COL, "    Best", txt_color=MID_GRAY, italic=True)
+    for col in cols:
+        num(ws, row, col, f"={_cell(base_row, col)}*{mult_best_ref}", fmt=fmt, txt_color=DARK)
+    row += 1
+
+    write(ws, row, LABEL_COL, "    Worst", txt_color=MID_GRAY, italic=True)
+    for col in cols:
+        num(ws, row, col, f"={_cell(base_row, col)}*{mult_worst_ref}", fmt=fmt, txt_color=DARK)
+    row += 1
+
+    for i, col in enumerate(cols):
+        refs[keys[i]] = (active_row, col)
     return row
 
 
@@ -115,7 +186,9 @@ def build_assumptions(wb, config):
     A = {}
 
     R = 1
-    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY); R += 2
+    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY)
+    _write_scenario_banner(ws, max(_all_cols()))
+    R += 2
     write(ws, R, LABEL_COL, "Inputs and Assumptions", txt_color=MID_GRAY); R += 2
 
     section_header(ws, R, "Data Provenance Legend"); R += 1
@@ -149,28 +222,41 @@ def build_assumptions(wb, config):
     loss_rate_mult_worst_ref = _assum_ref(A, "loss_rate_mult_worst")
 
     section_header(ws, R, "LOAN BOOK — BY PRODUCT (FY2025 opening; growth/rates scenario-switched)"); R += 1
-    for seg in config.LOAN_SEGMENTS:
-        k = seg["key"]
-        write(ws, R, LABEL_COL, seg["name"], bold=True, txt_color=NAVY); R += 1
-        R = _assum_row(ws, R, "Opening gross — Stage 1", seg["opening_s1"], BLUE_INPUT, A, f"{k}_opening_s1")
-        R = _assum_row(ws, R, "Opening gross — Stage 2", seg["opening_s2"], BLUE_INPUT, A, f"{k}_opening_s2")
-        R = _assum_row(ws, R, "Opening gross — Stage 3", seg["opening_s3"], BLUE_INPUT, A, f"{k}_opening_s3")
-        R = _scenario_row(ws, R, "Loss rate — Stage 1 (12m)", seg["loss_rate_s1"],
-                           loss_rate_mult_best_ref, loss_rate_mult_worst_ref, A, f"{k}_loss_rate_s1", fmt='0.000%')
-        R = _scenario_row(ws, R, "Loss rate — Stage 2 (lifetime)", seg["loss_rate_s2"],
-                           loss_rate_mult_best_ref, loss_rate_mult_worst_ref, A, f"{k}_loss_rate_s2", fmt='0.000%')
-        R = _scenario_row(ws, R, "Loss rate — Stage 3 (lifetime)", seg["loss_rate_s3"],
-                           loss_rate_mult_best_ref, loss_rate_mult_worst_ref, A, f"{k}_loss_rate_s3", fmt='0.000%')
-        R = _scenario_row(ws, R, "Gross loan growth p.a.", seg["growth"],
-                           growth_mult_best_ref, growth_mult_worst_ref, A, f"{k}_growth", fmt='0.0%')
-        R = _assum_row(ws, R, "Yield on loans", seg["yield_rate"], ORANGE, A, f"{k}_yield_rate", fmt='0.00%')
-        R = _assum_row(ws, R, "SICR rate (Stage 1→2)", seg["sicr_rate"], ORANGE, A, f"{k}_sicr_rate", fmt='0.0%')
-        R = _assum_row(ws, R, "Cure rate (Stage 2→1)", seg["cure_21"], ORANGE, A, f"{k}_cure_21", fmt='0.0%')
-        R = _assum_row(ws, R, "Default rate (Stage 2→3)", seg["default_rate"], ORANGE, A, f"{k}_default_rate", fmt='0.0%')
-        R = _assum_row(ws, R, "Cure rate (Stage 3→2)", seg["cure_32"], ORANGE, A, f"{k}_cure_32", fmt='0.0%')
-        R = _assum_row(ws, R, "Write-off rate (of Stage 3)", seg["writeoff_rate"], ORANGE, A, f"{k}_writeoff_rate", fmt='0.0%')
-        R = _assum_row(ws, R, "Risk weight (RWA)", seg["risk_weight"], ORANGE, A, f"{k}_risk_weight", fmt='0%')
-        R += 1
+    loan_cols = [ASSUM_COL + i for i in range(len(config.LOAN_SEGMENTS))]
+    for col, seg in zip(loan_cols, config.LOAN_SEGMENTS):
+        write(ws, R, col, seg["name"], bold=True, txt_color=WHITE, bg=MED_BLUE, halign="center")
+    R += 1
+    loan_keys = [seg["key"] for seg in config.LOAN_SEGMENTS]
+
+    def _loan_vals(field):
+        return [seg[field] for seg in config.LOAN_SEGMENTS]
+
+    def _loan_keys(suffix):
+        return [f"{k}_{suffix}" for k in loan_keys]
+
+    R = _table_row(ws, R, "Opening gross — Stage 1", _loan_vals("opening_s1"), loan_cols, BLUE_INPUT, A, _loan_keys("opening_s1"))
+    R = _table_row(ws, R, "Opening gross — Stage 2", _loan_vals("opening_s2"), loan_cols, BLUE_INPUT, A, _loan_keys("opening_s2"))
+    R = _table_row(ws, R, "Opening gross — Stage 3", _loan_vals("opening_s3"), loan_cols, BLUE_INPUT, A, _loan_keys("opening_s3"))
+    R = _scenario_table_row(ws, R, "Loss rate — Stage 1 (12m)", _loan_vals("loss_rate_s1"),
+                             loss_rate_mult_best_ref, loss_rate_mult_worst_ref, loan_cols, A,
+                             _loan_keys("loss_rate_s1"), fmt='0.000%')
+    R = _scenario_table_row(ws, R, "Loss rate — Stage 2 (lifetime)", _loan_vals("loss_rate_s2"),
+                             loss_rate_mult_best_ref, loss_rate_mult_worst_ref, loan_cols, A,
+                             _loan_keys("loss_rate_s2"), fmt='0.000%')
+    R = _scenario_table_row(ws, R, "Loss rate — Stage 3 (lifetime)", _loan_vals("loss_rate_s3"),
+                             loss_rate_mult_best_ref, loss_rate_mult_worst_ref, loan_cols, A,
+                             _loan_keys("loss_rate_s3"), fmt='0.000%')
+    R = _scenario_table_row(ws, R, "Gross loan growth p.a.", _loan_vals("growth"),
+                             growth_mult_best_ref, growth_mult_worst_ref, loan_cols, A,
+                             _loan_keys("growth"), fmt='0.0%')
+    R = _table_row(ws, R, "Yield on loans", _loan_vals("yield_rate"), loan_cols, ORANGE, A, _loan_keys("yield_rate"), fmt='0.00%')
+    R = _table_row(ws, R, "SICR rate (Stage 1→2)", _loan_vals("sicr_rate"), loan_cols, ORANGE, A, _loan_keys("sicr_rate"), fmt='0.0%')
+    R = _table_row(ws, R, "Cure rate (Stage 2→1)", _loan_vals("cure_21"), loan_cols, ORANGE, A, _loan_keys("cure_21"), fmt='0.0%')
+    R = _table_row(ws, R, "Default rate (Stage 2→3)", _loan_vals("default_rate"), loan_cols, ORANGE, A, _loan_keys("default_rate"), fmt='0.0%')
+    R = _table_row(ws, R, "Cure rate (Stage 3→2)", _loan_vals("cure_32"), loan_cols, ORANGE, A, _loan_keys("cure_32"), fmt='0.0%')
+    R = _table_row(ws, R, "Write-off rate (of Stage 3)", _loan_vals("writeoff_rate"), loan_cols, ORANGE, A, _loan_keys("writeoff_rate"), fmt='0.0%')
+    R = _table_row(ws, R, "Risk weight (RWA)", _loan_vals("risk_weight"), loan_cols, ORANGE, A, _loan_keys("risk_weight"), fmt='0%')
+    R += 1
 
     write(ws, R, LABEL_COL, "Off-Balance-Sheet Exposure", bold=True, txt_color=NAVY); R += 1
     ob = config.OFF_BALANCE_SHEET
@@ -199,13 +285,23 @@ def build_assumptions(wb, config):
     R += 2
 
     section_header(ws, R, "DEPOSITS / FUNDING (allocation modeled — only the aggregate is disclosed)"); R += 1
-    for dep in config.DEPOSIT_TYPES:
-        k = dep["key"]
-        write(ws, R, LABEL_COL, dep["name"], bold=True); R += 1
-        R = _assum_row(ws, R, "Opening balance", dep["opening"], ORANGE, A, f"{k}_opening")
-        R = _scenario_row(ws, R, "Growth p.a.", dep["growth"],
-                           growth_mult_best_ref, growth_mult_worst_ref, A, f"{k}_growth", fmt='0.0%')
-        R = _assum_row(ws, R, "Cost of funds", dep["cost_rate"], ORANGE, A, f"{k}_cost_rate", fmt='0.00%')
+    dep_cols = [ASSUM_COL + i for i in range(len(config.DEPOSIT_TYPES))]
+    for col, dep in zip(dep_cols, config.DEPOSIT_TYPES):
+        write(ws, R, col, dep["name"], bold=True, txt_color=WHITE, bg=MED_BLUE, halign="center")
+    R += 1
+    dep_keys = [dep["key"] for dep in config.DEPOSIT_TYPES]
+
+    def _dep_vals(field):
+        return [dep[field] for dep in config.DEPOSIT_TYPES]
+
+    def _dep_keys(suffix):
+        return [f"{k}_{suffix}" for k in dep_keys]
+
+    R = _table_row(ws, R, "Opening balance", _dep_vals("opening"), dep_cols, ORANGE, A, _dep_keys("opening"))
+    R = _scenario_table_row(ws, R, "Growth p.a.", _dep_vals("growth"),
+                             growth_mult_best_ref, growth_mult_worst_ref, dep_cols, A,
+                             _dep_keys("growth"), fmt='0.0%')
+    R = _table_row(ws, R, "Cost of funds", _dep_vals("cost_rate"), dep_cols, ORANGE, A, _dep_keys("cost_rate"), fmt='0.00%')
     R += 1
 
     section_header(ws, R, "INVESTMENT SECURITIES"); R += 1
@@ -311,6 +407,7 @@ def build_assumptions(wb, config):
     num(ws, R, ASSUM_COL, intercept_formula, fmt='0.0000', txt_color=DARK, bold=True)
     A["pb_roe_intercept"] = R; R += 1
 
+    _apply_print_setup(ws)
     return A
 
 
@@ -319,7 +416,12 @@ def build_assumptions(wb, config):
 # ─────────────────────────────────────────────
 
 def _assum_ref(A, key):
-    return f"Assumptions!${get_column_letter(ASSUM_COL)}${A[key]}"
+    """`A[key]` is normally a bare row int (implicitly column ASSUM_COL) — but table-style
+    Assumptions entries (segment/deposit-type columns, see `_table_row`/`_scenario_table_row`)
+    store a `(row, col)` tuple instead, since each category's value lives in its own column
+    rather than ASSUM_COL. Callers never need to know which shape a given key uses."""
+    row, col = A[key] if isinstance(A[key], tuple) else (A[key], ASSUM_COL)
+    return f"Assumptions!${get_column_letter(col)}${row}"
 
 
 def _prev(i, model_row):
@@ -372,6 +474,31 @@ def _model_period_header(ws, R):
 
 def _all_cols():
     return ACTUAL_COLS + DATA_COLS
+
+
+def _print_right_col():
+    return get_column_letter(max(_all_cols()))
+
+
+def _apply_print_setup(ws, blocks=None, right=None):
+    """Landscape, scaled, horizontally-centered print layout matching the Blu Containers
+    reference convention. `blocks` is a list of (start_row, end_row) tuples for a
+    multi-block print area (e.g. one per Model-sheet schedule); omit for a single-block
+    sheet spanning rows 1..ws.max_row. `print_title_rows` repeats row 1 (business name +
+    scenario banner) at the top of every physically printed page."""
+    right = right or _print_right_col()
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.scale = 95
+    ws.print_options.horizontalCentered = True
+    if blocks:
+        ws.print_area = [f"$B${s}:${right}${e}" for s, e in blocks]
+    else:
+        ws.print_area = f"$B$1:${right}${ws.max_row}"
+    ws.print_title_rows = "1:1"
+
+
+def _write_scenario_banner(ws, right_col):
+    write(ws, 1, right_col, _scenario_banner_formula(), bold=True, txt_color=GOLD, halign="right")
 
 
 def _period_label(year, is_actual):
@@ -1374,10 +1501,9 @@ def build_model(wb, config, A):
     _col_widths(ws)
     M = {}
 
+    right_col = max(_all_cols())
     write(ws, 1, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY)
-    write(ws, 1, 8,
-          f'="CURRENTLY RUNNING: "&UPPER(CHOOSE({SWITCH_CELL_REF},"Base","Best","Worst"))&" SCENARIO"',
-          bold=True, txt_color=GOLD)
+    _write_scenario_banner(ws, right_col)
     write(ws, 2, LABEL_COL, "Model — Scenario-Switched (fully formula-linked)", txt_color=MID_GRAY)
     master_check_title_row = 4
     # Reserve rows 4-8 for the Master Check (filled in after the rest of the sheet exists)
@@ -1389,13 +1515,21 @@ def build_model(wb, config, A):
     R += 1
     blank_row(ws, R, 8); R += 1
 
-    R = _build_loan_book_section(ws, config, A, M, R)
-    R = _build_funding_section(ws, config, A, M, R)
-    R = _build_income_statement_section(ws, config, A, M, R)
-    R = _build_cash_flow_balance_sheet_section(ws, config, A, M, R)
-    R = _build_capital_liquidity_section(ws, config, A, M, R)
+    # One print block per schedule section, so each starts a fresh printed page rather than
+    # splitting mid-schedule. block_start tracks where the *previous* section's block began;
+    # each loop iteration closes that block using the row the previous fn call left off at,
+    # before advancing into the next section.
+    blocks = []
+    block_start = 1
+    for fn in (_build_loan_book_section, _build_funding_section, _build_income_statement_section,
+               _build_cash_flow_balance_sheet_section, _build_capital_liquidity_section):
+        blocks.append((block_start, R - 1))
+        block_start = R
+        R = fn(ws, config, A, M, R)
+    blocks.append((block_start, R - 1))
 
     _build_master_check(ws, A, M, master_check_title_row)
+    _apply_print_setup(ws, blocks=blocks, right=get_column_letter(right_col))
 
     return M
 
@@ -1410,7 +1544,9 @@ def build_summary(wb, config, A, M, scenarios):
     _col_widths(ws)
 
     R = 1
-    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY); R += 2
+    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY)
+    _write_scenario_banner(ws, max(_all_cols()))
+    R += 2
     write(ws, R, LABEL_COL, "Summary Financial Outputs — Three Scenarios", txt_color=MID_GRAY); R += 2
 
     def _kpi_block(label, data, bg_hdr):
@@ -1498,6 +1634,7 @@ def build_summary(wb, config, A, M, scenarios):
              all_cols, label_col=LABEL_COL, fmt='0.0%', alt_idx=1)
     R += 1
 
+    _apply_print_setup(ws)
     return R
 
 
@@ -1505,13 +1642,52 @@ def build_summary(wb, config, A, M, scenarios):
 # SCENARIOS SHEET (Base/Best/Worst — static Python-computed values, existing convention)
 # ─────────────────────────────────────────────
 
+def _scenario_metric_block(ws, row, config, title, unit, base_vals, best_vals, worst_vals, fmt):
+    """Compact scenario-metric block, one per metric: a title bar carrying the metric name/
+    unit and the year-period labels on one row, a blank spacer, an outlined ACTIVE row
+    (CHOOSE on the scenario switch, referencing the Base/Best/Worst rows immediately below
+    it), then plain Base/Best/Worst rows. Mirrors the Assumptions-sheet `_scenario_row`
+    convention so both sheets read the same way."""
+    header_row(ws, row, f"{title} ({unit})" if unit else title, bg=NAVY, txt_color=WHITE, height=18)
+    for i, col in enumerate(DATA_COLS):
+        write(ws, row, col, _period_labels_proj(config)[i], bold=True, txt_color=WHITE, bg=NAVY, halign="center")
+    row += 1
+    row += 1  # blank spacer between the title bar and the live/ACTIVE row
+
+    active_row = row
+    base_row = row + 1
+    best_row = row + 2
+    worst_row = row + 3
+    active_formulas = [f"=CHOOSE({SWITCH_CELL_REF},{_cell(base_row, c)},{_cell(best_row, c)},{_cell(worst_row, c)})"
+                        for c in DATA_COLS]
+    data_row(ws, active_row, "", active_formulas, DATA_COLS, label_col=LABEL_COL, fmt=fmt,
+             txt_color=TEAL, bold=True)
+    outline_range(ws, active_row, DATA_COLS)
+    row += 1  # move past the active row -> row == base_row, no extra spacer here
+
+    unit_label = f"({unit})" if unit else None
+    data_row(ws, row, "Base", base_vals, DATA_COLS, label_col=LABEL_COL, units=unit_label,
+             units_col=UNITS_COL, fmt=fmt, alt_idx=0); row += 1
+    data_row(ws, row, "Best", best_vals, DATA_COLS, label_col=LABEL_COL, units=unit_label,
+             units_col=UNITS_COL, fmt=fmt, alt_idx=1); row += 1
+    data_row(ws, row, "Worst", worst_vals, DATA_COLS, label_col=LABEL_COL, units=unit_label,
+             units_col=UNITS_COL, fmt=fmt, alt_idx=0); row += 1
+    row += 1  # trailing spacer between metric blocks
+    return row
+
+
 def build_scenarios_sheet(wb, config, scenarios):
     ws = wb.create_sheet("Scenarios", index=3)
     ws.sheet_view.showGridLines = False
     _col_widths(ws)
+    # This sheet only ever uses DATA_COLS (K-O) — ACTUAL_COLS (H-J) are unused here, unlike
+    # Model/Summary, so narrow them instead of leaving a full-width dead gap before the data.
+    set_col_widths(ws, {get_column_letter(c): 3 for c in ACTUAL_COLS})
 
     R = 1
-    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY); R += 2
+    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY)
+    _write_scenario_banner(ws, max(_all_cols()))
+    R += 2
     write(ws, R, LABEL_COL, "Scenario Comparison — Key Drivers", txt_color=MID_GRAY); R += 1
 
     # Scenario switch — fixed at row 5, col D (SWITCH_CELL_REF = 'Scenarios'!$D$5), referenced
@@ -1519,54 +1695,64 @@ def build_scenarios_sheet(wb, config, scenarios):
     # re-drives the entire live Model sheet: 1=Base, 2=Best, 3=Worst.
     write(ws, 5, LABEL_COL, "SCENARIO SWITCH (1=Base, 2=Best, 3=Worst):", bold=True, txt_color=NAVY)
     num(ws, 5, 4, 1, fmt='0', bold=True, txt_color=BLUE_INPUT)
+    # In-cell dropdown restricting the switch to 1/2/3 — openpyxl's `showDropDown` flag is
+    # inverted (False is what actually shows the dropdown arrow).
+    switch_dv = DataValidation(type="list", formula1='"1,2,3"', allow_blank=False, showDropDown=False)
+    ws.add_data_validation(switch_dv)
+    switch_dv.add(ws.cell(row=5, column=4))
     write(ws, 5, 7, '=UPPER(CHOOSE($D$5,"Base","Best","Worst"))&" CASE IS CURRENTLY LIVE ON THE MODEL SHEET"',
           italic=True, txt_color=MID_GRAY)
     R = 7
 
-    scenario_defs = [
-        ("BASE CASE", NAVY, "Modeled loan growth / IFRS 9 loss rates / opex escalation as calibrated", scenarios["base"]),
-        ("BEST CASE", GREEN_DRK, "Loan growth x1.2, loss rates x0.8, opex escalation x0.9", scenarios["best"]),
-        ("WORST CASE", RED_DARK, "Loan growth x0.7, loss rates x1.4, opex escalation x1.15", scenarios["worst"]),
-    ]
-    for name, color, note, data in scenario_defs:
-        header_row(ws, R, name, bg=color, txt_color=WHITE, height=18, merge_to_col=12); R += 1
-        write(ws, R, LABEL_COL, note, italic=True, txt_color=MID_GRAY, size=9); R += 1
-        blank_row(ws, R); R += 1
-        year_header_row(ws, R, _period_labels_proj(config), DATA_COLS, label_col=LABEL_COL); R += 1
+    write(ws, R, LABEL_COL,
+          "Modeled loan growth / IFRS 9 loss rates / opex escalation as calibrated per case "
+          "(Best: growth x1.2, loss rates x0.8, opex x0.9 — Worst: growth x0.7, loss rates x1.4, opex x1.15)",
+          italic=True, txt_color=MID_GRAY, size=9)
+    R += 1
+    blank_row(ws, R); R += 1
 
+    def _metric_vals(data):
         pat = data["income_stmt"]["pat"]
         nii = data["nii"]["nii"]
         non_int = data["income_stmt"]["non_interest_income"]
         total_income = [nii[i] + non_int[i] for i in range(len(nii))]
-        metrics = [
-            ("Total Income (KES MM)", total_income, '#,##0.0'),
-            ("Net Interest Income (KES MM)", nii, '#,##0.0'),
-            ("Net Profit After Tax (KES MM)", pat, '#,##0.0'),
-            ("NPL Ratio", data["loan_book"]["npl_ratio"], '0.0%'),
-            ("Total Capital Ratio", data["capital"]["total_capital_ratio"], '0.0%'),
-            ("Liquidity Ratio", data["liquidity"]["ratio"], '0.0%'),
-            ("Return on Assets (avg)", data["ratios"]["roa"], '0.0%'),
-            ("Return on Equity (avg)", data["ratios"]["roe"], '0.0%'),
-        ]
-        for i, (label, vals, fmt) in enumerate(metrics):
-            data_row(ws, R, label, vals, DATA_COLS, label_col=LABEL_COL, fmt=fmt, alt_idx=i)
-            R += 1
-        R += 1
-        blank_row(ws, R, 8); R += 1
+        return {
+            "Total Income": (total_income, "KES MM", '#,##0.0'),
+            "Net Interest Income": (nii, "KES MM", '#,##0.0'),
+            "Net Profit After Tax": (pat, "KES MM", '#,##0.0'),
+            "NPL Ratio": (data["loan_book"]["npl_ratio"], None, '0.0%'),
+            "Total Capital Ratio": (data["capital"]["total_capital_ratio"], None, '0.0%'),
+            "Liquidity Ratio": (data["liquidity"]["ratio"], None, '0.0%'),
+            "Return on Assets (avg)": (data["ratios"]["roa"], None, '0.0%'),
+            "Return on Equity (avg)": (data["ratios"]["roe"], None, '0.0%'),
+        }
+
+    base_metrics = _metric_vals(scenarios["base"])
+    best_metrics = _metric_vals(scenarios["best"])
+    worst_metrics = _metric_vals(scenarios["worst"])
+
+    for metric, (base_vals, unit, fmt) in base_metrics.items():
+        best_vals, _, _ = best_metrics[metric]
+        worst_vals, _, _ = worst_metrics[metric]
+        R = _scenario_metric_block(ws, R, config, metric, unit, base_vals, best_vals, worst_vals, fmt)
+
+    _apply_print_setup(ws)
 
 
 # ─────────────────────────────────────────────
-# VALUATION SHEET
+# OUTPUT SHEET
 # ─────────────────────────────────────────────
 
-def build_valuation_sheet(wb, config, A, M):
-    ws = wb.create_sheet("Valuation", index=5)
+def build_output_sheet(wb, config, A, M):
+    ws = wb.create_sheet("Output", index=5)
     ws.sheet_view.showGridLines = False
     _col_widths(ws)
     n = len(config.YEARS)
 
     R = 1
-    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY); R += 2
+    write(ws, R, LABEL_COL, config.BUSINESS_NAME, bold=True, size=14, txt_color=NAVY)
+    _write_scenario_banner(ws, max(_all_cols()))
+    R += 2
     write(ws, R, LABEL_COL, "Equity Valuation — Base Case", txt_color=MID_GRAY); R += 2
 
     section_header(ws, R, "COST OF EQUITY (CAPM)"); R += 1
@@ -1840,6 +2026,7 @@ def build_valuation_sheet(wb, config, A, M):
                        bold=True, fmt='0.00')
     R += 1
 
+    _apply_print_setup(ws)
     return R
 
 
@@ -1874,8 +2061,13 @@ def build_cover(wb, config):
     write(ws, 17, LABEL_COL, "Model Contents", bold=True, size=13, txt_color=NAVY)
     for i, tab in enumerate(["Summary", "Assumptions", "Scenarios",
                               "Model (Loan Book, IFRS 9, Statements, Capital, Liquidity)",
-                              "Valuation (DDM, Residual Income, P/B-ROE)"]):
+                              "Output (DDM, Residual Income, P/B-ROE)"]):
         write(ws, 19 + i, 4, f"•  {tab}", txt_color=MID_GRAY)
+
+    # Static single page — no scenario banner (nothing scenario-dependent here) and its own
+    # narrower print area, unlike the data sheets' shared _apply_print_setup convention.
+    ws.page_setup.orientation = "landscape"
+    ws.print_area = f"$A$1:$J${ws.max_row}"
 
 
 # ─────────────────────────────────────────────
@@ -1901,7 +2093,7 @@ def build_excel(config, results, output_path):
     scenarios = bank_calculations.build_scenarios(config)
     build_summary(wb, config, A, M, scenarios)
     build_scenarios_sheet(wb, config, scenarios)
-    build_valuation_sheet(wb, config, A, M)
+    build_output_sheet(wb, config, A, M)
 
     wb.save(output_path)
     return output_path

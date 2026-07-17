@@ -421,6 +421,166 @@ but flagged for refinement.
       exactly; BVPS actuals reproduce the expected small gap vs the disclosed Group-basis
       figures; Summary table renders both columns correctly.
 
+## Phase 12 — Repo cleanup (root duplicates) (2026-07-14) — DONE
+
+- [x] Deleted root-level `bank_calculations.py`, `bank_excel_renderer.py`, `xl_helpers.py`,
+      `config_loader.py`, `config.py`, `build_bank_model.py`, `__init__.py`, the root
+      `financial/` directory, and root `launch.bat`/`launch.sh` — all confirmed
+      byte-identical duplicates of `bizplan/`/`scripts/` files, never imported by anything
+      on the live launch path (`scripts/build_bank_model.py` → `bizplan.config_loader` →
+      `bizplan.financial.*`).
+- [x] Verified: rebuilt via `scripts/build_bank_model.py` directly from a clean tree —
+      identical output to before the cleanup.
+
+## Phase 13 — Print/page setup (2026-07-14) — DONE
+
+- [x] `_apply_print_setup()` helper (`bank_excel_renderer.py`): landscape orientation,
+      scale=95, horizontally-centered, matching the Blu Containers reference convention.
+      Single-block print area on Cover/Summary/Assumptions/Scenarios/Output; multi-block
+      (one per schedule section: Loan Book, Funding, Income Statement, Cash Flow/Balance
+      Sheet, Capital/Liquidity) on Model, computed from the existing section-builder
+      return-row chain — no changes needed inside the section builders themselves.
+      `print_title_rows = "1:1"` on every non-Cover sheet so the banner (Phase 14) repeats
+      on every physically printed page.
+
+## Phase 14 — Top-right scenario banner (2026-07-14) — DONE
+
+- [x] `_scenario_banner_formula()` — a `HYPERLINK()` formula to `Scenarios!D5` wrapped
+      around the existing `CHOOSE()`-driven "Base/Best/Worst CASE" text. Placed at row 1,
+      rightmost content column, on Assumptions/Scenarios/Model/Summary/Output — retired the
+      old Model-sheet-only banner at column H in favor of one consistent cell per sheet.
+
+## Phase 15 — Rename "Valuation" sheet to "Output" (2026-07-14) — DONE
+
+- [x] `build_valuation_sheet` → `build_output_sheet`; sheet tab "Valuation" → "Output";
+      updated module docstring, Cover sheet's tab bullet list, and `BLUEPRINT.md`'s 6
+      occurrences. Confirmed zero `'Valuation'!` cross-sheet formula references existed
+      anywhere (pure leaf/consumer sheet) — the rename was fully self-contained. Left the
+      in-sheet "Equity Valuation — Base Case" heading as-is (names the methodology, not
+      the tab).
+
+## Phase 16 — Scenario metric block redesign (2026-07-14) — DONE
+
+- [x] Reworked `_scenario_row()` (Assumptions sheet) and added `_scenario_metric_block()`
+      (Scenarios sheet, replacing the old case-grouped Base/Best/Worst layout) to a shared
+      compact-table convention per the user's mock-ups: a title bar carrying the metric
+      name/unit once, a boxed `CHOOSE()`-driven ACTIVE row on top, a blank spacer, then
+      plain Base/Best/Worst rows below — short labels only, since the title bar already
+      carries the metric name/unit. Added `box_border()` to `xl_helpers.py`. Scenarios
+      sheet restructured from case-grouped (3 case blocks × 8 metrics each) to
+      metric-grouped (8 metric blocks, each showing its own live ACTIVE row above the three
+      static Base/Best/Worst comparison rows).
+- [x] Verified: `refs[key] = active_row` contract unchanged (downstream `A[key]` lookups on
+      the Assumptions sheet unaffected by the row reorder); rebuilt end-to-end, Model sheet
+      formula count unaffected.
+
+## Phase 17 — Scenario switch: Data Validation dropdown (2026-07-14) — DONE
+
+- [x] Added an in-cell `DataValidation` list (`"1,2,3"`) on `Scenarios!D5` — user decision:
+      ship the simple, robust openpyxl-native option first; a true Excel Forms combo box
+      (matching the Blu Containers reference exactly) is an explicit, not-yet-committed
+      fallback if the dropdown UX proves insufficient — the necessary raw-OOXML parts were
+      reverse-engineered against both the reference and the user's own partial manual
+      attempt during planning, so a follow-up phase wouldn't start from scratch.
+
+## Phase 18 — Standalone Python onboarding/update agent (2026-07-14) — DONE
+
+- [x] `agent/` package (`cli.py`, `research.py`, `config_writer.py`, `manifest.py`,
+      `build_runner.py`) — a standalone program (not a Claude Code subagent) that calls the
+      Anthropic API directly: a manual tool-use loop with the server-side `web_search` tool
+      plus a custom `download_file` tool locates and fetches a new institution's filings,
+      then the downloaded PDFs are fed back to Claude as native `document` content blocks
+      for extraction (falling back to the repo's existing pypdf/pdfplumber/pikepdf/pymupdf
+      recovery toolchain only if a PDF fails to parse via the API). Writes
+      `examples/<institution>/config.py` (validated immediately against
+      `bizplan/config_loader.REQUIRED_FIELDS`) and `research_output.md`, then runs the
+      existing renderer unchanged via `scripts/build_bank_model.py --bank <institution>`.
+      `update <institution>` re-runs the research step scoped to "anything newer than the
+      manifest's last-ingested sources" and, if found, rolls the config forward
+      (nearest-projected-year → `ACTUALS`, `YEARS` extended by one) rather than
+      regenerating from scratch.
+- [x] `.devops/agents/bank-onboarding.md` — the institution-agnostic SOP the agent's
+      prompts are grounded in, distilled from this file's own Phase -0.5 through Phase 11
+      (including the real pitfalls hit along the way: broken source PDFs, Bank-vs-
+      Consolidated column confusion, the two cash-flow-definition mismatches, regulatory
+      vs. accounting Tier 1).
+- [x] `AGENTS.md` (new, root) indexing both; one-line pointer added to `CLAUDE.md`.
+- [x] Verified: all new `agent/*.py` files parse cleanly (`ast.parse`); not yet exercised
+      end-to-end against the live Anthropic API in this session (needs `ANTHROPIC_API_KEY`
+      + real network access + real API spend — a genuine "run it for real" step left to the
+      user).
+
+## Phase 19 — Fix CHOOSE off-by-one on the Scenarios sheet (2026-07-14) — DONE
+
+- [x] **Real bug, found by the user reviewing the rendered output**: `_scenario_metric_block()`
+      did two separate `row += 1` calls right after writing the boxed ACTIVE row — one to move
+      past it, one meant as "the blank spacer before Base/Best/Worst" — which shifted every
+      subsequent row one below where the `CHOOSE()` formula's `base_row`/`best_row`/`worst_row`
+      actually pointed. `base_row` was never written to (Excel reads it as 0 → Base always
+      showed 0); "Base" data landed where the formula read for Best; "Best" landed where it
+      read for Worst; the real "Worst" data was orphaned one row further down, never
+      referenced. `_scenario_row()` (the Assumptions-sheet equivalent) never had this bug — it
+      only increments once per row with no spacer, which is what confirmed the bug was
+      isolated to the Scenarios sheet.
+- [x] Fix: exactly one `row += 1` between the active row and Base; the blank spacer moved to
+      between the title bar and the active row instead (also applied to `_scenario_row` for
+      consistency, per the user's revised visual preference — see Phase 20).
+- [x] Verified: wrote a script asserting, for every metric block on the Scenarios sheet, that
+      the `CHOOSE()` formula's three cell operands actually hold rows labeled "Base"/"Best"/
+      "Worst" respectively — zero mismatches across all 8 metric blocks.
+
+## Phase 20 — Group outline border + tighter columns (2026-07-14) — DONE
+
+- [x] New `outline_range()` in `xl_helpers.py` — draws one bounding rectangle around a
+      contiguous horizontal group of cells (left edge only on the first column, right edge
+      only on the last, top+bottom on every column) instead of `box_border()`'s every-cell-
+      gets-all-four-sides, which read as a grid of separate boxes rather than one outlined
+      group. Swapped into both `_scenario_metric_block` and `_scenario_row`.
+- [x] `_col_widths()` data columns (H-O) reduced from 14 to 12 (still comfortably fits the
+      largest modeled figures). The Scenarios sheet never uses `ACTUAL_COLS` (H-J) at all —
+      only `DATA_COLS` (K-O) — so those three full-width unused columns were most of the
+      "too much space between columns" effect; narrowed to width 3 on that sheet specifically
+      (Assumptions keeps them at full width — Phase 21 puts real data there).
+
+## Phase 21 — Assumptions: Loan Book & Deposits as tables (2026-07-14) — DONE
+
+- [x] Restructured the "LOAN BOOK — BY PRODUCT" and "DEPOSITS / FUNDING" sections from one
+      repeated ~12-row vertical block per category (3× for loan segments, 4× for deposit
+      types) into one table per section: a header row naming each category once, then one row
+      per metric spanning all category columns. Cuts the Loan Book section from 36 rows of
+      near-identical labels down to 12 metric rows (+ header); Deposits from ~12 down to 3
+      (+ header).
+- [x] The real constraint this ran into: every downstream Model-sheet formula reads a
+      per-segment assumption via `_assum_ref(A, key)`, which assumed a single global
+      `ASSUM_COL` varying only by row. Moving categories into columns meant `_assum_ref`
+      needed to know *which* column too. Fixed with a backward-compatible change: `A[key]`
+      can now be either a bare row int (existing behavior, ~40 of 57 call sites untouched) or
+      a `(row, col)` tuple (new, for table-clustered keys) — `_assum_ref` transparently
+      resolves either shape, so none of the ~15-18 call sites in `_build_loan_book_section`/
+      `_build_funding_section` that reference segment/deposit-typed keys needed to change at
+      all.
+- [x] New `_table_row()` (plain per-category metric row) and `_scenario_table_row()` (the
+      multi-column generalization of `_scenario_row`: title, spacer, outlined ACTIVE row with
+      one `CHOOSE()` per category column, then Base/Best/Worst) in `bank_excel_renderer.py`.
+      Column counts derive from `len(config.LOAN_SEGMENTS)`/`len(config.DEPOSIT_TYPES)` rather
+      than being hardcoded, so this generalizes to a future institution with a different
+      number of loan products or deposit types.
+- [x] Verified: rebuilt end-to-end — Model sheet formula count unchanged (636 formulas, 5 
+      pre-existing bare placeholder values, unaffected), Balance Sheet Check formula intact,
+      and confirmed by inspection that Model-sheet formulas for the Mortgage/Overdraft
+      segments now correctly reference `Assumptions!$I$...`/`$J$...` (their own columns)
+      rather than all collapsing onto column H.
+
+## Phase 22 — `.env` file for the agent (2026-07-14) — DONE
+
+- [x] `.env` at repo root with `ANTHROPIC_KEY=` (placeholder). Confirmed already covered by
+      `.gitignore`.
+- [x] `agent/cli.py`: added `_anthropic_client()` — loads `.env` via `python-dotenv` and
+      constructs the client explicitly off `ANTHROPIC_KEY`, since the Anthropic SDK's own
+      auto-detection only looks for `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`, not this
+      repo's chosen variable name. Raises a clear error if the key is missing rather than
+      failing deep inside the SDK. Added `python-dotenv` to `agent/requirements.txt`.
+
 ## Follow-ups (not blocking)
 
 - [ ] Real P/B for Absa/Co-op/DTB/Equity/KCB/SCB/Stanbic (need book value of equity +
@@ -428,3 +588,8 @@ but flagged for refinement.
       images, or external market-data lookup)
 - [ ] A true regression beta (needs historical price series + market index returns — no
       market-data API available with the current toolset)
+- [ ] True Excel Forms combo box for the scenario switch (fallback to Phase 17's
+      DataValidation dropdown, only if the user finds it insufficient — see Phase 17)
+- [ ] `agent/` CLI's first live end-to-end run against a second real institution (needs a
+      real `ANTHROPIC_KEY` in `.env` + user-provided starting URLs) — proves out the whole
+      pipeline the way `scripts/build_bank_model.py` is already proven for Family Bank Kenya

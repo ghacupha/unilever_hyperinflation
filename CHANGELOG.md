@@ -7,6 +7,63 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Fixed — Scenarios-sheet CHOOSE formula off-by-one (2026-07-14)
+- `_scenario_metric_block()` double-incremented the row cursor right after the ACTIVE row,
+  shifting Base/Best/Worst one row below where the `CHOOSE()` formula's operands actually
+  pointed — Base always evaluated to 0 (reading a blank cell), and Best/Worst each picked
+  up the wrong case's data. Fixed by removing the extra increment and relocating the blank
+  spacer to between the title bar and the ACTIVE row instead. Verified across all 8
+  Scenarios-sheet metric blocks with zero mismatches. Closes BACKLOG.md Phase 19.
+
+### Changed — Visual/layout refinements + Assumptions tables (2026-07-14)
+- The boxed live/ACTIVE row now uses a single outlined-group border (`outline_range()` in
+  `xl_helpers.py`) instead of bordering every cell individually; data columns narrowed
+  (14→12 globally, H-J collapsed to width 3 on the Scenarios sheet where they're unused) to
+  close the dead space the boxed rows sat in. Closes BACKLOG.md Phase 20.
+- Assumptions sheet's Loan Book and Deposits sections restructured from repeated per-
+  category vertical blocks into tables (one header row naming each category, one row per
+  metric spanning all categories) — Loan Book goes from 36 rows to 12, Deposits from ~12 to
+  3. Required extending `_assum_ref()` to resolve a `(row, col)` tuple in addition to the
+  existing bare-row-int form, so per-category assumptions can live in their own column
+  without any changes to the ~15-18 Model-sheet call sites that read them. Closes
+  BACKLOG.md Phase 21.
+
+### Added — `.env` for the agent (2026-07-14)
+- `.env` (git-ignored) with `ANTHROPIC_KEY=`; `agent/cli.py` now loads it explicitly via
+  `python-dotenv` rather than relying on the Anthropic SDK's default
+  `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN` auto-detection, since this repo uses its own
+  variable name. Closes BACKLOG.md Phase 22.
+
+### Added — Standalone onboarding/update agent (2026-07-14)
+- New `agent/` package: a standalone Python program (calls the Anthropic API directly,
+  not a Claude Code subagent) that researches a new institution's public filings via a
+  web-search + PDF-download tool-use loop, extracts the modelling facts, writes
+  `examples/<institution>/config.py` + `research_output.md`, and runs the existing
+  renderer unchanged. `agent update <institution>` re-checks for newer filings and rolls
+  the config forward. SOP at `.devops/agents/bank-onboarding.md`; index at `AGENTS.md`.
+  Closes BACKLOG.md Phase 18.
+
+### Changed — Scenario metric block redesign, printer-friendly output (2026-07-14)
+- Assumptions and Scenarios sheets reworked to a compact table convention: a title bar
+  carrying the metric name/unit once, a boxed live `CHOOSE()`-driven row on top, then
+  plain Base/Best/Worst rows below (short labels only) — replacing the old repeated
+  4-row-per-item layout and the Scenarios sheet's case-grouped blocks. Closes BACKLOG.md
+  Phase 16.
+- Added landscape/scaled/print-area page setup to every sheet (multi-block on Model, one
+  per schedule section) and a top-right, per-page `HYPERLINK()` scenario banner that
+  repeats on every printed page via `print_title_rows`. Closes BACKLOG.md Phase 13-14.
+- Added a native Data Validation dropdown (1/2/3) to the `Scenarios!D5` switch cell.
+  Closes BACKLOG.md Phase 17.
+- Renamed the "Valuation" sheet to "Output" throughout the renderer and `BLUEPRINT.md`
+  for reusability across future institutions. Closes BACKLOG.md Phase 15.
+
+### Removed — Root-level duplicate files (2026-07-14)
+- Deleted `bank_calculations.py`, `bank_excel_renderer.py`, `xl_helpers.py`,
+  `config_loader.py`, `config.py`, `build_bank_model.py`, `__init__.py`, the root
+  `financial/` directory, and root `launch.bat`/`launch.sh` — confirmed byte-identical
+  duplicates of `bizplan/`/`scripts/` files never touched by the live launch path. Closes
+  BACKLOG.md Phase 12.
+
 ### Added — Per-share equity valuation (2026-07-06)
 - New `SHARES_OUTSTANDING_2025` (1,662.655m shares, `[DISCLOSED]` — FY2025 report's share
   capital note, KES 1.00 par value confirmed). Added "Implied Value Per Share (KES)"

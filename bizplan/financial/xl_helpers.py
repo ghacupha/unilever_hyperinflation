@@ -61,6 +61,26 @@ def top_bottom_border():
 def bottom_only():
     return Border(bottom=Side(style="thin", color="8496AF"))
 
+def box_border(color=NAVY):
+    side = Side(style="thin", color=color)
+    return Border(left=side, right=side, top=side, bottom=side)
+
+def outline_range(ws, row, cols, color=NAVY):
+    """Draws a single bounding rectangle around a contiguous horizontal group of cells —
+    left edge only on the first column, right edge only on the last, top+bottom on every
+    column — instead of `box_border()`'s every-cell-gets-all-four-sides, which reads as a
+    grid of separate boxes rather than one outlined group."""
+    side = Side(style="thin", color=color)
+    none = Side(style=None)
+    for i, col in enumerate(cols):
+        cell = ws.cell(row=row, column=col)
+        cell.border = Border(
+            left=side if i == 0 else none,
+            right=side if i == len(cols) - 1 else none,
+            top=side,
+            bottom=side,
+        )
+
 def set_col_widths(ws, widths):
     for col_letter, w in widths.items():
         ws.column_dimensions[col_letter].width = w
