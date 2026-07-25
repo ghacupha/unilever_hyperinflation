@@ -129,7 +129,7 @@ immediately followed by projected columns on every schedule.
   Ending Cash Balance row must use the CF figure; the Balance Sheet's Total Assets must use
   the BS figure. Conflating them (reusing one hardcoded cell for both) breaks the Balance
   Sheet Check by exactly the inter-bank-balances amount.
-- **Financial Statement Quality Analysis** (Valuation sheet, actuals only — the projection
+- **Financial Statement Quality Analysis** (Output sheet, actuals only — the projection
   is our own modeling, not a filing to scrutinize): Sloan (1996) Accruals Ratio
   `(PAT − OCF) / Average Total Assets` (applies to banks unmodified); PAT-vs-OCF trend with
   a decline flag; the Texas Ratio `Stage 3 Gross NPLs / (Total Equity + Total Loan Loss
@@ -184,6 +184,70 @@ documented conventions). Findings and what changed as a result:
   Beta remains a reasoned proxy (~1.0, frontier-market bank equity betas typically
   0.8-1.1x) — no market-data API available here for a true regression.
 
+## 2026-07-14 — Print layout, scenario table redesign, "Output" rename, onboarding agent
+
+- **Print/page setup**: every sheet now gets landscape orientation, scale=95,
+  horizontally-centered — matching the Blu Containers reference. Model gets a multi-block
+  print area (one block per schedule section, computed from the existing section-builder
+  row-chain, not hardcoded); every other sheet gets a single block. `print_title_rows`
+  repeats row 1 (business name + scenario banner) on every physically printed page.
+- **Scenario banner**: consolidated to one `HYPERLINK()`-wrapped cell per sheet, top-right
+  (rightmost content column), linking back to the Scenarios switch cell — replaces the old
+  Model-sheet-only, non-hyperlinked banner.
+- **Scenario metric block redesign**: both the Assumptions sheet's per-item rows and the
+  Scenarios sheet's per-metric blocks follow one compact-table convention: a title bar
+  carrying the metric name/unit once, a blank spacer, an outlined live `CHOOSE()`-driven row,
+  then plain Base/Best/Worst rows below with short labels only — the metric name/unit isn't
+  repeated per row anymore. The Scenarios sheet itself moved from case-grouped (3 case
+  blocks, 8 metrics each) to metric-grouped (8 metric blocks, each with its own live ACTIVE
+  row) so the three cases are directly comparable at a glance. **Corrected same day**: the
+  first implementation had a real bug (`_scenario_metric_block` double-incremented the row
+  cursor after the ACTIVE row, so `CHOOSE()`'s operands pointed one row above where
+  Base/Best/Worst actually landed — Base always read 0) and the block's visuals didn't match
+  intent (every cell individually bordered instead of one outlined group; spacer sat after
+  the ACTIVE row instead of before it). Fixed: spacer now sits between the title bar and the
+  ACTIVE row; `outline_range()` (new, `xl_helpers.py`) draws one bounding rectangle around a
+  contiguous cell group instead of bordering each cell. Applied to both sheets.
+- **Assumptions tables**: the Loan Book and Deposits sections — previously one repeated
+  ~12-row vertical block per category (loan segment / deposit type) — are now one table per
+  section: a header row naming each category once, one row per metric spanning all category
+  columns. Required `_assum_ref()` to resolve either a bare row int (existing keys,
+  unchanged) or a `(row, col)` tuple (new, for table-clustered keys) so per-category
+  assumptions can live in different columns without touching the Model-sheet formula code
+  that reads them. Column count derives from `len(config.LOAN_SEGMENTS)`/
+  `len(config.DEPOSIT_TYPES)`, not hardcoded, so it generalizes to a different product/
+  deposit-type count for a future institution.
+- **Scenario switch UX**: native openpyxl `DataValidation` list dropdown on `Scenarios!D5`
+  — user's explicit choice over a true Excel Forms combo box (which would exactly match
+  the Blu Containers reference but requires raw OOXML zip surgery post-`wb.save()`,
+  something openpyxl has no API for). Kept as a documented, not-yet-committed fallback if
+  the dropdown UX proves insufficient.
+- **"Valuation" → "Output"**: renamed throughout (sheet tab, function name, docstrings) for
+  reusability across future institutions — a "Valuation" sheet name is bank-specific
+  framing; "Output" generalizes. Confirmed fully self-contained (no cross-sheet formula
+  references pointed at it).
+- **Repo cleanup**: root-level `.py` files and a mirrored root `financial/` directory
+  (leftovers from an early flat-layout migration into `bizplan/`) deleted — confirmed
+  byte-identical to their `bizplan/`/`scripts/` counterparts and never imported by the live
+  launch path.
+- **Standalone onboarding/update agent** (`agent/`, new): not a Claude Code subagent — a
+  plain Python program that calls the Anthropic API directly with its own tool-use loop
+  (server-side web search + a custom `download_file` tool) to research a new institution,
+  reads downloaded filings as native PDF document content blocks, writes
+  `examples/<institution>/config.py` + `research_output.md`, and runs the existing
+  renderer unchanged. Python was chosen over Go specifically because this repo already
+  solved the hard part of this problem once — malformed/truncated source PDFs needed
+  `pikepdf`/`pymupdf` recovery — and that toolchain, plus the official `anthropic` SDK, is
+  reused directly rather than reimplemented. `agent update <institution>` re-scopes the
+  research step to "anything newer than what's already ingested" and mechanically rolls
+  the config forward (nearest projected year → `ACTUALS`, `YEARS` extended by one) rather
+  than regenerating from scratch. SOP lives at `.devops/agents/bank-onboarding.md`
+  (distilled from this file's own onboarding history), indexed from `AGENTS.md`. Credentials
+  come from a repo-root `.env` (git-ignored): `ANTHROPIC_KEY`, loaded explicitly by
+  `agent/cli.py` via `python-dotenv` — this repo's own variable name, not the Anthropic
+  SDK's default `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`, so it's wired through by hand
+  rather than relying on the SDK's auto-detection.
+
 This is the design source of truth. Update it when a design decision changes, not just when
 code changes. If this document and the code disagree, that's a bug in one of them — fix the
 drift, don't let it linger.
@@ -232,7 +296,7 @@ already have elsewhere.
   has more granular risk-factor and credit-risk disclosure than the annual report.
 - `FBL_LISTING_ABRIDGED_NEWSPAPER_FINAL-1.pdf`, `ke-fmly-2026-ps-00.pdf` — IPO/listing
   prospectus documents; likely contain the valuation basis used for the listing, peer
-  comparisons, and share pricing rationale — useful for the Valuation sheet.
+  comparisons, and share pricing rationale — useful for the Output sheet.
 
 **Environment**: repo-root `.venv` (Python 3.13.2) now has `bizplan` (editable),
 `openpyxl`/`python-docx`/`python-pptx`/`anthropic`/`click`, plus `pypdf`/`pdfplumber`/
@@ -309,7 +373,7 @@ return plain dicts of lists), computed per year for the Base Case:
 14. **Liquidity** — liquid assets / total deposits vs. CBK statutory minimum.
 15. **Ratio Disclosures** — CAMELS-complete profitability (incl. DuPont decomposition),
     capital adequacy, liquidity, cash flow ratios.
-16. **Valuation** — CAPM cost of equity; DDM (multi-stage + Gordon terminal value);
+16. **Output** — CAPM cost of equity; DDM (multi-stage + Gordon terminal value);
     Residual Income/Excess Return cross-check; P/B-ROE regression + P/E peer multiples.
 
 **Scoping rule**: only the Base Case gets full formula-linked treatment on the Model sheet.
@@ -369,7 +433,7 @@ granularity — decide during the research pass):
 
 ## Renderer design (`bizplan/financial/bank_excel_renderer.py`)
 
-Sheet order: Cover, Summary, Assumptions, Scenarios, Model, **Valuation**. Built on shared
+Sheet order: Cover, Summary, Assumptions, Scenarios, Model, **Output**. Built on shared
 primitives in `bizplan/financial/xl_helpers.py` (`fill`, `font`, `align`, `write`, `num`,
 `pct`, `header_row`, `section_header`, `year_header_row`, `data_row`, `total_row`,
 `blank_row`, and the formula helpers `_cell`/`_sum_f`/`_add_rows_f`/`_sub_f`/`_ratio_f`/
@@ -386,7 +450,7 @@ key instead of a hardcoded address.
   benchmark / macro-forecast / analyst-judgment), with a legend.
 - **Summary sheet**: adds a "Ratio Disclosures" block (Schedule 15) alongside the existing
   revenue/EBITDA KPI blocks.
-- **Valuation sheet**: CAPM cost-of-equity inputs, DDM (live-linked to Model sheet dividend/
+- **Output sheet**: CAPM cost-of-equity inputs, DDM (live-linked to Model sheet dividend/
   PAT rows), Residual Income cross-check, P/B-ROE regression + P/E peer-multiples table —
   implied share price/equity value from all methods shown side by side.
 
@@ -453,7 +517,7 @@ catches this folder at any depth).
 - Master Check section shows "OK" for Balance Sheet, Capital Adequacy, Liquidity (Base Case).
 - Year 1 Base Case figures are plausible against the `data/`-derived research figures.
 - Best/Worst scenario columns still render (static values, as designed).
-- Valuation sheet's three methods each produce a plausible implied value, and DDM/Residual
+- Output sheet's three methods each produce a plausible implied value, and DDM/Residual
   Income formulas trace live back to the Model sheet (not re-typed).
 
 ## Open follow-ups (not blocking)

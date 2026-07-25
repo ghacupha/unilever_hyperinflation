@@ -94,3 +94,9 @@ work, update them before stopping**:
 Primary data source for calibration is the `data/` folder (Family Bank Kenya annual reports
 2021-2025, MTN Information Memorandum, IPO/listing prospectus docs) — extract targeted
 text/tables and search for key terms rather than reading these PDFs cover-to-cover.
+
+Onboarding a new institution: see `AGENTS.md` for the SOP
+(`.devops/agents/bank-onboarding.md`) and the runnable agent (`agent/`) that executes it —
+researches a new bank's filings, writes `examples/<institution>/config.py` +
+`research_output.md`, and runs the existing renderer. Requires `ANTHROPIC_API_KEY`; each
+run costs real API tokens.
