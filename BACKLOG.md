@@ -642,8 +642,21 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       SOP. Bonus find: the pre-listing report's own DCF assumptions (cost of equity
       21.9%, WACC 19.1%) — a useful independent cross-check against this model's own
       19.99% cost of equity.
-- [ ] Stage 3 — mechanical Buy/Hold/Sell pre-decision (Morningstar-style margin-of-safety
-      bands, uncertainty-tier mapping not designed yet)
+- [x] Stage 3 — mechanical Buy/Hold/Sell pre-decision. `bizplan/financial/
+      report_recommendation.py` (`mechanical_recommendation()`, pure Python, no LLM):
+      Morningstar's real published margin-of-safety bands (Low 20%/25% ... Extreme
+      75%/300%), with this repo's own heuristic mapping the DDM/RI/P-B-ROE method-spread
+      (coefficient of range) to an Uncertainty tier — flagged in the module docstring as
+      a design choice, not a literal Morningstar practice (their real rating also weighs
+      leverage/cash-flow predictability/competitive position). Tested against real
+      Stage 1+2 output: Family Bank Kenya's 3 methods disagree by 217% (DDM 7.72 vs
+      P/B-ROE 33.69/share) → "Extreme" tier → even the market's +94.8% premium to
+      blended fair value (price 27.65 vs. 14.20) stays inside the (very wide) band →
+      mechanical signal `Hold`, correctly deferring to a report-writing stage to argue a
+      specific catalyst for Sell rather than forcing one off raw dispersion. Also
+      sanity-checked: a "Low" uncertainty (tight method agreement) case correctly
+      triggers `Buy` at a much narrower 20% discount, confirming the tier-scaling works
+      as intended.
 - [ ] Stage 4/5 — per-section report drafting + plagiarism/references review
 - [ ] Stage 6 — PDF assembly (ReportLab + matplotlib), `launch.sh` wiring
 

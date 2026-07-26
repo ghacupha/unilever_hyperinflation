@@ -7,6 +7,19 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Equity Research Report pipeline, Stage 3: mechanical Buy/Hold/Sell (2026-07-26)
+- `bizplan/financial/report_recommendation.py`: pure Python, no LLM. Applies
+  Morningstar's real published margin-of-safety bands (Low 20%/25% ... Extreme
+  75%/300%) to price vs. this model's blended fair value, using the DDM/RI/P-B-ROE
+  method-spread (coefficient of range) to pick an Uncertainty tier — this repo's own
+  heuristic mapping, documented as such, not a literal Morningstar practice.
+- Tested against real Stage 1+2 output: Family Bank Kenya's 3 methods disagree by 217%
+  → "Extreme" tier → the market's +94.8% premium to blended fair value (27.65 vs.
+  14.20/share) still falls inside the wide Extreme band → mechanical signal `Hold`,
+  correctly deferring to a report-writing stage to argue a specific catalyst rather
+  than forcing Sell off raw dispersion. Also sanity-checked a tight-agreement ("Low"
+  uncertainty) case, which correctly triggers `Buy` at a much narrower 20% threshold.
+
 ### Added — Equity Research Report pipeline, Stage 2: price/consensus research (2026-07-26)
 - `.devops/agents/equity-report/price-consensus-research.md`: SOP for researching
   share price and analyst consensus (or a documented proxy when none exists), with

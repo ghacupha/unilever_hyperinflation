@@ -356,31 +356,43 @@ incidentally also enables backtesting a report's call against what actually happ
   — the new pipeline reuses that same file-based-SOP idea, driven through `claude -p
   --append-system-prompt "$(cat stage-file.md)"` instead.
 - **Stage sequence** (full detail was captured in a session plan, condensed here as the
-  durable record): Stage 0 model sourcing (institution + as-of year -> config.py,
-  generalizing `agent/cli.py`'s `onboard`/`update` into one period-parameterized,
-  subscription-billed stage) -> Stage 1 numeric ground-truth extraction (pure Python,
-  `bizplan/financial/report_data.py`, done — see Phase 24 in BACKLOG.md) -> Stage 1b
-  model validation (pure Python, `bizplan/financial/bank_validation.py`, done — mirrors
-  the Model sheet's 3-check Master Check exactly: Balance Sheet abs-check < 0.01, Total
-  Capital/RWA >= CBK minimum, Liquidity Ratio >= CBK minimum) -> Stage 2 price/consensus
-  research (`claude -p`, needs a reference-date parameter so a past-anchored run researches
-  price/consensus *as of then*) -> Stage 3 mechanical Buy/Hold/Sell pre-decision (pure
-  Python arithmetic on `valuation_inputs.json`, catalyst narrative left to the LLM) ->
-  Stage 4 per-section drafting (one `claude -p` call per Morningstar-style section) ->
-  Stage 5 plagiarism/references review -> Stage 6 PDF assembly (pure Python, ReportLab +
-  matplotlib, no system deps so `launch.bat` stays Windows-friendly).
+  durable record; status per BACKLOG.md's Phase 24): Stage 0 model sourcing (institution +
+  as-of year -> config.py, generalizing `agent/cli.py`'s `onboard`/`update` into one
+  period-parameterized, subscription-billed stage — **done**, `scripts/source_model.py`,
+  live-tested) -> Stage 1 numeric ground-truth extraction (pure Python,
+  `bizplan/financial/report_data.py` — **done**) -> Stage 1b model validation (pure
+  Python, `bizplan/financial/bank_validation.py` — **done** — mirrors the Model sheet's
+  3-check Master Check exactly: Balance Sheet abs-check < 0.01, Total Capital/RWA >= CBK
+  minimum, Liquidity Ratio >= CBK minimum) -> Stage 2 price/consensus research (`claude
+  -p`, `scripts/research_price_consensus.py` — **done**, live-tested, explicit
+  reference-date parameter so a past-anchored run researches price/consensus *as of
+  then*) -> Stage 3 mechanical Buy/Hold/Sell pre-decision (pure Python arithmetic,
+  `bizplan/financial/report_recommendation.py` — **done**, catalyst narrative left to the
+  LLM) -> Stage 4 per-section drafting (one `claude -p` call per Morningstar-style
+  section — not started) -> Stage 5 plagiarism/references review (not started) -> Stage 6
+  PDF assembly (pure Python, ReportLab + matplotlib, no system deps so `launch.bat` stays
+  Windows-friendly — not started).
 - **Buy/Hold/Sell threshold — Morningstar's own published framework**: a real, citable
   "beyond-this-percent-buy/sell-regardless-of-catalyst" convention exists already —
   Morningstar's star rating is price ÷ Fair Value Estimate with margin-of-safety bands
   that widen by an Uncertainty Rating (Low: 20% discount / 25% premium; Medium: 30%/35%;
-  High: 40%/55%; Very High: 50%/75%; Extreme: 75%/300%). Proposed adaptation: use this
-  model's own DDM/RI/P-B-ROE spread as the uncertainty proxy — **the exact mapping
-  function is not designed yet**, flagged as open research, not decided.
-- **Explicitly deferred / open**: a `TICKER`/`EXCHANGE` config field (doesn't exist today,
-  needed for Stage 2); the market-consensus data source for thinly-covered/just-listed NSE
-  stocks (no analyst-consensus feed chosen, needs an honest documented fallback); the
-  uncertainty-tier mapping function above; Financial Health letter-grade cutoffs;
-  retry/failure handling for `claude -p` stages; model/effort choice per stage.
+  High: 40%/55%; Very High: 50%/75%; Extreme: 75%/300%). **Now implemented**
+  (`report_recommendation.py`): this model's own DDM/RI/P-B-ROE spread (coefficient of
+  range: `(max-min)/median`) maps to an Uncertainty tier via this repo's own thresholds
+  (Low <30%, Medium <60%, High <100%, Very High <150%, else Extreme) — explicitly *not* a
+  literal Morningstar practice (their real rating also weighs leverage/cash-flow
+  predictability/competitive position), documented as a heuristic to revisit once tested
+  against more institutions. Tested against Family Bank Kenya: 217% method spread →
+  Extreme tier → a +94.8% price premium to blended fair value still lands inside the
+  (very wide) band → mechanical `Hold`, correctly deferring to a catalyst argument rather
+  than forcing Sell off raw method disagreement.
+- **Explicitly deferred / open**: the market-consensus data source policy for
+  thinly-covered/just-listed stocks generally (Stage 2's SOP handles it per-run with an
+  honest documented proxy, e.g. peer-average P/B, but there's no repo-wide policy
+  document yet); Financial Health letter-grade cutoffs (Stage 4); retry/failure handling
+  for `claude -p` stages; model/effort choice per stage. The `TICKER`/`EXCHANGE` gap was
+  resolved pragmatically as CLI arguments to `research_price_consensus.py` rather than a
+  `config_loader.py` schema change — revisit only if a later stage needs it structurally.
 
 This is the design source of truth. Update it when a design decision changes, not just when
 code changes. If this document and the code disagree, that's a bug in one of them — fix the
