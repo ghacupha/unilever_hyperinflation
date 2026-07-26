@@ -222,6 +222,7 @@ def build_assumptions(wb, config):
     loss_rate_mult_worst_ref = _assum_ref(A, "loss_rate_mult_worst")
 
     section_header(ws, R, "LOAN BOOK — BY PRODUCT (FY2025 opening; growth/rates scenario-switched)"); R += 1
+    blank_row(ws, R); R += 1
     loan_cols = [ASSUM_COL + i for i in range(len(config.LOAN_SEGMENTS))]
     for col, seg in zip(loan_cols, config.LOAN_SEGMENTS):
         write(ws, R, col, seg["name"], bold=True, txt_color=WHITE, bg=MED_BLUE, halign="center")
@@ -285,6 +286,7 @@ def build_assumptions(wb, config):
     R += 2
 
     section_header(ws, R, "DEPOSITS / FUNDING (allocation modeled — only the aggregate is disclosed)"); R += 1
+    blank_row(ws, R); R += 1
     dep_cols = [ASSUM_COL + i for i in range(len(config.DEPOSIT_TYPES))]
     for col, dep in zip(dep_cols, config.DEPOSIT_TYPES):
         write(ws, R, col, dep["name"], bold=True, txt_color=WHITE, bg=MED_BLUE, halign="center")
@@ -379,6 +381,7 @@ def build_assumptions(wb, config):
 
     section_header(ws, R, "PEER BANKS — for P/B-ROE regression and P/E cross-check "
                           "([PLACEHOLDER] P/B pending real peer market data)"); R += 1
+    blank_row(ws, R); R += 1
     hdr_row = R
     for col, label in [(3, "Bank"), (7, "EPS FY24"), (8, "EPS FY25"), (9, "ROAE FY24"),
                        (10, "ROAE FY25"), (11, "Payout FY25"), (12, "P/B (placeholder)")]:
@@ -495,6 +498,9 @@ def _apply_print_setup(ws, blocks=None, right=None):
     else:
         ws.print_area = f"$B$1:${right}${ws.max_row}"
     ws.print_title_rows = "1:1"
+    ws.oddFooter.left.text = "Page &[Page] of &[Pages]"
+    ws.oddFooter.center.text = "&[Tab]"
+    ws.oddFooter.right.text = "&[Date]&[Time]"
 
 
 def _write_scenario_banner(ws, right_col):
