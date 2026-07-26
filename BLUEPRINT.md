@@ -333,6 +333,55 @@ documented conventions). Findings and what changed as a result:
     and Profitability to Credit, Interest-Rate, and Term-Structure Shocks"* (FDIC/SSRN); the
     100bp shock-size convention is standard across this literature.
 
+## 2026-07-26 (cont.) — Equity Research Report pipeline (preliminary architecture)
+
+Next initiative: roll the valuation work above into a standing pipeline that generates
+both the Excel model and a Morningstar-style equity research PDF on request, generic
+across **institution** (already largely true) and an **as-of anchor period** (new —
+actuals = the 3 years ending at that anchor, projections = the next 5 years forward,
+enabling the same institution to be re-run at a different historical vantage point, which
+incidentally also enables backtesting a report's call against what actually happened).
+
+- **Billing constraint, resolved**: the existing `agent/` module (agent/cli.py etc.) calls
+  the raw Anthropic API directly, requires `ANTHROPIC_KEY`, and is separately metered —
+  the user explicitly does not want a second pipeline like that on top of an existing
+  Claude subscription. Confirmed (`claude --help` + docs): `claude -p "prompt"` (headless/
+  print mode), run **without** `--bare`, authenticates via the same subscription OAuth as
+  an interactive session and draws from the same per-seat allowance — not separate
+  per-token billing. `--bare` is the one thing that forces raw-API-key billing. So this
+  pipeline is orchestrated as shell/Python that shells out to `claude -p` with per-stage
+  prompt files, never as a new API-key-calling Python module. This directly extends a
+  pattern this repo already has: `.devops/agents/bank-onboarding.md` is a human-readable
+  SOP that's *also* injected as a system prompt for the (API-billed) `agent/cli.py` today
+  — the new pipeline reuses that same file-based-SOP idea, driven through `claude -p
+  --append-system-prompt "$(cat stage-file.md)"` instead.
+- **Stage sequence** (full detail was captured in a session plan, condensed here as the
+  durable record): Stage 0 model sourcing (institution + as-of year -> config.py,
+  generalizing `agent/cli.py`'s `onboard`/`update` into one period-parameterized,
+  subscription-billed stage) -> Stage 1 numeric ground-truth extraction (pure Python,
+  `bizplan/financial/report_data.py`, done — see Phase 24 in BACKLOG.md) -> Stage 1b
+  model validation (pure Python, `bizplan/financial/bank_validation.py`, done — mirrors
+  the Model sheet's 3-check Master Check exactly: Balance Sheet abs-check < 0.01, Total
+  Capital/RWA >= CBK minimum, Liquidity Ratio >= CBK minimum) -> Stage 2 price/consensus
+  research (`claude -p`, needs a reference-date parameter so a past-anchored run researches
+  price/consensus *as of then*) -> Stage 3 mechanical Buy/Hold/Sell pre-decision (pure
+  Python arithmetic on `valuation_inputs.json`, catalyst narrative left to the LLM) ->
+  Stage 4 per-section drafting (one `claude -p` call per Morningstar-style section) ->
+  Stage 5 plagiarism/references review -> Stage 6 PDF assembly (pure Python, ReportLab +
+  matplotlib, no system deps so `launch.bat` stays Windows-friendly).
+- **Buy/Hold/Sell threshold — Morningstar's own published framework**: a real, citable
+  "beyond-this-percent-buy/sell-regardless-of-catalyst" convention exists already —
+  Morningstar's star rating is price ÷ Fair Value Estimate with margin-of-safety bands
+  that widen by an Uncertainty Rating (Low: 20% discount / 25% premium; Medium: 30%/35%;
+  High: 40%/55%; Very High: 50%/75%; Extreme: 75%/300%). Proposed adaptation: use this
+  model's own DDM/RI/P-B-ROE spread as the uncertainty proxy — **the exact mapping
+  function is not designed yet**, flagged as open research, not decided.
+- **Explicitly deferred / open**: a `TICKER`/`EXCHANGE` config field (doesn't exist today,
+  needed for Stage 2); the market-consensus data source for thinly-covered/just-listed NSE
+  stocks (no analyst-consensus feed chosen, needs an honest documented fallback); the
+  uncertainty-tier mapping function above; Financial Health letter-grade cutoffs;
+  retry/failure handling for `claude -p` stages; model/effort choice per stage.
+
 This is the design source of truth. Update it when a design decision changes, not just when
 code changes. If this document and the code disagree, that's a bug in one of them — fix the
 drift, don't let it linger.

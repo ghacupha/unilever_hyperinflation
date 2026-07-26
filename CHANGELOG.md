@@ -7,6 +7,19 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Equity Research Report pipeline, Phase A: ground-truth JSON + validation (2026-07-26)
+- `bizplan/financial/bank_validation.py`: `validate_model()` re-implements the Model
+  sheet's Excel "Master Check" (Balance Sheet, Capital Adequacy, Liquidity) as a pure
+  Python function, same tolerances, so a pipeline can gate on model integrity without a
+  spreadsheet engine. Tested against Family Bank Kenya: all 3 checks pass for every
+  projected year.
+- `bizplan/financial/report_data.py`: `compute()`/`to_report_json()` serialize
+  `build_all()`/`build_scenarios()`/`build_sensitivity()` into the JSON shape a later
+  equity-research-report pipeline's writing stages will read — the intended
+  anti-hallucination boundary (every number an LLM narrates should trace back to this
+  file, not a paraphrase). First phase of a larger preliminary architecture — see
+  BLUEPRINT.md's "Equity Research Report pipeline" section and BACKLOG.md's Phase 24.
+
 ### Added — Blended valuation, per-scenario valuation table, Net Income sensitivity (2026-07-26)
 - New "Blended Valuation" section on the Output sheet: a weighted combination of DDM,
   Residual Income, and P/B-ROE regression (50/30/20 default, configurable on the

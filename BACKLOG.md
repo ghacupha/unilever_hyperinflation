@@ -606,6 +606,30 @@ but flagged for refinement.
 - [x] Rebuilt end-to-end; Balance Sheet Check, Capital Adequacy, and Liquidity all still OK
       for every projected year.
 
+## Phase 24 — Equity Research Report pipeline (IN PROGRESS)
+
+Preliminary architecture in `BLUEPRINT.md` (2026-07-26, "Equity Research Report pipeline"
+section, once added) — a `claude -p` (subscription-billed, not raw-API-billed) pipeline
+generating both the Excel model and a Morningstar-style PDF, generic across institution
+AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward).
+
+- [x] Phase A — pure-Python ground truth + validation, no LLM involved:
+      `bizplan/financial/bank_validation.py` (`validate_model()` — re-implements the Model
+      sheet's 3-check "Master Check" — Balance Sheet, Capital Adequacy, Liquidity — in
+      Python, same tolerances) and `bizplan/financial/report_data.py` (`compute()` +
+      `to_report_json()` — serializes `build_all()`/`build_scenarios()`/
+      `build_sensitivity()` into the JSON every later report-writing stage will read).
+      Tested standalone against `family_bank_kenya`: validation `ok=True` for all 5
+      projected years; JSON output correct (blended value 14.20/share, 3 sensitivity
+      factors, Base/Best/Worst scenario valuation all present).
+- [ ] Stage 0 — model sourcing generalized to (institution, as-of year) -> config.py
+- [ ] Stage 2 — price/consensus research (`claude -p`, needs a reference-date parameter
+      for backtesting validity)
+- [ ] Stage 3 — mechanical Buy/Hold/Sell pre-decision (Morningstar-style margin-of-safety
+      bands, uncertainty-tier mapping not designed yet)
+- [ ] Stage 4/5 — per-section report drafting + plagiarism/references review
+- [ ] Stage 6 — PDF assembly (ReportLab + matplotlib), `launch.sh` wiring
+
 ## Follow-ups (not blocking)
 
 - [x] Real P/B for Absa/Co-op/DTB/Equity/KCB/SCB/Stanbic — resolved via live web lookup
