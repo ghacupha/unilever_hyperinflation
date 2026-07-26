@@ -490,9 +490,14 @@ def build_valuation(config, income_stmt, bs):
     final_book_equity = bs["total_equity"][-1]
     pb_regression_value = implied_pb * final_book_equity
 
+    w = v.get("blend_weights", dict(ddm=0.5, ri=0.3, pb=0.2))
+    blended_value = (w["ddm"] * ddm_value + w["ri"] * residual_income_value
+                      + w["pb"] * pb_regression_value)
+
     return dict(
         cost_of_equity=coe, ddm_value=ddm_value, residual_income_value=residual_income_value,
         pb_regression_value=pb_regression_value, implied_pb=implied_pb,
+        blended_value=blended_value, blend_weights=w,
         roe_series=roe_series, residual_income=residual_income,
         pv_dividends=pv_dividends, pv_terminal_ddm=pv_terminal_ddm,
     )
@@ -576,3 +581,75 @@ def build_scenarios(config):
     best = build_scenario(config, **m["best"])
     worst = build_scenario(config, **m["worst"])
     return dict(base=base, best=best, worst=worst)
+
+
+# ─────────────────────────────────────────────
+# SENSITIVITY — one-lever-at-a-time PAT impact, for the Summary sheet's "Key Net
+# Income Sensitivities" section. Isolates a single driver at a time (unlike
+# Best/Worst above, which move growth/loss-rate/opex together) so each factor's
+# individual effect on PAT is visible. See research_output.md for why these three
+# levers were chosen and which candidates were tested and excluded.
+# ─────────────────────────────────────────────
+
+class _AttrOverrideConfig:
+    """Shallow view of `config` with the given attributes replaced — for one-off
+    sensitivity shocks outside the LOAN_SEGMENTS/OPEX_ITEMS levers `_ScenarioConfig`
+    covers (e.g. loan yield, deposit cost)."""
+
+    def __init__(self, config, **overrides):
+        self._config = config
+        self._overrides = overrides
+
+    def __getattr__(self, name):
+        if name in self._overrides:
+            return self._overrides[name]
+        return getattr(self._config, name)
+
+
+def _avg_pat(config_obj):
+    pat = build_all(config_obj)["income_stmt"]["pat"]
+    return sum(pat) / len(pat)
+
+
+def build_sensitivity(config):
+    """Average-PAT % impact of shocking one driver at a time, holding all others at
+    Base. Growth reuses the existing Best/Worst growth_mult (already a scenario
+    lever elsewhere in this model); asset yield and cost of funds use a parallel
+    +/-100bp shift, the standard shock size in bank NIM-sensitivity disclosures."""
+    base_avg = _avg_pat(config)
+    m = config.SCENARIO_MULTIPLIERS
+
+    def pct(config_obj):
+        return (_avg_pat(config_obj) - base_avg) / base_avg
+
+    def shock_yield(delta):
+        segs = [dict(seg, yield_rate=max(0.0, seg["yield_rate"] + delta)) for seg in config.LOAN_SEGMENTS]
+        return _AttrOverrideConfig(config, LOAN_SEGMENTS=segs)
+
+    def shock_cost(delta):
+        deps = [dict(dep, cost_rate=max(0.0, dep["cost_rate"] + delta)) for dep in config.DEPOSIT_TYPES]
+        return _AttrOverrideConfig(config, DEPOSIT_TYPES=deps)
+
+    factors = [
+        dict(
+            name="Loan/balance-sheet growth", category="Macro — credit demand cycle",
+            detail=f"Worst {m['worst']['growth_mult']:.2f}x / Best {m['best']['growth_mult']:.2f}x growth multiplier",
+            downside=pct(_ScenarioConfig(config,
+                [dict(seg, growth=seg["growth"]*m["worst"]["growth_mult"]) for seg in config.LOAN_SEGMENTS],
+                list(config.OPEX_ITEMS))),
+            upside=pct(_ScenarioConfig(config,
+                [dict(seg, growth=seg["growth"]*m["best"]["growth_mult"]) for seg in config.LOAN_SEGMENTS],
+                list(config.OPEX_ITEMS))),
+        ),
+        dict(
+            name="Asset yield (lending rate)", category="Bank-specific — rate cycle / repricing",
+            detail="+/-100bp parallel shift on loan yields",
+            downside=pct(shock_yield(-0.01)), upside=pct(shock_yield(0.01)),
+        ),
+        dict(
+            name="Cost of funds (deposit pricing)", category="Macro — policy rate transmission",
+            detail="+/-100bp parallel shift on deposit cost",
+            downside=pct(shock_cost(0.01)), upside=pct(shock_cost(-0.01)),
+        ),
+    ]
+    return dict(base_avg_pat=base_avg, factors=factors)

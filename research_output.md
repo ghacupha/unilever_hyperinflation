@@ -487,6 +487,20 @@ Net effect on cost of equity: CoE = risk-free (12.32%) + beta × ERP. Old: 12.32
 the lower, measured peer beta largely offset each other, landing CoE about 1.8 points lower
 than before.
 
+## Update 2026-07-26 (cont.) — Blended valuation weighting research
+
+Full discussion (Damodaran's stance on triangulation vs. mechanical averaging; how sell-side
+analysts actually weight DDM/Residual Income/relative valuation for banks; the sources) lives
+in `BLUEPRINT.md`'s "2026-07-26 — Blended valuation, per-scenario valuation, and Net Income
+sensitivity" section rather than duplicated here, since it's a methodology/design decision
+rather than a company-specific data point. Short version: no universal weighting formula
+exists in the literature, so weights (50% DDM / 30% RI / 20% P/B-ROE) operationalize this
+model's own pre-existing "primary / cross-check / market-check" method hierarchy, and are
+configurable in `config.py`. Key papers: Gianfrate & Vincenzi (*"How Do Analysts Value
+Banks?"*), Brownen-Trinh et al. 2023 (*"How Do Equity Research Analysts Value Banks?"*),
+Frensidy et al. 2020 (target-price accuracy study), Damodaran's relative-valuation lecture
+notes (pages.stern.nyu.edu).
+
 ## Still outstanding (see `BACKLOG.md`)
 
 - CBK Prudential Guidelines PDF direct pull (exact current wording, not just figures

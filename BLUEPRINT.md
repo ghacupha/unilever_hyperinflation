@@ -248,6 +248,91 @@ documented conventions). Findings and what changed as a result:
   SDK's default `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`, so it's wired through by hand
   rather than relying on the SDK's auto-detection.
 
+## 2026-07-26 — Blended valuation, per-scenario valuation, and Net Income sensitivity
+
+- **Blended valuation — industry-practice research and why we picked this weighting**:
+  researched how real equity-research analysts and Damodaran himself combine DDM, Residual
+  Income, and relative (P/B) valuation into one number for banks. Findings, with sources:
+  - DDM and Residual Income (Excess Return) are consistently reported as the primary
+    *intrinsic* methods analysts use for banks specifically (unlike non-financials, where
+    unlevered DCF/EV-EBITDA dominate) — debt is a bank's raw material, not financing, so
+    FCFF/FCFE break down; this is the same reasoning already in this file's "Why DDM +
+    Excess Return, not FCFE" bullet above. P/B and P/E multiples are the standard *relative*
+    cross-check layered on top, not usually given equal footing with the intrinsic methods.
+    (Gianfrate & Vincenzi, *"How Do Analysts Value Banks?"*; Brownen-Trinh et al. 2023,
+    *"How Do Equity Research Analysts Value Banks?"*; Frensidy et al. 2020, *Journal of
+    Accounting/Sage* target-price-accuracy study — DDM had the best directional accuracy of
+    the models tested, Residual Income outperformed a plain DDM/DCF.)
+  - Damodaran's own stance on mechanically combining methods is skeptical, not endorsing: he
+    treats simple/weighted averaging as one of three blunt options (the others being "pick
+    one method" or "triangulate" — understand *why* methods diverge rather than average the
+    disagreement away). He explicitly favors triangulation: convergence across methods
+    builds conviction, and divergence is itself informative about the market's growth/risk
+    expectations, not noise to be smoothed out. (*Damodaran, "Relative Valuation"* lecture
+    notes and *valuesurvey.pdf*, pages.stern.nyu.edu.)
+  - **No single universal weighting formula exists in the literature or in public sell-side
+    templates** — shops differ, and several practitioner sources explicitly decline to
+    publish one. Given that, we didn't invent a new philosophy: we operationalized the
+    hierarchy this file already stated for the Output sheet before this change ("DDM
+    (primary) + Residual Income/Excess Return (cross-check) + P/B-ROE regression & P/E peer
+    multiples (market sanity check)") into actual weights: **50% DDM / 30% Residual Income /
+    20% P/B-ROE regression**, configurable via `config.VALUATION["blend_weights"]` (also
+    editable live on the Assumptions sheet) since reasonable analysts weight this
+    differently and the choice should be visible and changeable, not buried in code.
+  - **This model's own numbers illustrate exactly the divergence Damodaran warns about**:
+    DDM implies KES 7.72/share, Residual Income KES 11.99, P/B-ROE regression KES 33.69 —
+    a roughly 4.4x spread between the lowest and highest method, against an actual NSE
+    trading range of roughly 18–26 since Family Bank's 23 Jun 2026 listing. Blended (50/30/20)
+    lands at KES 14.20 — below the observed market price. Per Damodaran's framing, this
+    divergence is a finding to flag, not a discrepancy the blend should paper over: either
+    the DDM/RI payout and terminal-growth assumptions are conservative relative to what the
+    market is pricing in, or the peer P/B multiples (freshly researched this session, see
+    `research_output.md`) reflect a scarcity/re-rating premium for NSE bank equity that
+    fundamentals-based methods don't capture. Left as an open question, not resolved here.
+  - Implementation: `bank_calculations.build_valuation()` now returns `blended_value`
+    (equity value, same units as the other three); the Output sheet adds a "Blended
+    Valuation" section right after the existing three-method summary table, as a live
+    formula referencing the three method rows and the new Assumptions-sheet weight cells.
+    `build_scenarios()` already ran the full valuation pipeline (including the new blended
+    figure) for Best/Worst for free, since `build_scenario()` just calls `build_all()` with
+    flexed inputs — no new Python plumbing needed there.
+
+- **Valuation per share by scenario (Summary sheet)**: added a small Base/Best/Worst ×
+  {DDM, Residual Income, P/B-ROE, Blended} table right after the existing three
+  `_kpi_block()` Financial Summary blocks. Follows the same static-Python-value convention
+  as those blocks and the Scenarios sheet (per the existing scoping rule: only Base gets
+  live Model-sheet formulas) — Best/Worst valuation was already computed by
+  `build_scenarios()`, just never rendered anywhere until now.
+
+- **Net Income sensitivity — up to 3 factors moving PAT by >10%**: built
+  `bank_calculations.build_sensitivity()`, which shocks one driver at a time (holding all
+  others at Base) and reports the % change in average projected PAT. This is deliberately
+  different from the existing Best/Worst scenarios, which move growth/loss-rate/opex
+  *together* — isolating one lever at a time shows which single factor actually matters.
+  - **Candidates tested and their isolated impact on average PAT**: loan/balance-sheet
+    growth (existing Worst/Best multipliers, 0.70x/1.20x): **-19.5% / +14.0%**. Asset yield
+    on loans (±100bp parallel shift, the standard shock size used in bank NIM-sensitivity
+    literature — e.g. FDIC/Federal Reserve studies of NIM sensitivity to rate shocks):
+    **±15.0%**. Cost of funds/deposit pricing (±100bp): **±22.7%**. All three comfortably
+    exceed the 10% bar and are the three reported on the Summary sheet — one macro
+    (growth: credit-demand cycle), one bank-specific/rate-cycle (asset yield/repricing), one
+    macro (cost of funds: policy-rate transmission and deposit competition), matching how
+    real bank equity research typically frames rate risk (asset-side and liability-side
+    NIM sensitivity discussed separately, not netted) and credit-cycle risk.
+  - **Honest negative finding, also worth flagging**: at this model's *currently configured*
+    Best/Worst magnitudes, isolating IFRS 9 loss-rate risk alone (1.4x worst-case multiplier)
+    moves average PAT by only **-1.7%**, and opex escalation (1.15x) by only **-3.3%** —
+    neither crosses 10% in isolation, even though credit risk is usually assumed to be a
+    bank's primary risk factor. This likely means the Best/Worst loss-rate/opex multipliers
+    (calibrated early in this project, before the real peer/market research above) are
+    narrower than a genuine stress scenario would be — worth revisiting if this model is
+    used for real stress-testing rather than illustrative scenario comparison; not corrected
+    here since changing those multipliers is a separate calibration decision, not a rendering
+    or methodology fix.
+  - Sources: Gerald A. Hanweck & Lisa H. Ryu, *"The Sensitivity of Bank Net Interest Margins
+    and Profitability to Credit, Interest-Rate, and Term-Structure Shocks"* (FDIC/SSRN); the
+    100bp shock-size convention is standard across this literature.
+
 This is the design source of truth. Update it when a design decision changes, not just when
 code changes. If this document and the code disagree, that's a bug in one of them — fix the
 drift, don't let it linger.
@@ -339,6 +424,10 @@ core-capital/liquidity minimums need pulling from the CBK Prudential Guidelines 
 - **P/B-ROE regression, not flat peer-average P/B**: the P/B-ROE relationship is empirically
   strong for banks (Damodaran) — read off Family Bank's implied P/B at its own ROE from a
   regression across the peer set, a more defensible cross-check than a simple average.
+- **Blended valuation weighting (50% DDM / 30% Residual Income / 20% P/B-ROE) and the >10%
+  Net Income sensitivity factors** — see the "2026-07-26" section above for the full
+  industry-practice research (Damodaran on triangulation vs. averaging; how sell-side
+  analysts actually weight bank valuation methods) behind these choices.
 
 ## Schedule design (`bizplan/financial/bank_calculations.py`)
 
@@ -374,7 +463,9 @@ return plain dicts of lists), computed per year for the Base Case:
 15. **Ratio Disclosures** — CAMELS-complete profitability (incl. DuPont decomposition),
     capital adequacy, liquidity, cash flow ratios.
 16. **Output** — CAPM cost of equity; DDM (multi-stage + Gordon terminal value);
-    Residual Income/Excess Return cross-check; P/B-ROE regression + P/E peer multiples.
+    Residual Income/Excess Return cross-check; P/B-ROE regression + P/E peer multiples;
+    Blended Valuation (weighted combination, see "2026-07-26" section above); per-scenario
+    valuation and Net Income sensitivity factors surfaced on the Summary sheet.
 
 **Scoping rule**: only the Base Case gets full formula-linked treatment on the Model sheet.
 Best/Worst remain Python-computed static comparison values on the Scenarios sheet — bounds

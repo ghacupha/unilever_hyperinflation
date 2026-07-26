@@ -583,6 +583,29 @@ but flagged for refinement.
       repo's chosen variable name. Raises a clear error if the key is missing rather than
       failing deep inside the SDK. Added `python-dotenv` to `agent/requirements.txt`.
 
+## Phase 23 — Blended valuation, per-scenario valuation, Net Income sensitivity (2026-07-26) — DONE
+
+- [x] Researched industry/academic practice for combining DDM + Residual Income + relative
+      (P/B-ROE) valuation into one number — no universal weighting formula found; adopted
+      50% DDM / 30% RI / 20% P/B-ROE, operationalizing this file's own pre-existing method
+      hierarchy. Full write-up in BLUEPRINT.md's "2026-07-26" section.
+- [x] `bank_calculations.build_valuation()` returns `blended_value`; flows through
+      `build_scenarios()` for Base/Best/Worst automatically (no new plumbing needed there).
+- [x] Output sheet: new "Blended Valuation" section (live formula) after the existing
+      three-method summary table; 3 new configurable weight rows on the Assumptions sheet.
+- [x] Summary sheet: new "Implied Value Per Share by Scenario" table (Base/Best/Worst ×
+      DDM/RI/P-B-ROE/Blended), static-Python-value convention matching the existing KPI
+      blocks.
+- [x] `bank_calculations.build_sensitivity()`: one-lever-at-a-time PAT impact. 3 factors
+      cross the >10% average-PAT bar: loan/balance-sheet growth (-19.5%/+14.0%), asset
+      yield/lending rate (±15.0% per 100bp), cost of funds/deposit pricing (±22.7% per
+      100bp). Loss-rate and opex-escalation levers tested and excluded — don't cross 10% at
+      their currently configured Best/Worst magnitudes (see BLUEPRINT.md for the honest
+      negative finding and its implication for those multipliers' calibration).
+- [x] New "Key Net Income Sensitivities" section on the Summary sheet.
+- [x] Rebuilt end-to-end; Balance Sheet Check, Capital Adequacy, and Liquidity all still OK
+      for every projected year.
+
 ## Follow-ups (not blocking)
 
 - [x] Real P/B for Absa/Co-op/DTB/Equity/KCB/SCB/Stanbic — resolved via live web lookup

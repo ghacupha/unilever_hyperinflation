@@ -7,6 +7,23 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Blended valuation, per-scenario valuation table, Net Income sensitivity (2026-07-26)
+- New "Blended Valuation" section on the Output sheet: a weighted combination of DDM,
+  Residual Income, and P/B-ROE regression (50/30/20 default, configurable on the
+  Assumptions sheet), live-formula-linked like the rest of the Base Case. Weighting choice
+  is grounded in a review of how equity-research analysts and Damodaran actually combine
+  these methods for banks — see BLUEPRINT.md's "2026-07-26" section for the full research
+  and citations.
+- New "Implied Value Per Share by Scenario" table on the Summary sheet (Base/Best/Worst ×
+  DDM/Residual Income/P-B-ROE/Blended) — Best/Worst valuation was already computed by
+  `build_scenarios()` but never rendered anywhere until now.
+- New "Key Net Income Sensitivities" section on the Summary sheet, from a new
+  `bank_calculations.build_sensitivity()` that shocks one driver at a time (vs. the
+  existing Best/Worst scenarios, which move several levers together). Three factors cross
+  a >10% average-PAT threshold: loan/balance-sheet growth, asset yield (lending rate), and
+  cost of funds (deposit pricing) — loss rate and opex escalation were tested and don't
+  cross 10% at their currently configured scenario magnitudes.
+
 ### Changed — Resolved remaining `[PLACEHOLDER]` valuation assumptions (2026-07-26)
 - Equity risk premium: 9.5% generic placeholder → 13.94% (Damodaran's total Kenya ERP,
   Jan 2026 data update).

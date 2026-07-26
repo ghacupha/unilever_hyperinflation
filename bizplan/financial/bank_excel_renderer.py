@@ -379,6 +379,14 @@ def build_assumptions(wb, config):
                     "weighted-average count used for historical EPS")
     R += 1
 
+    bw = v.get("blend_weights", dict(ddm=0.5, ri=0.3, pb=0.2))
+    write(ws, R, LABEL_COL, "Blended valuation weights (DDM / RI / P-B-ROE)", txt_color=MID_GRAY); R += 1
+    R = _assum_row(ws, R, "Weight — DDM (primary)", bw["ddm"], ORANGE, A, "blend_w_ddm", fmt='0%')
+    R = _assum_row(ws, R, "Weight — Residual Income (cross-check)", bw["ri"], ORANGE, A, "blend_w_ri", fmt='0%')
+    R = _assum_row(ws, R, "Weight — P-B-ROE Regression (market check)", bw["pb"], ORANGE, A, "blend_w_pb", fmt='0%',
+                   note="See BLUEPRINT.md \"Blended valuation\" for the industry-practice rationale")
+    R += 1
+
     section_header(ws, R, "PEER BANKS — for P/B-ROE regression and P/E cross-check "
                           "(P/B: current NSE price / book value per share, 24 Jul 2026)"); R += 1
     blank_row(ws, R); R += 1
@@ -1544,7 +1552,7 @@ def build_model(wb, config, A):
 # SUMMARY SHEET
 # ─────────────────────────────────────────────
 
-def build_summary(wb, config, A, M, scenarios):
+def build_summary(wb, config, A, M, scenarios, sensitivity):
     ws = wb.create_sheet("Summary", index=1)
     ws.sheet_view.showGridLines = False
     _col_widths(ws)
@@ -1578,6 +1586,29 @@ def build_summary(wb, config, A, M, scenarios):
     _kpi_block("BASE CASE — Financial Summary", scenarios["base"], NAVY)
     _kpi_block("BEST CASE — Financial Summary", scenarios["best"], GREEN_DRK)
     _kpi_block("WORST CASE — Financial Summary", scenarios["worst"], RED_DARK)
+
+    shares = config.SHARES_OUTSTANDING_2025
+    section_header(ws, R, "IMPLIED VALUE PER SHARE BY SCENARIO (KES per share)"); R += 1
+    write(ws, R, 10, "Base/Best/Worst are Python-computed static values, same convention as the "
+                     "Financial Summary blocks above — only the Base Case gets live Model-sheet-"
+                     "linked valuation formulas (see the Output sheet).",
+          txt_color=MID_GRAY, italic=True, size=9)
+    scen_cols = [8, 9, 10]
+    for col, lbl in zip(scen_cols, ["Base", "Best", "Worst"]):
+        write(ws, R, col, lbl, bold=True, bg=MED_BLUE, txt_color=WHITE, halign="center")
+    R += 1
+    for label, key, is_blended in [
+        ("Dividend Discount Model (DDM)", "ddm_value", False),
+        ("Residual Income / Excess Return", "residual_income_value", False),
+        ("P/B-ROE Regression (relative)", "pb_regression_value", False),
+        ("Blended Valuation", "blended_value", True),
+    ]:
+        write(ws, R, LABEL_COL, label, bold=is_blended, txt_color=NAVY if is_blended else DARK)
+        for col, case in zip(scen_cols, ["base", "best", "worst"]):
+            per_share = scenarios[case]["valuation"][key] / shares
+            num(ws, R, col, per_share, fmt='#,##0.00', bold=is_blended, txt_color=NAVY if is_blended else DARK)
+        R += 1
+    R += 1
 
     all_cols = _all_cols()
     all_years = _period_labels(config)
@@ -1638,6 +1669,26 @@ def build_summary(wb, config, A, M, scenarios):
     data_row(ws, R, "Operating Cash Flow / Total Deposits",
              [f"=IFERROR('Model'!{_cell(M['ocf'], col)}/'Model'!{_cell(M['dep_total'], col)},0)" for col in all_cols],
              all_cols, label_col=LABEL_COL, fmt='0.0%', alt_idx=1)
+    R += 1
+    R += 1
+
+    section_header(ws, R, "KEY NET INCOME SENSITIVITIES (Base Case, one factor at a time)"); R += 1
+    write(ws, R, 10, "Average-PAT % impact of shocking one driver in isolation, others held at "
+                     "Base — not the combined Best/Worst scenarios above. See BLUEPRINT.md / "
+                     "research_output.md for methodology, shock sizes, and which candidate "
+                     "factors were tested and excluded for not moving PAT by more than 10%.",
+          txt_color=MID_GRAY, italic=True, size=9)
+    R += 1
+    for col, lbl, ha in [(LABEL_COL, "Factor", "left"), (7, "Category", "left"),
+                         (10, "Downside", "center"), (12, "Upside", "center")]:
+        write(ws, R, col, lbl, bold=True, bg=MED_BLUE, txt_color=WHITE, halign=ha)
+    R += 1
+    for f in sensitivity["factors"]:
+        write(ws, R, LABEL_COL, f["name"], bold=True)
+        write(ws, R, 7, f"{f['category']} — {f['detail']}", txt_color=MID_GRAY, size=9, italic=True)
+        num(ws, R, 10, f["downside"], fmt='+0.0%;-0.0%', txt_color=RED_DARK if f["downside"] < 0 else GREEN_DRK)
+        num(ws, R, 12, f["upside"], fmt='+0.0%;-0.0%', txt_color=GREEN_DRK if f["upside"] > 0 else RED_DARK)
+        R += 1
     R += 1
 
     _apply_print_setup(ws)
@@ -1877,6 +1928,23 @@ def build_output_sheet(wb, config, A, M):
         R += 1
     R += 1
 
+    section_header(ws, R, "BLENDED VALUATION (weighted: DDM primary / RI cross-check / P-B-ROE market check)"); R += 1
+    write(ws, R, 10, "Weights are editable on the Assumptions sheet — see BLUEPRINT.md \"Blended "
+                     "valuation\" for the industry-practice rationale behind this weighting.",
+          txt_color=MID_GRAY, italic=True, size=9)
+    blended_formula = (f"={_assum_ref(A, 'blend_w_ddm')}*{_cell(ddm_value_row, ASSUM_COL)}"
+                       f"+{_assum_ref(A, 'blend_w_ri')}*{_cell(ri_value_row, ASSUM_COL)}"
+                       f"+{_assum_ref(A, 'blend_w_pb')}*{_cell(pb_value_row, ASSUM_COL)}")
+    write(ws, R, LABEL_COL, "Blended Implied Equity Value", bold=True, txt_color=NAVY)
+    num(ws, R, ASSUM_COL, blended_formula, fmt='#,##0.0', bold=True, txt_color=NAVY)
+    blended_value_row = R
+    R += 1
+    write(ws, R, LABEL_COL, "Blended Implied Value Per Share (KES)", bold=True, txt_color=NAVY)
+    num(ws, R, ASSUM_COL, f"={_cell(blended_value_row, ASSUM_COL)}/{_assum_ref(A, 'shares_outstanding')}",
+        fmt='#,##0.00', bold=True, txt_color=NAVY)
+    blended_per_share_row = R
+    R += 2
+
     section_header(ws, R, "BOOK VALUE PER SHARE (Actuals, cross-check)"); R += 1
     write(ws, R, LABEL_COL,
           "Total Equity ÷ that year's own share count (share count changed year to year via "
@@ -2097,7 +2165,8 @@ def build_excel(config, results, output_path):
     A = build_assumptions(wb, config)
     M = build_model(wb, config, A)
     scenarios = bank_calculations.build_scenarios(config)
-    build_summary(wb, config, A, M, scenarios)
+    sensitivity = bank_calculations.build_sensitivity(config)
+    build_summary(wb, config, A, M, scenarios, sensitivity)
     build_scenarios_sheet(wb, config, scenarios)
     build_output_sheet(wb, config, A, M)
 

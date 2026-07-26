@@ -423,6 +423,12 @@ VALUATION = dict(
     # StanChart, and NCBA don't publish a beta on this source so are excluded from the
     # average rather than guessed.
     terminal_growth=0.08,         # [MODELED] proxy for long-run nominal Kenya GDP growth
+    blend_weights=dict(ddm=0.5, ri=0.3, pb=0.2),  # [MODELED] blended-valuation weights —
+    # DDM primary / Residual Income cross-check / P-B-ROE market-check, matching this
+    # model's own existing method hierarchy (see BLUEPRINT.md's "Blended valuation"
+    # section for the industry-practice research behind this choice — there's no single
+    # universal weighting formula in the literature, so this operationalizes the
+    # hierarchy the Output sheet already documented). Configurable per analyst judgment.
 )
 
 PEER_BANKS = [
