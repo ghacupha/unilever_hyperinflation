@@ -622,7 +622,15 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       Tested standalone against `family_bank_kenya`: validation `ok=True` for all 5
       projected years; JSON output correct (blended value 14.20/share, 3 sensitivity
       factors, Base/Best/Worst scenario valuation all present).
-- [ ] Stage 0 — model sourcing generalized to (institution, as-of year) -> config.py
+- [x] Stage 0 — model sourcing generalized to (institution, as-of year) -> config.py.
+      `.devops/agents/equity-report/model-sourcing.md` (SOP) + `scripts/source_model.py`
+      (orchestrator, `claude -p` subscription-billed, not the API-billed `agent/`
+      pattern). **Live-tested**: ran `source_model.py family_bank_kenya --as-of 2025` for
+      real — the nested `claude -p` session correctly recognized the anchor already
+      matched the existing config, left `config.py` untouched (surgical-changes
+      instinct), and only annotated `research_output.md` with a confirmation entry. The
+      orchestrator's own deterministic validation + rebuild then passed. Re-verified
+      independently after: `validate_model()` → `ok=True`, workbook intact (6 sheets).
 - [ ] Stage 2 — price/consensus research (`claude -p`, needs a reference-date parameter
       for backtesting validity)
 - [ ] Stage 3 — mechanical Buy/Hold/Sell pre-decision (Morningstar-style margin-of-safety

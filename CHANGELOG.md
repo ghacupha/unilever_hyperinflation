@@ -7,6 +7,18 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Equity Research Report pipeline, Stage 0: model sourcing (2026-07-26)
+- `.devops/agents/equity-report/model-sourcing.md`: SOP generalizing
+  `bank-onboarding.md` along a second axis — institution *and* an as-of anchor year
+  (actuals = the 3 years ending there, projections = the next 5), supporting both
+  roll-forward (seasonal updates) and roll-backward (backtesting) re-sourcing.
+- `scripts/source_model.py`: orchestrator invoking `claude -p` (Claude Code's headless
+  mode, subscription-billed) instead of the raw-API-billed `agent/` module, then
+  deterministically validating (`bank_validation`) and rebuilding the workbook.
+- **Live-tested end-to-end**: ran against `family_bank_kenya --as-of 2025` for real —
+  correctly recognized the anchor already matched, left `config.py` untouched, only
+  annotated `research_output.md`. Validation and rebuild both passed.
+
 ### Added — Equity Research Report pipeline, Phase A: ground-truth JSON + validation (2026-07-26)
 - `bizplan/financial/bank_validation.py`: `validate_model()` re-implements the Model
   sheet's Excel "Master Check" (Balance Sheet, Capital Adequacy, Liquidity) as a pure

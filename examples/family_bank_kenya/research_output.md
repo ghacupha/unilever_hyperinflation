@@ -5,6 +5,10 @@ Primary source is the repo's own `data/` folder. Every figure below carries a `s
 `accessed` field. This is a working research log, not the final Assumptions sheet — it
 feeds `config.py` once that's written (Phase 4).
 
+**Anchor (as_of): FY2025** — `ACTUAL_YEARS = [2023, 2024, 2025]`, projected
+`YEARS = [2026, 2027, 2028, 2029, 2030]`, per the period-parameterized sourcing SOP in
+`.devops/agents/equity-report/model-sourcing.md`.
+
 ## Update 2026-07-06 — real FY2025 data, `data/` reorganized, 5 broken PDFs fixed
 
 `data/` was reorganized into per-bank subfolders (`family_bank/`, `absa/`, `co-op/`, `dtb/`,
@@ -510,3 +514,16 @@ notes (pages.stern.nyu.edu).
   Trading Economics)** — secondary source, reasonable to use as-is.
 - Re-extraction once the four broken PDFs are replaced: full 2024/2025 IFRS 9 stage
   tables, capital adequacy 5-year trend, segment/sector loan concentration detail.
+
+## Update 2026-07-26 (later) — Model-sourcing SOP run, as_of=2025: anchor already current
+
+Ran the period-parameterized model-sourcing SOP
+(`.devops/agents/equity-report/model-sourcing.md`) with `as_of=2025`. Required
+`ACTUAL_YEARS=[2023, 2024, 2025]` / projected `YEARS=[2026-2030]` already match
+`config.py` exactly (last rolled forward to the FY2025 anchor in the updates above,
+same day). This is neither a roll-forward nor a roll-backward per the SOP's §1 —
+the institution is already anchored at the requested `as_of` year, so `config.py`
+required no changes. `VALUATION` inputs (risk-free rate, ERP, beta, peer P/B) were
+re-verified as still the same-anchor, non-backtest figures sourced in the two updates
+immediately above (both dated 2026-07-26, i.e. "as of today", not a historical
+backtest vantage point) — no re-sourcing needed.
