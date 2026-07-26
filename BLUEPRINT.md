@@ -371,9 +371,22 @@ incidentally also enables backtesting a report's call against what actually happ
   LLM) -> Stage 4 per-section drafting (one `claude -p` call per Morningstar-style
   section — **done**, `scripts/draft_report_sections.py` + 8 SOPs under
   `.devops/agents/equity-report/section-*.md`, live-tested full batch) -> Stage 5
-  plagiarism/references review (not started) -> Stage 6 PDF assembly (pure Python,
-  ReportLab + matplotlib, no system deps so `launch.bat` stays Windows-friendly — not
-  started).
+  plagiarism/references review (**done**, `scripts/review_report.py` +
+  `.devops/agents/equity-report/review-plagiarism-references.md`, one whole-document
+  `claude -p` pass — live-tested, see finding below) -> Stage 6 PDF assembly (pure
+  Python, ReportLab + matplotlib, no system deps so `launch.bat` stays Windows-friendly
+  — not started).
+- **Stage 5 finding — the review pass genuinely earns its keep**: run against the real
+  Stage 4 output, it caught 2 real arithmetic errors introduced during independent
+  section drafting (a "more than double" comparison that was actually ~1.62x; a
+  spread-to-worst-case ratio conflated with a different best-to-worst ratio), 1 real
+  cross-section inconsistency (two sections quoting different liquidity figures because
+  one had mixed in an FY2025 *actual* disclosed ratio where the projected-series value
+  belonged), and 1 genuine unresolved discrepancy between Stage 2's live-researched peer
+  P/B figures and the ones already baked into `config.py` from earlier in this session
+  (KCB/Co-op Bank differ slightly — worth investigating, not yet reconciled). All four
+  were flagged under a `## Review Notes` header rather than silently rewritten, per the
+  SOP's explicit instruction — this is the intended behavior, not a gap.
 - **Stage 4 section list, consolidated from the original ~13-section proposal**:
   Investment Thesis, Bulls Say/Bears Say, Economic Moat, Valuation/Sensitivity/Scenarios
   (merged — all three just narrate the same `valuation_inputs.json`), Financial Health,
@@ -423,10 +436,15 @@ incidentally also enables backtesting a report's call against what actually happ
 - **Explicitly deferred / open**: the market-consensus data source policy for
   thinly-covered/just-listed stocks generally (Stage 2's SOP handles it per-run with an
   honest documented proxy, e.g. peer-average P/B, but there's no repo-wide policy
-  document yet); Financial Health letter-grade cutoffs (Stage 4); retry/failure handling
-  for `claude -p` stages; model/effort choice per stage. The `TICKER`/`EXCHANGE` gap was
-  resolved pragmatically as CLI arguments to `research_price_consensus.py` rather than a
-  `config_loader.py` schema change — revisit only if a later stage needs it structurally.
+  document yet); retry/failure handling for `claude -p` stages; model/effort choice per
+  stage; the recommendation-section run-to-run variability noted above; **the peer P/B
+  discrepancy Stage 5 surfaced** (Stage 2's live-researched KCB/Co-op Bank P/B vs. the
+  figures already in `config.py` — likely just different source snapshots on different
+  dates, but not yet actually reconciled or explained). The `TICKER`/`EXCHANGE` gap and
+  Financial Health letter-grade cutoffs are both now resolved (see Stage 2 and Stage 4
+  entries above) — CLI arguments rather than a `config_loader.py` schema change for the
+  former, `report_data.financial_health_grade()`'s documented threshold rule for the
+  latter.
 
 This is the design source of truth. Update it when a design decision changes, not just when
 code changes. If this document and the code disagree, that's a bug in one of them — fix the

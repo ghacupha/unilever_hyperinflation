@@ -7,6 +7,21 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Equity Research Report pipeline, Stage 5: plagiarism/references review (2026-07-26)
+- `.devops/agents/equity-report/review-plagiarism-references.md`: SOP for the one
+  whole-document pass over all 8 Stage 4 sections — cross-checks claims against source,
+  flags near-verbatim copying and cross-section contradictions, assembles a
+  deduplicated References list, appends the standard Disclaimer.
+- `scripts/review_report.py`: orchestrator, same subscription-billed `claude -p`
+  convention as earlier stages.
+- **Live-tested against the real Stage 4 output and genuinely earned its keep**: caught
+  2 real arithmetic errors introduced during independent section drafting, 1 real
+  cross-section inconsistency (two sections quoting different liquidity figures — one
+  had mixed in an actual-year disclosed ratio where a projected value belonged), and 1
+  genuine unresolved cross-file discrepancy (Stage 2's live-researched peer P/B vs. the
+  figures already in `config.py`). All flagged under a `## Review Notes` header, not
+  silently rewritten, per the SOP's explicit instruction.
+
 ### Added — Equity Research Report pipeline, Stage 4: per-section report drafting (2026-07-26)
 - 8 section SOPs under `.devops/agents/equity-report/section-*.md` (Investment Thesis,
   Bulls/Bears, Economic Moat, Valuation/Sensitivity/Scenarios, Financial Health, Market

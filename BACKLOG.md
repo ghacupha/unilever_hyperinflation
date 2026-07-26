@@ -679,7 +679,22 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       LLM catalyst judgment on a genuinely borderline call (Extreme uncertainty tier,
       price inside the wide mechanical band), not a bug. Documented in BLUEPRINT.md as an
       open characteristic of this pipeline stage, not resolved here.
-- [ ] Stage 5 — plagiarism/references review
+- [x] Stage 5 — plagiarism/references review. `.devops/agents/equity-report/
+      review-plagiarism-references.md` (SOP, whole-document pass — reads all 8 Stage 4
+      section files + Stage 1/2/3 JSON at once) + `scripts/review_report.py`
+      (orchestrator). **Live-tested against the real Stage 4 output and genuinely
+      earned its keep**: caught 2 real arithmetic errors introduced during drafting
+      (a "more than double" claim that was actually ~1.62x; a spread-vs-worst-case ratio
+      conflated with a different best-vs-worst ratio), 1 real internal inconsistency
+      between two sections quoting a different liquidity figure (one section had mixed
+      in an FY2025 *actual* disclosed ratio where the projected-series value belonged),
+      and 1 genuine unresolved cross-file discrepancy (Stage 2's live-researched peer P/B
+      for KCB/Co-op Bank differs slightly from the figures baked into `config.py` from
+      earlier in this session — flagged, not silently reconciled). All flagged under a
+      `## Review Notes` header at the top of `report_reviewed.md`, per the SOP's
+      "flag, don't silently fix" instruction — content below was left unchanged. Also
+      assembled a clean, deduplicated, dated References section (14 sources) and
+      appended the standard Disclaimer.
 - [ ] Stage 6 — PDF assembly (ReportLab + matplotlib), `launch.sh` wiring
 
 ## Follow-ups (not blocking)
