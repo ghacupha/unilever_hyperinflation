@@ -631,8 +631,17 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       instinct), and only annotated `research_output.md` with a confirmation entry. The
       orchestrator's own deterministic validation + rebuild then passed. Re-verified
       independently after: `validate_model()` → `ok=True`, workbook intact (6 sheets).
-- [ ] Stage 2 — price/consensus research (`claude -p`, needs a reference-date parameter
-      for backtesting validity)
+- [x] Stage 2 — price/consensus research. `.devops/agents/equity-report/
+      price-consensus-research.md` (SOP, explicit reference-date handling for backtesting
+      validity) + `scripts/research_price_consensus.py` (orchestrator). **Live-tested**
+      against `family_bank_kenya --ticker FMLY --exchange NSE`: found real share price
+      (KES 27.65, 24 Jul 2026, two independent sources), correctly identified zero
+      analyst consensus (FMLY listed 23 Jun 2026, "0 analysts" per MarketScreener,
+      correctly excluded a stale pre-listing target as not a live consensus), and used
+      the documented peer-average-P/B proxy (0.93x → KES 18.25 implied) exactly per the
+      SOP. Bonus find: the pre-listing report's own DCF assumptions (cost of equity
+      21.9%, WACC 19.1%) — a useful independent cross-check against this model's own
+      19.99% cost of equity.
 - [ ] Stage 3 — mechanical Buy/Hold/Sell pre-decision (Morningstar-style margin-of-safety
       bands, uncertainty-tier mapping not designed yet)
 - [ ] Stage 4/5 — per-section report drafting + plagiarism/references review

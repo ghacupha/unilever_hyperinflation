@@ -7,6 +7,16 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Equity Research Report pipeline, Stage 2: price/consensus research (2026-07-26)
+- `.devops/agents/equity-report/price-consensus-research.md`: SOP for researching
+  share price and analyst consensus (or a documented proxy when none exists), with
+  explicit reference-date handling so a backtest run can't leak hindsight.
+- `scripts/research_price_consensus.py`: orchestrator, same `claude -p`
+  subscription-billed convention as Stage 0.
+- **Live-tested**: found Family Bank Kenya's real share price (KES 27.65, 24 Jul 2026)
+  and correctly determined no analyst consensus exists yet (recently listed), falling
+  back to a documented peer-average-P/B proxy (KES 18.25) exactly as the SOP specifies.
+
 ### Added — Equity Research Report pipeline, Stage 0: model sourcing (2026-07-26)
 - `.devops/agents/equity-report/model-sourcing.md`: SOP generalizing
   `bank-onboarding.md` along a second axis — institution *and* an as-of anchor year
