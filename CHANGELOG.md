@@ -7,6 +7,23 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Equity Research Report pipeline, Stage 4: per-section report drafting (2026-07-26)
+- 8 section SOPs under `.devops/agents/equity-report/section-*.md` (Investment Thesis,
+  Bulls/Bears, Economic Moat, Valuation/Sensitivity/Scenarios, Financial Health, Market
+  Consensus, Recommendation, Risks & Uncertainty — consolidated from the original
+  ~13-section proposal; Cover/Peer-table/Disclaimer need no LLM and are left to Stage 6).
+- `scripts/draft_report_sections.py`: orchestrator, one `claude -p` call per section,
+  same subscription-billed convention as Stages 0/2.
+- `bizplan/financial/report_data.py`: added `financial_health_grade()` (pure Python,
+  documented threshold rule) and wired it into `to_report_json()`'s output.
+- **Live-tested, full 8-section batch**: uniformly high quality, every number traced to
+  the JSON inputs, no fabrication detected, genuine Bulls/Bears tension, honest "None"
+  moat rating.
+- **Important finding**: the Recommendation section, tested twice independently on
+  identical data, reached different conclusions (Sell vs. Hold) — both well-reasoned,
+  genuine run-to-run variability in LLM catalyst judgment on a borderline call, not a
+  bug. Documented in BLUEPRINT.md as an open characteristic to account for, not resolved.
+
 ### Added — Equity Research Report pipeline, Stage 3: mechanical Buy/Hold/Sell (2026-07-26)
 - `bizplan/financial/report_recommendation.py`: pure Python, no LLM. Applies
   Morningstar's real published margin-of-safety bands (Low 20%/25% ... Extreme

@@ -11,6 +11,52 @@ import os
 
 from bizplan.financial import bank_calculations
 
+# Financial Health grade thresholds — this repo's own simple, documented rule (buffer
+# above the CBK regulatory minimum for capital/liquidity; absolute bands for NPL ratio),
+# not a Morningstar or CBK-published grading scale. The LLM report stage narrates this
+# already-computed grade; it does not assign it.
+_CAPITAL_BUFFER_BANDS = (0.05, 0.02, 0.0)     # A/B/C cutoffs, buffer over minimum; below -> F
+_LIQUIDITY_BUFFER_BANDS = (0.15, 0.05, 0.0)   # A/B/C cutoffs, buffer over minimum; below -> F
+_NPL_BANDS = (0.05, 0.10, 0.15)               # A/B/C cutoffs, absolute ratio; above -> D
+_GRADE_RANK = {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
+_RANK_GRADE = {v: k for k, v in _GRADE_RANK.items()}
+
+
+def _buffer_grade(value, minimum, bands):
+    buffer = value - minimum
+    if buffer >= bands[0]:
+        return "A"
+    if buffer >= bands[1]:
+        return "B"
+    if buffer >= bands[2]:
+        return "C"
+    return "F"
+
+
+def _npl_grade(npl_ratio):
+    if npl_ratio < _NPL_BANDS[0]:
+        return "A"
+    if npl_ratio < _NPL_BANDS[1]:
+        return "B"
+    if npl_ratio < _NPL_BANDS[2]:
+        return "C"
+    return "D"
+
+
+def financial_health_grade(capital_ratio, capital_min, liquidity_ratio, liquidity_min, npl_ratio):
+    """Uses the first projected year (nearest to "now") as the current-state snapshot,
+    not a later/terminal projection year."""
+    capital_grade = _buffer_grade(capital_ratio, capital_min, _CAPITAL_BUFFER_BANDS)
+    liquidity_grade = _buffer_grade(liquidity_ratio, liquidity_min, _LIQUIDITY_BUFFER_BANDS)
+    npl_grade = _npl_grade(npl_ratio)
+    overall_rank = min(_GRADE_RANK[capital_grade], _GRADE_RANK[liquidity_grade], _GRADE_RANK[npl_grade])
+    return dict(
+        overall_grade=_RANK_GRADE[overall_rank],
+        capital_grade=capital_grade, capital_ratio=capital_ratio, capital_min=capital_min,
+        liquidity_grade=liquidity_grade, liquidity_ratio=liquidity_ratio, liquidity_min=liquidity_min,
+        npl_grade=npl_grade, npl_ratio=npl_ratio,
+    )
+
 
 def compute(config):
     """Runs the full Python calculation pipeline once. Returns the raw dicts so callers
@@ -72,6 +118,11 @@ def to_report_json(config, computed):
         ),
         npl_ratio=results["loan_book"]["npl_ratio"],
         peer_banks=list(config.PEER_BANKS),
+        financial_health=financial_health_grade(
+            results["capital"]["total_capital_ratio"][0], config.CAPITAL["total_capital_rwa_min"],
+            results["liquidity"]["ratio"][0], config.LIQUIDITY_STATUTORY_MIN,
+            results["loan_book"]["npl_ratio"][0],
+        ),
     )
 
 

@@ -657,7 +657,29 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       sanity-checked: a "Low" uncertainty (tight method agreement) case correctly
       triggers `Buy` at a much narrower 20% discount, confirming the tier-scaling works
       as intended.
-- [ ] Stage 4/5 — per-section report drafting + plagiarism/references review
+- [x] Stage 4 — per-section report drafting. 8 SOPs under `.devops/agents/equity-report/
+      section-*.md` (Investment Thesis, Bulls/Bears, Economic Moat, Valuation/
+      Sensitivity/Scenarios, Financial Health, Market Consensus, Recommendation, Risks —
+      consolidated from the original ~13-section list to keep the pipeline tractable;
+      Cover/Peer-table/Disclaimer left to Stage 6 as pure Python, no LLM needed) +
+      `scripts/draft_report_sections.py` orchestrator. Also added
+      `report_data.financial_health_grade()` (pure Python, documented threshold rule —
+      buffer-over-minimum for capital/liquidity, absolute bands for NPL — overall grade
+      is the worst of the three sub-grades).
+      **Live-tested, all 8 sections, full batch**: uniformly high quality — every number
+      traced to the JSON inputs, no fabrication detected, genuine (not rubber-stamped)
+      Bulls/Bears tension, an honest "None" moat rating with real peer-ROAE comparison.
+      **Important finding, worth flagging plainly**: the Recommendation section was
+      tested twice independently (once standalone via `--section`, once as part of the
+      full batch) and reached **different conclusions on the same data** — Sell (citing
+      post-IPO analyst-coverage initiation as the catalyst) vs. Hold (judging that same
+      catalyst as not sufficiently dated/firm, and additionally weighing that the P/B-
+      regression method alone argues undervaluation, not overvaluation). Both runs were
+      well-reasoned and internally consistent — this is genuine run-to-run variability in
+      LLM catalyst judgment on a genuinely borderline call (Extreme uncertainty tier,
+      price inside the wide mechanical band), not a bug. Documented in BLUEPRINT.md as an
+      open characteristic of this pipeline stage, not resolved here.
+- [ ] Stage 5 — plagiarism/references review
 - [ ] Stage 6 — PDF assembly (ReportLab + matplotlib), `launch.sh` wiring
 
 ## Follow-ups (not blocking)

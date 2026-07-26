@@ -369,9 +369,43 @@ incidentally also enables backtesting a report's call against what actually happ
   then*) -> Stage 3 mechanical Buy/Hold/Sell pre-decision (pure Python arithmetic,
   `bizplan/financial/report_recommendation.py` — **done**, catalyst narrative left to the
   LLM) -> Stage 4 per-section drafting (one `claude -p` call per Morningstar-style
-  section — not started) -> Stage 5 plagiarism/references review (not started) -> Stage 6
-  PDF assembly (pure Python, ReportLab + matplotlib, no system deps so `launch.bat` stays
-  Windows-friendly — not started).
+  section — **done**, `scripts/draft_report_sections.py` + 8 SOPs under
+  `.devops/agents/equity-report/section-*.md`, live-tested full batch) -> Stage 5
+  plagiarism/references review (not started) -> Stage 6 PDF assembly (pure Python,
+  ReportLab + matplotlib, no system deps so `launch.bat` stays Windows-friendly — not
+  started).
+- **Stage 4 section list, consolidated from the original ~13-section proposal**:
+  Investment Thesis, Bulls Say/Bears Say, Economic Moat, Valuation/Sensitivity/Scenarios
+  (merged — all three just narrate the same `valuation_inputs.json`), Financial Health,
+  Market Consensus Comparison, Price vs. Fair Value & Recommendation, Risks &
+  Uncertainty — 8 `claude -p` calls instead of ~13, each pointed at Stage 1/2/3's JSON
+  files by path (not pasted into the prompt) so every number stays traceable. Cover/
+  Snapshot, the Peer Comparables table, and the Disclaimer need no LLM at all and are
+  left to Stage 6's pure-Python PDF assembly.
+- **Financial Health grading** (`report_data.financial_health_grade()`, pure Python): a
+  simple, documented threshold rule — buffer above the CBK minimum for capital/liquidity
+  (A/B/C/F bands), absolute bands for the NPL ratio (A/B/C/D) — overall grade is the
+  worst of the three sub-grades, not a weighted composite. Explicitly this repo's own
+  rule, not a published CBK or Morningstar grading scale. Tested: Family Bank Kenya gets
+  A/A capital/liquidity but a C on NPL (10.8%), pulling the overall grade to C — a
+  sensible result (strong balance sheet, asset quality is the actual binding constraint).
+- **Important finding from live-testing Stage 4 — recommendation run-to-run variability**:
+  the Recommendation section was run twice independently on identical input data (once
+  standalone, once as part of the full 8-section batch) and reached **different
+  conclusions** — one run identified post-IPO analyst-coverage initiation as a specific
+  enough catalyst to override Hold toward Sell; the second run considered the same
+  candidate catalyst insufficiently dated/firm, additionally weighed that the P/B-
+  regression method alone argues undervaluation rather than overvaluation, and stayed
+  Hold. Both runs were internally consistent, well-reasoned, and honestly caveated — this
+  is genuine variability in LLM judgment on a genuinely borderline call (Extreme
+  uncertainty tier, price sitting inside a very wide mechanical band), not a bug in the
+  SOP or the arithmetic underneath it. **Not resolved here** — flagged as an open
+  characteristic of any LLM-judgment-dependent pipeline stage: a real deployment would
+  need either (a) accept the variability and present it as a range/confidence statement
+  rather than a single point call, (b) run the section N times and take a majority/
+  consensus view, or (c) tighten the SOP's bar for what counts as "specific and dated"
+  further. Worth remembering when interpreting any single run's Buy/Hold/Sell output as
+  more deterministic than it actually is.
 - **Buy/Hold/Sell threshold — Morningstar's own published framework**: a real, citable
   "beyond-this-percent-buy/sell-regardless-of-catalyst" convention exists already —
   Morningstar's star rating is price ÷ Fair Value Estimate with margin-of-safety bands
