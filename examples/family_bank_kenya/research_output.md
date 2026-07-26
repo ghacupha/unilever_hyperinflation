@@ -458,6 +458,35 @@ capital note (`Integrated-Report-and-Financial-Statements-2025.pdf`, p.265):
   (19.31 for FY2025, 16.64 for FY2024) — expected, given this model's Bank-not-Group
   basis (see the Bank vs Consolidated reconciliation above), not a discrepancy.
 
+## Update 2026-07-26 — Equity risk premium, beta, and remaining peer P/B ratios resolved
+
+Closes the three items below that were previously `[PLACEHOLDER]`. All figures pulled via
+live web search/fetch (no market-data API); see `examples/family_bank_kenya/config.py`
+`VALUATION` dict and `PEER_BANKS` list for where each value now lives.
+
+- **Equity risk premium** — Damodaran's total Kenya ERP (mature-market ERP + country risk
+  premium; Moody's Caa1, country risk premium 9.71%) is **13.94%**, from his Jan 2026 data
+  update (`pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/ctryprem.html`), replacing
+  the earlier 9.5% generic placeholder. **[DISCLOSED]**
+- **Beta** — Family Bank itself has no measurable beta yet (NSE listing 23 Jun 2026 is too
+  recent for a reliable price history). Used the average of 6 NSE-listed Kenyan peer banks'
+  published equity betas instead: Absa 0.44, Co-op Bank 0.52, DTB 0.28, Equity Group 0.59,
+  I&M 0.80, KCB Group 0.66 → **average 0.55** (`live.mystocks.co.ke`, accessed 24 Jul 2026).
+  Stanbic, StanChart, and NCBA don't publish a beta on this source and were excluded from
+  the average rather than estimated. Replaces the earlier 1.0 neutral-midpoint placeholder.
+  **[DISCLOSED-DERIVED]**
+- **Peer bank P/B ratios** (the 7 remaining after NCBA/I&M) — current NSE share price ÷ book
+  value per share, `stockanalysis.com/quote/nase/<ticker>/statistics/`, all accessed 24 Jul
+  2026: Absa 1.69 (BVPS 19.58, price 33.00), Co-op Bank 1.18 (BVPS 29.61, price 35.00), DTB
+  0.36 (BVPS 377.77, price 150.75, ticker DTK), Equity Group 0.96 (BVPS 86.57, price 87.00),
+  KCB Group 0.73 (BVPS 109.61, price 82.50), Stanbic Holdings 1.44 (BVPS 202.74, price
+  292.00), StanChart 1.81 (BVPS 184.79, price 334.25, ticker SCBK). **[DISCLOSED-DERIVED]**
+
+Net effect on cost of equity: CoE = risk-free (12.32%) + beta × ERP. Old: 12.32% +
+1.0×9.5% = 21.82%. New: 12.32% + 0.55×13.94% ≈ 19.99% — the higher, Kenya-specific ERP and
+the lower, measured peer beta largely offset each other, landing CoE about 1.8 points lower
+than before.
+
 ## Still outstanding (see `BACKLOG.md`)
 
 - CBK Prudential Guidelines PDF direct pull (exact current wording, not just figures
@@ -465,10 +494,5 @@ capital note (`Integrated-Report-and-Financial-Statements-2025.pdf`, p.265):
   closely, so this is now a lower-priority confirmation, not a blocker).
 - Kenyan government bond yield for CAPM risk-free rate: **12.32% (10-year, 2 July 2026,
   Trading Economics)** — secondary source, reasonable to use as-is.
-- Damodaran Kenya country risk premium / equity risk premium — dataset located
-  (`stern.nyu.edu/~adamodar/pc/datasets/ctryprem.xlsx`, last updated Jan 2026) but exact
-  Kenya figure not yet pulled.
-- Beta for Family Bank / peer average — not yet researched.
-- Peer market cap / book equity (for actual P/B, not just ROAE) — not yet researched.
 - Re-extraction once the four broken PDFs are replaced: full 2024/2025 IFRS 9 stage
   tables, capital adequacy 5-year trend, segment/sector loan concentration detail.

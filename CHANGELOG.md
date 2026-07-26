@@ -7,6 +7,22 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Changed — Resolved remaining `[PLACEHOLDER]` valuation assumptions (2026-07-26)
+- Equity risk premium: 9.5% generic placeholder → 13.94% (Damodaran's total Kenya ERP,
+  Jan 2026 data update).
+- Beta: 1.0 neutral midpoint → 0.55 (average of 6 NSE-listed Kenyan peer banks' published
+  equity betas; Family Bank itself is too newly listed, 23 Jun 2026, for its own beta).
+- Peer bank P/B ratios: the remaining 7 of 9 peers (Absa, Co-op Bank, DTB, Equity Group,
+  KCB Group, Stanbic Holdings, StanChart) now use current NSE price / book value per share
+  instead of illustrative placeholders.
+- Net CAPM effect: cost of equity moves from 21.82% to ~19.99% — the higher Kenya-specific
+  ERP and lower measured peer beta largely offset. Residual Income turns positive in Year 1
+  (was negative in every year under the placeholder inputs) though still negative in Years
+  2-5 as projected ROE keeps declining below the (still high) cost of equity.
+- All figures sourced via live web search/fetch, documented with source + accessed date in
+  `research_output.md`'s 2026-07-26 entry. Closes BACKLOG.md's "Damodaran ERP", "beta",
+  and "peer market cap/book equity" follow-up items.
+
 ### Fixed — Scenarios-sheet CHOOSE formula off-by-one (2026-07-14)
 - `_scenario_metric_block()` double-incremented the row cursor right after the ACTIVE row,
   shifting Base/Best/Worst one row below where the `CHOOSE()` formula's operands actually

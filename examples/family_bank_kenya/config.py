@@ -413,28 +413,32 @@ OTHER_BS_ITEMS_GROWTH_RATE = 0.08  # [MODELED] generic growth rate for granular 
 # ─────────────────────────────────────────────
 VALUATION = dict(
     risk_free_rate=0.1232,        # [DISCLOSED-secondary] Kenya 10Y bond yield, 2 Jul 2026
-    equity_risk_premium=0.095,    # [PLACEHOLDER] pending exact Damodaran Kenya country ERP figure
-    beta=1.0,                     # [PLACEHOLDER] frontier-market bank equity betas typically
-    # run 0.8-1.1x; 1.0 is a neutral midpoint, not a sourced regression (no market-data API
-    # available here for a true regression against historical prices — see research_output.md)
+    equity_risk_premium=0.1394,   # [DISCLOSED] Damodaran total Kenya equity risk premium
+    # (mature-market ERP + country risk premium; Moody's Caa1, CRP 9.71%), Jan 2026 data
+    # update — pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/ctryprem.html
+    beta=0.55,                    # [DISCLOSED-DERIVED] average of measured equity betas for
+    # 6 NSE-listed Kenyan peer banks (Absa 0.44, Co-op 0.52, DTB 0.28, Equity Group 0.59,
+    # I&M 0.80, KCB 0.66 — live.mystocks.co.ke, 24 Jul 2026); Family Bank itself has no
+    # measurable beta yet (listed 23 Jun 2026, insufficient price history). Stanbic,
+    # StanChart, and NCBA don't publish a beta on this source so are excluded from the
+    # average rather than guessed.
     terminal_growth=0.08,         # [MODELED] proxy for long-run nominal Kenya GDP growth
 )
 
 PEER_BANKS = [
     # name, EPS FY24, EPS FY25, ROAE FY24, ROAE FY25, payout FY25, P/B
-    # NCBA and I&M now have real disclosed/derived P/B; the rest remain [PLACEHOLDER]
-    # (searched each bank's FY2025 report for book value/share price/market cap — not
-    # found as extractable text, likely presented as infographic images; see
-    # research_output.md for exactly what was and wasn't found).
-    dict(name="Absa", eps_fy24=3.8, eps_fy25=4.2, roae_fy24=0.270, roae_fy25=0.247, payout_fy25=0.486, pb_placeholder=1.4),
-    dict(name="Co-op Bank", eps_fy24=4.3, eps_fy25=5.0, roae_fy24=0.197, roae_fy25=0.191, payout_fy25=0.496, pb_placeholder=1.1),
-    dict(name="DTB", eps_fy24=27.3, eps_fy25=33.7, roae_fy24=0.098, roae_fy25=0.103, payout_fy25=0.267, pb_placeholder=0.5),
-    dict(name="Equity Group", eps_fy24=12.3, eps_fy25=19.1, roae_fy24=0.211, roae_fy25=0.265, payout_fy25=0.302, pb_placeholder=1.8),
+    # P/B for all 9 peers is now [DISCLOSED] or [DISCLOSED-DERIVED] — current NSE share
+    # price / book value per share, stockanalysis.com/quote/nase/<ticker>/statistics/,
+    # 24 Jul 2026 (I&M/NCBA sourced earlier, unchanged; see research_output.md).
+    dict(name="Absa", eps_fy24=3.8, eps_fy25=4.2, roae_fy24=0.270, roae_fy25=0.247, payout_fy25=0.486, pb_placeholder=1.69),  # [DISCLOSED-DERIVED] BVPS 19.58 / price 33.00
+    dict(name="Co-op Bank", eps_fy24=4.3, eps_fy25=5.0, roae_fy24=0.197, roae_fy25=0.191, payout_fy25=0.496, pb_placeholder=1.18),  # [DISCLOSED-DERIVED] BVPS 29.61 / price 35.00
+    dict(name="DTB", eps_fy24=27.3, eps_fy25=33.7, roae_fy24=0.098, roae_fy25=0.103, payout_fy25=0.267, pb_placeholder=0.36),  # [DISCLOSED-DERIVED] BVPS 377.77 / price 150.75 (ticker DTK)
+    dict(name="Equity Group", eps_fy24=12.3, eps_fy25=19.1, roae_fy24=0.211, roae_fy25=0.265, payout_fy25=0.302, pb_placeholder=0.96),  # [DISCLOSED-DERIVED] BVPS 86.57 / price 87.00
     dict(name="I&M Group", eps_fy24=8.9, eps_fy25=10.8, roae_fy24=0.162, roae_fy25=0.180, payout_fy25=0.348, pb_placeholder=0.64),  # [DISCLOSED-DERIVED] BVPS 66 / price ~42.50
-    dict(name="KCB Group", eps_fy24=18.7, eps_fy25=20.8, roae_fy24=0.246, roae_fy25=0.225, payout_fy25=0.337, pb_placeholder=1.3),
+    dict(name="KCB Group", eps_fy24=18.7, eps_fy25=20.8, roae_fy24=0.246, roae_fy25=0.225, payout_fy25=0.337, pb_placeholder=0.73),  # [DISCLOSED-DERIVED] BVPS 109.61 / price 82.50
     dict(name="NCBA", eps_fy24=13.3, eps_fy25=14.2, roae_fy24=0.212, roae_fy25=0.197, payout_fy25=0.500, pb_placeholder=1.2),  # [DISCLOSED] directly reported
-    dict(name="Stanbic Holdings", eps_fy24=34.7, eps_fy25=34.7, roae_fy24=0.193, roae_fy25=0.180, payout_fy25=0.644, pb_placeholder=1.1),
-    dict(name="StanChart", eps_fy24=52.7, eps_fy25=32.5, roae_fy24=0.301, roae_fy25=0.180, payout_fy25=0.955, pb_placeholder=1.6),
+    dict(name="Stanbic Holdings", eps_fy24=34.7, eps_fy25=34.7, roae_fy24=0.193, roae_fy25=0.180, payout_fy25=0.644, pb_placeholder=1.44),  # [DISCLOSED-DERIVED] BVPS 202.74 / price 292.00
+    dict(name="StanChart", eps_fy24=52.7, eps_fy25=32.5, roae_fy24=0.301, roae_fy25=0.180, payout_fy25=0.955, pb_placeholder=1.81),  # [DISCLOSED-DERIVED] BVPS 184.79 / price 334.25 (ticker SCBK)
 ]  # [DISCLOSED] EPS/ROAE/payout from MTN Information Memorandum 2026, p.65
 
 COVER_INFO = dict(**{

@@ -364,9 +364,9 @@ def build_assumptions(wb, config):
     section_header(ws, R, "VALUATION"); R += 1
     v = config.VALUATION
     R = _assum_row(ws, R, "Risk-free rate (Kenya 10Y bond yield)", v["risk_free_rate"], BLUE_INPUT, A, "risk_free_rate", fmt='0.00%')
-    R = _assum_row(ws, R, "Equity risk premium (Kenya, Damodaran)", v["equity_risk_premium"], ORANGE, A, "erp", fmt='0.00%',
-                   note="[PLACEHOLDER] pending exact Damodaran Kenya figure")
-    R = _assum_row(ws, R, "Beta", v["beta"], ORANGE, A, "beta", fmt='0.00', note="[PLACEHOLDER] pending peer/company beta research")
+    R = _assum_row(ws, R, "Equity risk premium (Kenya, Damodaran)", v["equity_risk_premium"], BLUE_INPUT, A, "erp", fmt='0.00%',
+                   note="[DISCLOSED] Damodaran total Kenya ERP, Jan 2026 data update")
+    R = _assum_row(ws, R, "Beta", v["beta"], BLUE_INPUT, A, "beta", fmt='0.00', note="[DISCLOSED-DERIVED] average of 6 NSE-listed Kenyan peer bank betas, 24 Jul 2026")
     R = _assum_row(ws, R, "Terminal growth rate", v["terminal_growth"], ORANGE, A, "terminal_growth", fmt='0.0%')
     coe_formula = f"={_cell(A['risk_free_rate'], ASSUM_COL)}+{_cell(A['beta'], ASSUM_COL)}*{_cell(A['erp'], ASSUM_COL)}"
     write(ws, R, LABEL_COL, "Cost of equity (CAPM)", bold=True)
@@ -380,11 +380,11 @@ def build_assumptions(wb, config):
     R += 1
 
     section_header(ws, R, "PEER BANKS — for P/B-ROE regression and P/E cross-check "
-                          "([PLACEHOLDER] P/B pending real peer market data)"); R += 1
+                          "(P/B: current NSE price / book value per share, 24 Jul 2026)"); R += 1
     blank_row(ws, R); R += 1
     hdr_row = R
     for col, label in [(3, "Bank"), (7, "EPS FY24"), (8, "EPS FY25"), (9, "ROAE FY24"),
-                       (10, "ROAE FY25"), (11, "Payout FY25"), (12, "P/B (placeholder)")]:
+                       (10, "ROAE FY25"), (11, "Payout FY25"), (12, "P/B")]:
         write(ws, R, col, label, bold=True, bg=LIGHT_BLUE, halign="center" if col > 3 else "left")
     R += 1
     peer_first_row = R
@@ -395,7 +395,7 @@ def build_assumptions(wb, config):
         num(ws, R, 9, peer["roae_fy24"], fmt='0.0%', txt_color=BLUE_INPUT)
         num(ws, R, 10, peer["roae_fy25"], fmt='0.0%', txt_color=BLUE_INPUT)
         num(ws, R, 11, peer["payout_fy25"], fmt='0.0%', txt_color=BLUE_INPUT)
-        num(ws, R, 12, peer["pb_placeholder"], fmt='0.00', txt_color=ORANGE)
+        num(ws, R, 12, peer["pb_placeholder"], fmt='0.00', txt_color=BLUE_INPUT)
         R += 1
     peer_last_row = R - 1
     A["peer_first_row"] = peer_first_row
@@ -1843,7 +1843,7 @@ def build_output_sheet(wb, config, A, M):
     ri_per_share_row = R
     R += 2
 
-    section_header(ws, R, "RELATIVE VALUATION — P/B-ROE REGRESSION ([PLACEHOLDER] peer P/B)"); R += 1
+    section_header(ws, R, "RELATIVE VALUATION — P/B-ROE REGRESSION"); R += 1
     write(ws, R, LABEL_COL, "Final-year ROE (on opening equity)")
     num(ws, R, ASSUM_COL, f"={_cell(roe_row_ref, DATA_COLS[-1])}", fmt='0.0%'); final_roe_row = R; R += 1
     write(ws, R, LABEL_COL, "Implied P/B (regression slope x ROE + intercept)")

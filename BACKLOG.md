@@ -44,12 +44,14 @@ before starting work, update it before stopping.
       10.5%/8%/14.5%/20% and the Shs 5bn 2026 threshold)
 - [x] Kenyan government bond yield: 12.32% (10-year, 2 July 2026, Trading Economics) —
       secondary source, usable as CAPM risk-free rate
-- [ ] Pull exact Kenya figure from Damodaran's country risk premium dataset (location
-      confirmed: `stern.nyu.edu/~adamodar/pc/datasets/ctryprem.xlsx`)
-- [ ] Research beta for Family Bank / peer average
+- [x] Pull exact Kenya figure from Damodaran's country risk premium dataset — total ERP
+      13.94% (Jan 2026 data update), see `research_output.md` 2026-07-26 entry
+- [x] Research beta for Family Bank / peer average — 0.55, average of 6 NSE-listed peer
+      bank betas (Family Bank itself too newly listed for its own beta)
 - [x] Peer bank EPS/ROAE/payout/DPS pulled from MTN memorandum (9 banks: Absa, Co-op, DTB,
       Equity Group, I&M, KCB, NCBA, Stanbic, StanChart) — see `research_output.md`
-- [ ] Still need peer market cap / book value of equity (for actual P/B, not just ROAE)
+- [x] Peer market cap / book value of equity — resolved via current NSE price / book value
+      per share for all 9 peers, see `research_output.md` 2026-07-26 entry
 - [x] Forward-looking Kenya macro/sector outlook pulled from MTN memorandum: sector NPL
       peaked 17.6% mid-2025 and moderating, NIM compression expected 2026, Risk-Based
       Credit Pricing Model full rollout by 28 Feb 2026 — see `research_output.md`
@@ -583,11 +585,12 @@ but flagged for refinement.
 
 ## Follow-ups (not blocking)
 
-- [ ] Real P/B for Absa/Co-op/DTB/Equity/KCB/SCB/Stanbic (need book value of equity +
-      share price/market cap — not found as extractable text; may need OCR on infographic
-      images, or external market-data lookup)
-- [ ] A true regression beta (needs historical price series + market index returns — no
-      market-data API available with the current toolset)
+- [x] Real P/B for Absa/Co-op/DTB/Equity/KCB/SCB/Stanbic — resolved via live web lookup
+      (current NSE price / book value per share), not company filings; see
+      `research_output.md` 2026-07-26 entry
+- [x] Beta — no true regression performed (still no historical price series/index-return
+      access), but resolved with a defensible proxy: average of 6 NSE-listed peer banks'
+      published equity betas (0.55), replacing the earlier generic 1.0 midpoint
 - [ ] True Excel Forms combo box for the scenario switch (fallback to Phase 17's
       DataValidation dropdown, only if the user finds it insufficient — see Phase 17)
 - [ ] `agent/` CLI's first live end-to-end run against a second real institution (needs a
