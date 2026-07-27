@@ -27,6 +27,12 @@ BUSINESS_NAME = "Family Bank Limited"
 OUTPUT_PREFIX = "Family_Bank_Kenya"
 CURRENCY = "KES"
 CURRENCY_UNIT = "Millions"
+TICKER = "FMLY"  # [DISCLOSED] NSE ticker — listed by introduction 23 Jun 2026
+EXCHANGE = "NSE"  # Nairobi Securities Exchange — optional, read by the equity-report
+# pipeline's price/consensus research stage (bizplan/report/price_research.py) as the
+# default when --ticker/--exchange aren't passed explicitly. Not in
+# bizplan/config_loader.py's REQUIRED_FIELDS — this is additive, not part of the shared
+# validation contract every institution's config.py must satisfy.
 ACTUAL_YEARS = [2023, 2024, 2025]
 YEARS = [2026, 2027, 2028, 2029, 2030]
 TAX_RATE = 0.30  # [DISCLOSED] Kenya standard corporate tax rate

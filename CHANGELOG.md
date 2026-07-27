@@ -7,6 +7,40 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Changed — Restructured the equity-report pipeline into `bizplan/report/` (2026-07-27)
+- Moved all generic, institution-agnostic equity-report logic into a new `bizplan/report/`
+  package (`data.py`, `validation.py`, `recommendation.py`, `pdf.py` — moved as-is from
+  `bizplan/financial/`; `sourcing.py`, `price_research.py`, `drafting.py`, `review.py`,
+  `pipeline.py` — extracted from what had grown into substantive logic inside
+  `scripts/*.py`). `scripts/*.py` are now thin CLI wrappers only (argparse + one call into
+  `bizplan.report.*`), matching `scripts/build_bank_model.py`'s existing style — prompted
+  directly by noticing the inconsistency between that file and the newer pipeline scripts.
+- Added `bizplan/report/claude_cli.py`: a shared `run_stage()` helper replacing a `claude
+  -p` subprocess-invocation block that had been copy-pasted near-identically 5 times.
+- `review.py` now imports its section list from `drafting.py`'s `SECTIONS` (the pipeline's
+  one source of truth for section order) instead of keeping its own hand-maintained
+  duplicate — closes a real, latent risk of the two lists drifting out of sync.
+- `pipeline.py`'s `generate()` now calls `sourcing`/`price_research`/`drafting`/`review`
+  directly in-process instead of shelling out to run other scripts as child processes (a
+  natural side effect of the logic now living in importable functions).
+- Added optional `TICKER`/`EXCHANGE` fields to `config.py` (not in
+  `config_loader.py`'s `REQUIRED_FIELDS` — additive, small blast radius); Stage 2 and the
+  full pipeline now default to reading them from config instead of requiring
+  `--ticker`/`--exchange` on every invocation. `launch.sh`/`.bat`'s `REPORT=1` mode no
+  longer requires `TICKER`/`EXCHANGE` env vars as a result.
+- Documented `REPORT=1` prominently in `README.md` (previously only in code comments) and
+  updated its Project Structure / sheet-name tables to match current reality.
+- Researched industry practice before restructuring: PyPA's src/flat-layout guidance,
+  Sphinx (engine vs. per-project `conf.py`) and Cookiecutter (templating engine vs.
+  generated instance) as concrete examples of drawing the generic/instance-specific
+  boundary at the directory level — confirms this repo's existing `bizplan/` vs.
+  `examples/<institution>/` split was already the right shape; this change extends it to
+  the newer pipeline rather than introducing a new pattern.
+- Purely a reorganization — no stage's behavior changed. Verified via `python -m
+  py_compile` on every touched file, `--help` on every rewritten script, a fresh full
+  `bizplan.report.*` import smoke test, and re-running Stage 1/validation and Stage 6 PDF
+  assembly against already-known-good data to confirm identical output post-move.
+
 ### Added — Equity Research Report pipeline, Stage 6: PDF assembly + full orchestration (2026-07-26)
 - `bizplan/financial/report_pdf.py`: pure Python, no LLM. Cover page, a lightweight
   markdown-to-flowables converter scoped to what the section SOPs actually produce,

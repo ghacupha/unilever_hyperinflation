@@ -723,6 +723,24 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       peer set/proxy value (9 peers, ~1.11x, ~KES 23.26) than the earlier test run (2
       peers, ~0.93x, ~KES 18.25) — real run-to-run variability in web research scope,
       on top of the Stage 4 recommendation variability already documented above.
+- [x] **Restructuring (2026-07-27)**: moved all generic equity-report logic out of
+      `scripts/*.py` into a new `bizplan/report/` package — noticed directly from the
+      file listing that the pipeline scripts had grown real logic (task-prompt
+      construction, a `claude -p` subprocess block duplicated 5x, the section list) while
+      `scripts/build_bank_model.py` stayed a genuinely thin wrapper. Researched practice
+      first (PyPA src/flat-layout guidance; Sphinx and Cookiecutter as concrete
+      engine-vs-instance examples) — confirmed the right boundary is the one this repo
+      already draws between `bizplan/` and `examples/<institution>/`, just not yet
+      extended to this newer pipeline. `data.py`/`validation.py`/`recommendation.py`/
+      `pdf.py` moved as-is; `sourcing.py`/`price_research.py`/`drafting.py`/`review.py`/
+      `pipeline.py` extracted from the scripts; new `claude_cli.py` shared helper. Fixed
+      a latent bug for free: `review.py` now derives its section list from `drafting.py`
+      instead of a hand-maintained duplicate. Added optional `TICKER`/`EXCHANGE` config
+      fields so `REPORT=1 ./scripts/launch.sh <institution>` no longer needs env vars.
+      `REPORT=1` documented prominently in README.md. Pure reorganization — verified via
+      compile checks, `--help` on every rewritten script, a full `bizplan.report.*`
+      import smoke test, and re-running Stage 1/validation/Stage 6 against already-known-
+      good data to confirm identical output post-move.
 
 ## Follow-ups (not blocking)
 

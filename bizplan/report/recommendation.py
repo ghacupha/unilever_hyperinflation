@@ -56,7 +56,7 @@ def uncertainty_tier(method_values):
 
 
 def mechanical_recommendation(report_json, price):
-    """`report_json` is `report_data.to_report_json()`'s output. `price` is the current
+    """`report_json` is `data.to_report_json()`'s output. `price` is the current
     share price (e.g. from Stage 2's `price_consensus_research.json`). Returns a dict —
     see `write_recommendation` for the JSON shape written to disk."""
     vps = report_json["valuation_per_share"]

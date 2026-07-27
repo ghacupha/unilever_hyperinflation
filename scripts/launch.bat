@@ -2,10 +2,12 @@
 REM Windows launcher: creates the venv if missing, activates it, builds the model into a
 REM timestamped output\ subfolder (matching the colossal-visuals convention).
 REM
-REM Set REPORT=1 (plus TICKER and EXCHANGE) to also run the full equity-research-report
-REM pipeline (Stages 1-6 -- see BLUEPRINT.md's "Equity Research Report pipeline" section)
-REM and produce a PDF alongside the Excel model, e.g.:
-REM   set REPORT=1 & set TICKER=FMLY & set EXCHANGE=NSE & scripts\launch.bat family_bank_kenya
+REM Set REPORT=1 to also run the full equity-research-report pipeline (Stages 1-6 -- see
+REM BLUEPRINT.md's "Equity Research Report pipeline" section) and produce a PDF alongside
+REM the Excel model, e.g.:
+REM   set REPORT=1 & scripts\launch.bat family_bank_kenya
+REM Reads TICKER/EXCHANGE from that institution's config.py; override with
+REM set TICKER=... & set EXCHANGE=... if the config doesn't have them.
 REM This makes several `claude -p` calls (subscription-billed, not separately metered)
 REM and takes noticeably longer than the Excel-only path.
 setlocal
@@ -40,17 +42,13 @@ mkdir "%OUT_DIR%"
 set "OUTPUT_DIR=%OUT_DIR%"
 
 if "%REPORT%"=="1" (
-    if "%TICKER%"=="" (
-        echo REPORT=1 requires TICKER and EXCHANGE env vars.
-        exit /b 1
-    )
-    if "%EXCHANGE%"=="" (
-        echo REPORT=1 requires TICKER and EXCHANGE env vars.
-        exit /b 1
-    )
     echo REPORT=1 -- running the full equity-report pipeline ^(Stages 1-6^). This makes
     echo several claude -p calls and can take a while -- it is not a quick command.
-    python "%SCRIPTS_DIR%generate_equity_report.py" "%BANK%" --ticker "%TICKER%" --exchange "%EXCHANGE%" --output-dir "%OUT_DIR%"
+    set "TICKER_ARG="
+    set "EXCHANGE_ARG="
+    if not "%TICKER%"=="" set "TICKER_ARG=--ticker %TICKER%"
+    if not "%EXCHANGE%"=="" set "EXCHANGE_ARG=--exchange %EXCHANGE%"
+    python "%SCRIPTS_DIR%generate_equity_report.py" "%BANK%" --output-dir "%OUT_DIR%" %TICKER_ARG% %EXCHANGE_ARG%
 ) else (
     python "%SCRIPTS_DIR%build_bank_model.py" --bank "%BANK%"
 )

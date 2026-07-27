@@ -358,25 +358,26 @@ incidentally also enables backtesting a report's call against what actually happ
 - **Stage sequence** (full detail was captured in a session plan, condensed here as the
   durable record; status per BACKLOG.md's Phase 24): Stage 0 model sourcing (institution +
   as-of year -> config.py, generalizing `agent/cli.py`'s `onboard`/`update` into one
-  period-parameterized, subscription-billed stage — **done**, `scripts/source_model.py`,
+  period-parameterized, subscription-billed stage — **done**, `bizplan/report/sourcing.py`,
   live-tested) -> Stage 1 numeric ground-truth extraction (pure Python,
-  `bizplan/financial/report_data.py` — **done**) -> Stage 1b model validation (pure
-  Python, `bizplan/financial/bank_validation.py` — **done** — mirrors the Model sheet's
+  `bizplan/report/data.py` — **done**) -> Stage 1b model validation (pure
+  Python, `bizplan/report/validation.py` — **done** — mirrors the Model sheet's
   3-check Master Check exactly: Balance Sheet abs-check < 0.01, Total Capital/RWA >= CBK
   minimum, Liquidity Ratio >= CBK minimum) -> Stage 2 price/consensus research (`claude
-  -p`, `scripts/research_price_consensus.py` — **done**, live-tested, explicit
+  -p`, `bizplan/report/price_research.py` — **done**, live-tested, explicit
   reference-date parameter so a past-anchored run researches price/consensus *as of
   then*) -> Stage 3 mechanical Buy/Hold/Sell pre-decision (pure Python arithmetic,
-  `bizplan/financial/report_recommendation.py` — **done**, catalyst narrative left to the
+  `bizplan/report/recommendation.py` — **done**, catalyst narrative left to the
   LLM) -> Stage 4 per-section drafting (one `claude -p` call per Morningstar-style
-  section — **done**, `scripts/draft_report_sections.py` + 8 SOPs under
+  section — **done**, `bizplan/report/drafting.py` + 8 SOPs under
   `.devops/agents/equity-report/section-*.md`, live-tested full batch) -> Stage 5
-  plagiarism/references review (**done**, `scripts/review_report.py` +
+  plagiarism/references review (**done**, `bizplan/report/review.py` +
   `.devops/agents/equity-report/review-plagiarism-references.md`, one whole-document
   `claude -p` pass — live-tested, see finding below) -> Stage 6 PDF assembly (**done**,
-  pure Python, `bizplan/financial/report_pdf.py`, ReportLab + matplotlib, no system deps
+  pure Python, `bizplan/report/pdf.py`, ReportLab + matplotlib, no system deps
   so `launch.bat` stays Windows-friendly). **All 6 stages now built and live-tested**;
-  `scripts/generate_equity_report.py` orchestrates the full sequence, and
+  `bizplan/report/pipeline.py` (invoked via `scripts/generate_equity_report.py`)
+  orchestrates the full sequence, and
   `launch.sh`/`.bat` gained an opt-in `REPORT=1 TICKER=... EXCHANGE=...` mode (default
   path unchanged) — see the Stage 6 entry below and BACKLOG.md's Phase 24 for the full
   end-to-end test.

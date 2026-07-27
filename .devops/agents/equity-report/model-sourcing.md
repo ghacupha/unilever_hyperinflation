@@ -50,7 +50,10 @@ else. Then:
 Same schema contract as `bank-onboarding.md` §5 (`bizplan/config_loader.py`'s
 `REQUIRED_FIELDS` + `validate_bank_config()` shape checks) — nothing new here except that
 `ACTUAL_YEARS`/`ACTUALS` and `YEARS` are now derived from `as_of` per §1 above, not chosen
-freehand.
+freehand. Also add `TICKER`/`EXCHANGE` (e.g. `TICKER = "FMLY"`, `EXCHANGE = "NSE"`) if
+the institution is exchange-listed — optional, not in `REQUIRED_FIELDS`, but Stage 2
+(`bizplan/report/price_research.py`) reads them as its default so
+`--ticker`/`--exchange` don't need to be passed by hand on every run.
 
 ## 3. Run the renderer, unchanged
 
@@ -68,18 +71,18 @@ projected years: run
 
 ```python
 from bizplan.config_loader import load_and_validate
-from bizplan.financial import report_data, bank_validation
+from bizplan.report import data as report_data, validation as report_validation
 
 config = load_and_validate("examples/<institution>/config.py")
 computed = report_data.compute(config)
-validation = bank_validation.validate_model(config, computed["results"])
+validation = report_validation.validate_model(config, computed["results"])
 assert validation["ok"], validation
 ```
 
 If `validation["ok"]` is `False`, do not proceed to any later pipeline stage — fix the
 `config.py` inputs until every projected year's Balance Sheet, Capital Adequacy, and
 Liquidity check passes. This mirrors the Model sheet's Master Check exactly (same three
-checks, same tolerances) — see `bizplan/financial/bank_validation.py`.
+checks, same tolerances) — see `bizplan/report/validation.py`.
 
 ## 5. Write `research_output.md`
 

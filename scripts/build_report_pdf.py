@@ -13,7 +13,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from bizplan.financial import report_pdf  # noqa: E402
+from bizplan.report import pdf as report_pdf  # noqa: E402
 
 
 def main():

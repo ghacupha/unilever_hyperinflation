@@ -60,7 +60,7 @@ def financial_health_grade(capital_ratio, capital_min, liquidity_ratio, liquidit
 
 def compute(config):
     """Runs the full Python calculation pipeline once. Returns the raw dicts so callers
-    (e.g. `bank_validation.validate_model()`) can share this computation instead of each
+    (e.g. `validation.validate_model()`) can share this computation instead of each
     re-running `build_all()` themselves."""
     results = bank_calculations.build_all(config)
     scenarios = bank_calculations.build_scenarios(config)
