@@ -1,7 +1,7 @@
-# Windows PowerShell launcher: creates the venv if missing, builds the model into a
+﻿# Windows PowerShell launcher: creates the venv if missing, builds the model into a
 # timestamped output\ subfolder (matching the launch.sh/launch.bat convention).
 #
-# Reads a repo-root .env file automatically (see .env.example) — set REPORT=1 there to
+# Reads a repo-root .env file automatically (see .env.example) -- set REPORT=1 there to
 # also run the full equity-research-report pipeline (Stages 1-6 -- see BLUEPRINT.md's
 # "Equity Research Report pipeline" section) and produce a PDF alongside the Excel model,
 # instead of passing it inline every run:
@@ -44,7 +44,7 @@ if (Test-Path $EnvFile) {
 
 $PythonExe = Join-Path $VenvDir "Scripts\python.exe"
 if (-not (Test-Path $PythonExe)) {
-    Write-Output "No virtual environment found — creating one at $VenvDir..."
+    Write-Output "No virtual environment found -- creating one at $VenvDir..."
     $SystemPython = Get-Command python -ErrorAction SilentlyContinue
     if (-not $SystemPython) {
         Write-Error "No python found on PATH."
