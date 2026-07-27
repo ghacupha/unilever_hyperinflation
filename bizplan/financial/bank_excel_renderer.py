@@ -46,6 +46,11 @@ MASTER_HEADER_ROW = 11  # Model sheet's own top year-header row (written once in
 SWITCH_CELL_REF = "'Scenarios'!$D$5"
 
 
+def _units(config):
+    """Row-units label derived from config, e.g. "(KES MM)" — not hardcoded per-institution."""
+    return f"({config.CURRENCY} {config.CURRENCY_UNIT_ABBR})"
+
+
 def _scenario_banner_formula():
     """Top-right, per-page print banner: shows the live scenario and links back to the
     Scenarios sheet's switch cell."""
@@ -334,10 +339,10 @@ def build_assumptions(wb, config):
                     cap["opening_tier1"], ORANGE, A, "opening_tier1")
     R = _assum_row(ws, R, "Opening Tier 2 capital (Balance Sheet liability-side anchor)",
                     cap["opening_tier2"], ORANGE, A, "opening_tier2")
-    R = _assum_row(ws, R, "Core capital / RWA minimum (CBK)", cap["core_capital_rwa_min"], BLUE_INPUT, A, "core_min", fmt='0.0%')
-    R = _assum_row(ws, R, "Total capital / RWA minimum (CBK)", cap["total_capital_rwa_min"], BLUE_INPUT, A, "total_min", fmt='0.0%')
-    R = _assum_row(ws, R, "Core capital / deposits minimum (CBK)", cap["core_capital_deposits_min"], BLUE_INPUT, A, "deposits_min", fmt='0.0%')
-    R = _assum_row(ws, R, "Minimum core capital, absolute (CBK)", cap["min_core_capital_absolute"], BLUE_INPUT, A, "min_core_capital_absolute")
+    R = _assum_row(ws, R, "Core capital / RWA minimum (" + config.REGULATOR_NAME + ")", cap["core_capital_rwa_min"], BLUE_INPUT, A, "core_min", fmt='0.0%')
+    R = _assum_row(ws, R, "Total capital / RWA minimum (" + config.REGULATOR_NAME + ")", cap["total_capital_rwa_min"], BLUE_INPUT, A, "total_min", fmt='0.0%')
+    R = _assum_row(ws, R, "Core capital / deposits minimum (" + config.REGULATOR_NAME + ")", cap["core_capital_deposits_min"], BLUE_INPUT, A, "deposits_min", fmt='0.0%')
+    R = _assum_row(ws, R, "Minimum core capital, absolute (" + config.REGULATOR_NAME + ")", cap["min_core_capital_absolute"], BLUE_INPUT, A, "min_core_capital_absolute")
     R = _assum_row(ws, R, "Other RWA (% of gross loans, projected years)",
                     cap["other_rwa_pct_of_gross_loans"], ORANGE, A, "other_rwa_pct_of_gross_loans", fmt='0.0%')
     R = _assum_row(ws, R, "Regulatory Tier 1 (% of Total Equity, projected years)",
@@ -358,7 +363,7 @@ def build_assumptions(wb, config):
     R = _assum_row(ws, R, "Other B/S items growth rate (projected years)",
                     config.OTHER_BS_ITEMS_GROWTH_RATE, ORANGE, A, "other_bs_items_growth", fmt='0.0%',
                     note="Applies to granular Balance Sheet lines with no disclosed forward driver")
-    R = _assum_row(ws, R, "Statutory liquidity ratio minimum (CBK)", config.LIQUIDITY_STATUTORY_MIN, BLUE_INPUT, A, "liquidity_min", fmt='0.0%')
+    R = _assum_row(ws, R, "Statutory liquidity ratio minimum (" + config.REGULATOR_NAME + ")", config.LIQUIDITY_STATUTORY_MIN, BLUE_INPUT, A, "liquidity_min", fmt='0.0%')
     R += 1
 
     section_header(ws, R, "VALUATION"); R += 1
@@ -595,12 +600,12 @@ def _build_loan_book_section(ws, config, A, M, R):
             s3_proj.append(f"={prev3}+{default_r}*{prev2}-{cure32}*{prev3}-{wo}*{prev3}")
         R += 3
 
-        _write_actual_row(ws, s1_row, "Gross — Stage 1", s1_actual, units="(KES MM)", alt_idx=0)
-        _write_formula_row(ws, s1_row, "Gross — Stage 1", s1_proj, units="(KES MM)", alt_idx=0)
-        _write_actual_row(ws, s2_row, "Gross — Stage 2", s2_actual, units="(KES MM)", alt_idx=1)
-        _write_formula_row(ws, s2_row, "Gross — Stage 2", s2_proj, units="(KES MM)", alt_idx=1)
-        _write_actual_row(ws, s3_row, "Gross — Stage 3", s3_actual, units="(KES MM)", alt_idx=0)
-        _write_formula_row(ws, s3_row, "Gross — Stage 3", s3_proj, units="(KES MM)", alt_idx=0)
+        _write_actual_row(ws, s1_row, "Gross — Stage 1", s1_actual, units=_units(config), alt_idx=0)
+        _write_formula_row(ws, s1_row, "Gross — Stage 1", s1_proj, units=_units(config), alt_idx=0)
+        _write_actual_row(ws, s2_row, "Gross — Stage 2", s2_actual, units=_units(config), alt_idx=1)
+        _write_formula_row(ws, s2_row, "Gross — Stage 2", s2_proj, units=_units(config), alt_idx=1)
+        _write_actual_row(ws, s3_row, "Gross — Stage 3", s3_actual, units=_units(config), alt_idx=0)
+        _write_formula_row(ws, s3_row, "Gross — Stage 3", s3_proj, units=_units(config), alt_idx=0)
 
         gross_total_row = R
         total_row(ws, R, f"Total Gross — {seg['name']}", [_sum_f(s1_row, s3_row, c) for c in ACTUAL_COLS],
@@ -619,12 +624,12 @@ def _build_loan_book_section(ws, config, A, M, R):
                    for c in DATA_COLS]
         e3_proj = [f"={_assum_ref(A, f'{k}_loss_rate_s3')}*{_assum_ref(A, 'macro_mult')}*{_cell(s3_row, c)}"
                    for c in DATA_COLS]
-        _write_actual_row(ws, e1_row, "ECL — Stage 1", e1_actual, units="(KES MM)", alt_idx=1)
-        _write_formula_row(ws, e1_row, "ECL — Stage 1", e1_proj, units="(KES MM)", alt_idx=1)
-        _write_actual_row(ws, e2_row, "ECL — Stage 2", e2_actual, units="(KES MM)", alt_idx=0)
-        _write_formula_row(ws, e2_row, "ECL — Stage 2", e2_proj, units="(KES MM)", alt_idx=0)
-        _write_actual_row(ws, e3_row, "ECL — Stage 3", e3_actual, units="(KES MM)", alt_idx=1)
-        _write_formula_row(ws, e3_row, "ECL — Stage 3", e3_proj, units="(KES MM)", alt_idx=1)
+        _write_actual_row(ws, e1_row, "ECL — Stage 1", e1_actual, units=_units(config), alt_idx=1)
+        _write_formula_row(ws, e1_row, "ECL — Stage 1", e1_proj, units=_units(config), alt_idx=1)
+        _write_actual_row(ws, e2_row, "ECL — Stage 2", e2_actual, units=_units(config), alt_idx=0)
+        _write_formula_row(ws, e2_row, "ECL — Stage 2", e2_proj, units=_units(config), alt_idx=0)
+        _write_actual_row(ws, e3_row, "ECL — Stage 3", e3_actual, units=_units(config), alt_idx=1)
+        _write_formula_row(ws, e3_row, "ECL — Stage 3", e3_proj, units=_units(config), alt_idx=1)
         R += 3
 
         ecl_total_row = R
@@ -637,10 +642,10 @@ def _build_loan_book_section(ws, config, A, M, R):
         net_row = R
         _write_actual_row(ws, R, f"Net Loans — {seg['name']}",
                            [_sub_f(gross_total_row, ecl_total_row, c) for c in ACTUAL_COLS],
-                           bold=True, units="(KES MM)")
+                           bold=True, units=_units(config))
         _write_formula_row(ws, R, f"Net Loans — {seg['name']}",
                             [_sub_f(gross_total_row, ecl_total_row, c) for c in DATA_COLS],
-                            bold=True, units="(KES MM)")
+                            bold=True, units=_units(config))
         R += 1
 
         charge_row = R
@@ -651,8 +656,8 @@ def _build_loan_book_section(ws, config, A, M, R):
         for i in range(1, len(ACTUAL_COLS)):
             charge_actual.append(f"={_cell(ecl_total_row, ACTUAL_COLS[i])}-{_cell(ecl_total_row, ACTUAL_COLS[i-1])}")
         charge_proj = [f"={_cell(ecl_total_row, col)}-{_prev(i, ecl_total_row)}" for i, col in enumerate(DATA_COLS)]
-        _write_actual_row(ws, R, f"Provision Charge — {seg['name']}", charge_actual, units="(KES MM)")
-        _write_formula_row(ws, R, f"Provision Charge — {seg['name']}", charge_proj, units="(KES MM)")
+        _write_actual_row(ws, R, f"Provision Charge — {seg['name']}", charge_actual, units=_units(config))
+        _write_formula_row(ws, R, f"Provision Charge — {seg['name']}", charge_proj, units=_units(config))
         R += 1
         blank_row(ws, R); R += 1
 
@@ -673,14 +678,14 @@ def _build_loan_book_section(ws, config, A, M, R):
     ob_row = R
     ob_actual = [_actual(config, y, "off_balance", "gross") for y in ay]
     ob_proj = [f"={_prev(i, ob_row)}*(1+{_assum_ref(A, 'ob_growth')})" for i, c in enumerate(DATA_COLS)]
-    _write_actual_row(ws, R, "Off-Balance-Sheet Balance", ob_actual, units="(KES MM)")
-    _write_formula_row(ws, R, "Off-Balance-Sheet Balance", ob_proj, units="(KES MM)")
+    _write_actual_row(ws, R, "Off-Balance-Sheet Balance", ob_actual, units=_units(config))
+    _write_formula_row(ws, R, "Off-Balance-Sheet Balance", ob_proj, units=_units(config))
     R += 1
     ob_rwa_row = R
     ob_rwa_actual = [f"={_cell(ob_row, c)}*{_assum_ref(A, 'ob_ccf')}*{_assum_ref(A, 'ob_risk_weight')}" for c in ACTUAL_COLS]
     ob_rwa_proj = [f"={_cell(ob_row, c)}*{_assum_ref(A, 'ob_ccf')}*{_assum_ref(A, 'ob_risk_weight')}" for c in DATA_COLS]
-    _write_actual_row(ws, R, "Off-Balance-Sheet RWA", ob_rwa_actual, units="(KES MM)")
-    _write_formula_row(ws, R, "Off-Balance-Sheet RWA", ob_rwa_proj, units="(KES MM)")
+    _write_actual_row(ws, R, "Off-Balance-Sheet RWA", ob_rwa_actual, units=_units(config))
+    _write_formula_row(ws, R, "Off-Balance-Sheet RWA", ob_rwa_proj, units=_units(config))
     R += 1
     blank_row(ws, R); R += 1
     M["ob_balance"] = ob_row
@@ -701,8 +706,8 @@ def _build_loan_book_section(ws, config, A, M, R):
     _write_formula_row(ws, R, "Total Net Loans", [_sub_f(agg_gross_row, agg_ecl_row, c) for c in DATA_COLS], bold=True)
     R += 1
     agg_s3_row = R
-    _write_actual_row(ws, R, "Total Stage 3 (NPL) Gross", [_add_rows_f(agg_s3_gross_rows, c) for c in ACTUAL_COLS], units="(KES MM)")
-    _write_formula_row(ws, R, "Total Stage 3 (NPL) Gross", [_add_rows_f(agg_s3_gross_rows, c) for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Total Stage 3 (NPL) Gross", [_add_rows_f(agg_s3_gross_rows, c) for c in ACTUAL_COLS], units=_units(config))
+    _write_formula_row(ws, R, "Total Stage 3 (NPL) Gross", [_add_rows_f(agg_s3_gross_rows, c) for c in DATA_COLS], units=_units(config))
     R += 1
     npl_ratio_row = R
     _write_actual_row(ws, R, "NPL Ratio", [_ratio_f(agg_s3_row, agg_gross_row, c) for c in ACTUAL_COLS], fmt='0.0%')
@@ -733,7 +738,12 @@ def _build_sector_concentration_section(ws, config, R):
     """Loan Book Concentration — Sector Detail (Actuals only, disclosed). No CBK sector
     -concentration ceiling is disclosed anywhere in Family Bank's own filings (confirmed via
     targeted search) — this shows the real disclosed sector breakdown for context, not a
-    compliance check against a limit that doesn't exist in the disclosure."""
+    compliance check against a limit that doesn't exist in the disclosure.
+
+    Optional section: institutions whose filings don't disclose a sector breakdown in this
+    shape simply skip it (no SECTOR_CONCENTRATION_10CAT/_7CAT_2023 required in config.py)."""
+    if not (hasattr(config, "SECTOR_CONCENTRATION_10CAT") and hasattr(config, "SECTOR_CONCENTRATION_7CAT_2023")):
+        return R
     section_header(ws, R, "Loan Book Concentration — Sector Detail (Actuals, disclosed)"); R += 1
     write(ws, R, LABEL_COL,
           "Family Bank changed its sector classification scheme between FY2023 (7 categories) "
@@ -757,7 +767,7 @@ def _build_sector_concentration_section(ws, config, R):
     sector10_rows = []
     for key, label in sectors_10cat:
         vals = [None, sc10[2024][key], sc10[2025][key]]
-        _write_actual_row(ws, R, label, vals, units="(KES MM)")
+        _write_actual_row(ws, R, label, vals, units=_units(config))
         sector10_rows.append(R)
         R += 1
     total10_row = R
@@ -784,7 +794,7 @@ def _build_sector_concentration_section(ws, config, R):
     sector7_rows = []
     for key, label in sectors_7cat:
         vals = [sc7[key], None, None]
-        _write_actual_row(ws, R, label, vals, units="(KES MM)")
+        _write_actual_row(ws, R, label, vals, units=_units(config))
         sector7_rows.append(R)
         R += 1
     total7_row = R
@@ -812,18 +822,18 @@ def _build_funding_section(ws, config, A, M, R):
     sec_actual = [_actual(config, y, "securities_amortised") + _actual(config, y, "securities_fvoci")
                   for y in ay]  # [DISCLOSED] real totals (amortised cost + FVOCI)
     sec_proj = [f"={_prev(i, sec_row)}*(1+{_assum_ref(A, 'sec_growth')})" for i, c in enumerate(DATA_COLS)]
-    _write_actual_row(ws, R, "Government Securities Balance", sec_actual, units="(KES MM)")
-    _write_formula_row(ws, R, "Government Securities Balance", sec_proj, units="(KES MM)")
+    _write_actual_row(ws, R, "Government Securities Balance", sec_actual, units=_units(config))
+    _write_formula_row(ws, R, "Government Securities Balance", sec_proj, units=_units(config))
     R += 1
     sec_income_row = R
     # Actual years: left blank. The bank discloses total interest income, not a
     # loan-vs-securities split — applying the forward yield assumption to actual balances
     # would produce a number that doesn't match the real disclosed total, so it's not
     # fabricated here. Projected years: live formula, balance x assumed yield.
-    _write_actual_row(ws, R, "Securities Interest Income", [None] * len(ACTUAL_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Securities Interest Income", [None] * len(ACTUAL_COLS), units=_units(config))
     _write_formula_row(ws, R, "Securities Interest Income",
                         [f"={_cell(sec_row, c)}*{_assum_ref(A, 'sec_yield_rate')}" for c in DATA_COLS],
-                        units="(KES MM)")
+                        units=_units(config))
     R += 1
     blank_row(ws, R); R += 1
     M["sec_balance"] = sec_row
@@ -839,9 +849,9 @@ def _build_funding_section(ws, config, A, M, R):
         bal_row = R
         bal_actual = [f"={proportion:.6f}*{_actual(config, y, 'deposits_total')}" for y in ay]
         bal_proj = [f"={_prev(i, bal_row)}*(1+{_assum_ref(A, f'{k}_growth')})" for i, c in enumerate(DATA_COLS)]
-        _write_actual_row(ws, R, f"{dep['name']} — Balance", bal_actual, units="(KES MM)",
+        _write_actual_row(ws, R, f"{dep['name']} — Balance", bal_actual, units=_units(config),
                            alt_idx=len(dep_balance_rows))
-        _write_formula_row(ws, R, f"{dep['name']} — Balance", bal_proj, units="(KES MM)",
+        _write_formula_row(ws, R, f"{dep['name']} — Balance", bal_proj, units=_units(config),
                             alt_idx=len(dep_balance_rows))
         R += 1
         exp_row = R
@@ -849,9 +859,9 @@ def _build_funding_section(ws, config, A, M, R):
         # only the aggregate interest expense is disclosed, not a per-deposit-type split.
         exp_actual = [None] * len(ACTUAL_COLS)
         exp_proj = [f"={_cell(bal_row, c)}*{_assum_ref(A, f'{k}_cost_rate')}" for c in DATA_COLS]
-        _write_actual_row(ws, R, f"{dep['name']} — Interest Expense", exp_actual, units="(KES MM)",
+        _write_actual_row(ws, R, f"{dep['name']} — Interest Expense", exp_actual, units=_units(config),
                            alt_idx=len(dep_balance_rows) + 1)
-        _write_formula_row(ws, R, f"{dep['name']} — Interest Expense", exp_proj, units="(KES MM)",
+        _write_formula_row(ws, R, f"{dep['name']} — Interest Expense", exp_proj, units=_units(config),
                             alt_idx=len(dep_balance_rows) + 1)
         R += 1
         M[f"{k}_balance"] = bal_row
@@ -886,17 +896,17 @@ def _build_funding_section(ws, config, A, M, R):
 
     # Actual years: left blank, same reasoning as Securities Interest Income — the
     # loan-vs-securities split of interest income isn't disclosed.
-    _write_actual_row(ws, R, "Loan Interest Income", [None] * len(ACTUAL_COLS), units="(KES MM)")
-    _write_formula_row(ws, R, "Loan Interest Income", [_loan_income_formula(c) for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Loan Interest Income", [None] * len(ACTUAL_COLS), units=_units(config))
+    _write_formula_row(ws, R, "Loan Interest Income", [_loan_income_formula(c) for c in DATA_COLS], units=_units(config))
     R += 1
 
     total_interest_income_row = R
     # Actual years: hardcoded real disclosed total interest income.
     total_interest_actual = [_actual(config, y, "interest_income") for y in ay]
-    _write_actual_row(ws, R, "Total Interest Income", total_interest_actual, bold=True, units="(KES MM)")
+    _write_actual_row(ws, R, "Total Interest Income", total_interest_actual, bold=True, units=_units(config))
     _write_formula_row(ws, R, "Total Interest Income",
                         [f"={_cell(loan_income_row, c)}+{_cell(sec_income_row, c)}" for c in DATA_COLS],
-                        bold=True, units="(KES MM)")
+                        bold=True, units=_units(config))
     R += 1
 
     nii_row = R
@@ -928,10 +938,10 @@ def _build_income_statement_section(ws, config, A, M, R):
     # Actual years: hardcoded real disclosed non-interest income (fees+investment+
     # trading+other income, already summed in ACTUALS). Projected: modeled ratio of deposits.
     non_int_actual = [_actual(config, y, "non_interest_income") for y in ay]
-    _write_actual_row(ws, R, "Non-Interest Income", non_int_actual, units="(KES MM)")
+    _write_actual_row(ws, R, "Non-Interest Income", non_int_actual, units=_units(config))
     _write_formula_row(ws, R, "Non-Interest Income",
                         [f"={_cell(M['dep_total'], c)}*{_assum_ref(A, 'nii_rate')}" for c in DATA_COLS],
-                        units="(KES MM)")
+                        units=_units(config))
     R += 1
     blank_row(ws, R); R += 1
     M["non_interest_income"] = non_int_row
@@ -945,8 +955,8 @@ def _build_income_statement_section(ws, config, A, M, R):
         # below for the real hardcoded aggregate) — left blank.
         proj_formulas = [f"={_assum_ref(A, f'opex_{k}_y1')}*(1+{_assum_ref(A, f'opex_{k}_esc')})^{yi}"
                          for yi, c in enumerate(DATA_COLS)]
-        _write_actual_row(ws, R, item["name"], [None] * len(ACTUAL_COLS), units="(KES MM)", alt_idx=i)
-        _write_formula_row(ws, R, item["name"], proj_formulas, units="(KES MM)", alt_idx=i)
+        _write_actual_row(ws, R, item["name"], [None] * len(ACTUAL_COLS), units=_units(config), alt_idx=i)
+        _write_formula_row(ws, R, item["name"], proj_formulas, units=_units(config), alt_idx=i)
         opex_rows.append(row)
         R += 1
     opex_total_row = R
@@ -971,10 +981,10 @@ def _build_income_statement_section(ws, config, A, M, R):
     R += 1
     tax_row = R
     tax_actual = [_actual(config, y, "tax") for y in ay]
-    _write_actual_row(ws, R, "Income Tax", tax_actual, units="(KES MM)")
+    _write_actual_row(ws, R, "Income Tax", tax_actual, units=_units(config))
     _write_formula_row(ws, R, "Income Tax",
                         [f"=MAX(0,{_cell(pbt_row, c)}*{_assum_ref(A, 'tax_rate')})" for c in DATA_COLS],
-                        units="(KES MM)")
+                        units=_units(config))
     R += 1
     pat_row = R
     # PAT = PBT - Tax as a formula in both regions — for actual years both operands are
@@ -991,9 +1001,9 @@ def _build_income_statement_section(ws, config, A, M, R):
     # formula (payout ratio x PAT) throughout, not presented as a disclosed fact for actuals.
     div_formula = lambda c: f"={_cell(pat_row, c)}*{_assum_ref(A, 'dividend_payout')}"
     _write_actual_row(ws, R, "Dividends Paid (illustrative, modeled payout ratio)",
-                       [div_formula(c) for c in ACTUAL_COLS], units="(KES MM)")
+                       [div_formula(c) for c in ACTUAL_COLS], units=_units(config))
     _write_formula_row(ws, R, "Dividends Paid (illustrative, modeled payout ratio)",
-                        [div_formula(c) for c in DATA_COLS], units="(KES MM)")
+                        [div_formula(c) for c in DATA_COLS], units=_units(config))
     R += 1
     blank_row(ws, R, 8); R += 1
 
@@ -1027,12 +1037,12 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
         da_proj.append(f"={prev_ppe}*{_assum_ref(A, 'da_rate')}")
         capex_proj.append(f"={prev_ppe}*{_assum_ref(A, 'capex_rate')}")
         ppe_proj.append(f"={prev_ppe}+{_cell(capex_row, col)}-{_cell(da_row, col)}")
-    _write_actual_row(ws, ppe_row, "Net PP&E", ppe_actual, units="(KES MM)")
-    _write_formula_row(ws, ppe_row, "Net PP&E", ppe_proj, units="(KES MM)")
-    _write_actual_row(ws, da_row, "Depreciation & Amortisation", [None] * len(ay), units="(KES MM)")
-    _write_formula_row(ws, da_row, "Depreciation & Amortisation", da_proj, units="(KES MM)")
-    _write_actual_row(ws, capex_row, "Capital Expenditure", [None] * len(ay), units="(KES MM)")
-    _write_formula_row(ws, capex_row, "Capital Expenditure", capex_proj, units="(KES MM)")
+    _write_actual_row(ws, ppe_row, "Net PP&E", ppe_actual, units=_units(config))
+    _write_formula_row(ws, ppe_row, "Net PP&E", ppe_proj, units=_units(config))
+    _write_actual_row(ws, da_row, "Depreciation & Amortisation", [None] * len(ay), units=_units(config))
+    _write_formula_row(ws, da_row, "Depreciation & Amortisation", da_proj, units=_units(config))
+    _write_actual_row(ws, capex_row, "Capital Expenditure", [None] * len(ay), units=_units(config))
+    _write_formula_row(ws, capex_row, "Capital Expenditure", capex_proj, units=_units(config))
     R += 3
     blank_row(ws, R); R += 1
     M["ppe"] = ppe_row; M["da"] = da_row; M["capex"] = capex_row
@@ -1052,8 +1062,8 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
         row = R
         actual_vals = [_actual(config, y, key) for y in ay]
         proj_vals = [f"={_prev(i, row)}*(1+{_assum_ref(A, 'other_bs_items_growth')})" for i in range(len(DATA_COLS))]
-        _write_actual_row(ws, row, label, actual_vals, units="(KES MM)", alt_idx=alt_idx)
-        _write_formula_row(ws, row, label, proj_vals, units="(KES MM)", alt_idx=alt_idx)
+        _write_actual_row(ws, row, label, actual_vals, units=_units(config), alt_idx=alt_idx)
+        _write_formula_row(ws, row, label, proj_vals, units=_units(config), alt_idx=alt_idx)
         R += 1
         return row
 
@@ -1079,8 +1089,8 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
     # Real FY2023-only line (repaid by FY2024) — held at 0 for projected years since it's
     # genuinely gone, not just undisclosed at this granularity (unlike the other items,
     # which don't grow generically here because there's nothing to grow).
-    _write_actual_row(ws, R, "Short-Term CBK Borrowings", [_actual(config, y, "st_cbk_borrowings") for y in ay], units="(KES MM)", alt_idx=1)
-    _write_formula_row(ws, R, "Short-Term CBK Borrowings", [0.0] * len(DATA_COLS), units="(KES MM)", alt_idx=1)
+    _write_actual_row(ws, R, "Short-Term CBK Borrowings", [_actual(config, y, "st_cbk_borrowings") for y in ay], units=_units(config), alt_idx=1)
+    _write_formula_row(ws, R, "Short-Term CBK Borrowings", [0.0] * len(DATA_COLS), units=_units(config), alt_idx=1)
     R += 1
     other_liab_item_rows = [
         due_to_banks_row, st_cbk_row,
@@ -1115,22 +1125,22 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
         ocf_proj.append(
             f"={_cell(M['pat'], col)}+{_cell(da_row, col)}+{_cell(M['agg_charge_total'], col)}"
             f"-{d_gross}-{d_sec}-{d_other_assets}+{d_dep}+{d_other_liab}")
-    _write_actual_row(ws, R, "Operating Cash Flow", ocf_actual, bold=True, units="(KES MM)")
-    _write_formula_row(ws, R, "Operating Cash Flow", ocf_proj, bold=True, units="(KES MM)")
+    _write_actual_row(ws, R, "Operating Cash Flow", ocf_actual, bold=True, units=_units(config))
+    _write_formula_row(ws, R, "Operating Cash Flow", ocf_proj, bold=True, units=_units(config))
     R += 1
 
     icf_row = R
     icf_actual = [_actual(config, y, "icf") for y in ay]
-    _write_actual_row(ws, R, "Investing Cash Flow (Capex)", icf_actual, units="(KES MM)")
+    _write_actual_row(ws, R, "Investing Cash Flow (Capex)", icf_actual, units=_units(config))
     _write_formula_row(ws, R, "Investing Cash Flow (Capex)",
-                        [f"=-{_cell(capex_row, c)}" for c in DATA_COLS], units="(KES MM)")
+                        [f"=-{_cell(capex_row, c)}" for c in DATA_COLS], units=_units(config))
     R += 1
 
     fcf_row = R
     fcf_actual = [_actual(config, y, "fcf") for y in ay]
-    _write_actual_row(ws, R, "Financing Cash Flow (Dividends)", fcf_actual, units="(KES MM)")
+    _write_actual_row(ws, R, "Financing Cash Flow (Dividends)", fcf_actual, units=_units(config))
     _write_formula_row(ws, R, "Financing Cash Flow (Dividends)",
-                        [f"=-{_cell(M['dividends'], c)}" for c in DATA_COLS], units="(KES MM)")
+                        [f"=-{_cell(M['dividends'], c)}" for c in DATA_COLS], units=_units(config))
     R += 1
 
     net_change_row = R
@@ -1173,45 +1183,45 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
     # (preserves the Cash-Flow-to-Balance-Sheet linkage); split into its 2 disclosed lines
     # via the FY2025 actual mix rather than growing each independently, which would
     # disconnect the split from the CF mechanic and risk the Balance Sheet Check.
-    cbk_pct, due_from_pct = 0.554516, 0.445484
+    cbk_pct, due_from_pct = config.BS_SPLIT_RATIOS["cbk_pct"], config.BS_SPLIT_RATIOS["due_from_pct"]
     cash_cbk_row = R
-    _write_actual_row(ws, R, "Cash and Balances with CBK", [_actual(config, y, "cash_cbk") for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Cash and Balances with CBK", [f"={_cell(cash_row, c)}*{cbk_pct}" for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Cash and Balances with CBK", [_actual(config, y, "cash_cbk") for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Cash and Balances with CBK", [f"={_cell(cash_row, c)}*{cbk_pct}" for c in DATA_COLS], units=_units(config))
     R += 1
     due_from_banks_row = R
-    _write_actual_row(ws, R, "Balances Due from Banking Institutions", [_actual(config, y, "due_from_banks") for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Balances Due from Banking Institutions", [f"={_cell(cash_row, c)}*{due_from_pct}" for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Balances Due from Banking Institutions", [_actual(config, y, "due_from_banks") for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Balances Due from Banking Institutions", [f"={_cell(cash_row, c)}*{due_from_pct}" for c in DATA_COLS], units=_units(config))
     R += 1
 
     # Securities split: same reasoning, split off M['sec_balance'] (INVESTMENT_SECURITIES
     # growth mechanic, unchanged) via the FY2025 actual mix.
-    amort_pct, fvoci_pct = 0.536160, 0.463840
+    amort_pct, fvoci_pct = config.BS_SPLIT_RATIOS["amort_pct"], config.BS_SPLIT_RATIOS["fvoci_pct"]
     sec_amort_row = R
-    _write_actual_row(ws, R, "Government Securities — Amortised Cost", [_actual(config, y, "securities_amortised") for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Government Securities — Amortised Cost", [f"={_cell(M['sec_balance'], c)}*{amort_pct}" for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Government Securities — Amortised Cost", [_actual(config, y, "securities_amortised") for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Government Securities — Amortised Cost", [f"={_cell(M['sec_balance'], c)}*{amort_pct}" for c in DATA_COLS], units=_units(config))
     R += 1
     sec_fvoci_row = R
-    _write_actual_row(ws, R, "Government Securities — FVOCI", [_actual(config, y, "securities_fvoci") for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Government Securities — FVOCI", [f"={_cell(M['sec_balance'], c)}*{fvoci_pct}" for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Government Securities — FVOCI", [_actual(config, y, "securities_fvoci") for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Government Securities — FVOCI", [f"={_cell(M['sec_balance'], c)}*{fvoci_pct}" for c in DATA_COLS], units=_units(config))
     R += 1
 
     net_loans_row = R
-    _write_actual_row(ws, R, "Loans and Advances to Customers (net)", [_ref_f(M['agg_net_total'], c) for c in ACTUAL_COLS], units="(KES MM)")
-    _write_formula_row(ws, R, "Loans and Advances to Customers (net)", [_ref_f(M['agg_net_total'], c) for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Loans and Advances to Customers (net)", [_ref_f(M['agg_net_total'], c) for c in ACTUAL_COLS], units=_units(config))
+    _write_formula_row(ws, R, "Loans and Advances to Customers (net)", [_ref_f(M['agg_net_total'], c) for c in DATA_COLS], units=_units(config))
     R += 1
 
     ppe_ref_row = R
-    _write_actual_row(ws, R, "Property and Equipment", [_ref_f(ppe_row, c) for c in ACTUAL_COLS], units="(KES MM)")
-    _write_formula_row(ws, R, "Property and Equipment", [_ref_f(ppe_row, c) for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Property and Equipment", [_ref_f(ppe_row, c) for c in ACTUAL_COLS], units=_units(config))
+    _write_formula_row(ws, R, "Property and Equipment", [_ref_f(ppe_row, c) for c in DATA_COLS], units=_units(config))
     R += 1
 
     other_assets_ref_row = R
     _write_actual_row(ws, R, "Other Assets (Investment in Subsidiaries, Investment Properties, "
                              "Intangibles, ROU Assets, Prepaid Leases, Tax Assets — see detail above)",
-                       [_ref_f(other_assets_row, c) for c in ACTUAL_COLS], units="(KES MM)")
+                       [_ref_f(other_assets_row, c) for c in ACTUAL_COLS], units=_units(config))
     _write_formula_row(ws, R, "Other Assets (Investment in Subsidiaries, Investment Properties, "
                               "Intangibles, ROU Assets, Prepaid Leases, Tax Assets — see detail above)",
-                        [_ref_f(other_assets_row, c) for c in DATA_COLS], units="(KES MM)")
+                        [_ref_f(other_assets_row, c) for c in DATA_COLS], units=_units(config))
     R += 1
     blank_row(ws, R); R += 1
 
@@ -1225,16 +1235,16 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
 
     section_header(ws, R, "LIABILITIES", bg=LIGHT_BLUE, txt_color=DARK); R += 1
     deposits_ref_row = R
-    _write_actual_row(ws, R, "Customer Deposits", [_ref_f(M['dep_total'], c) for c in ACTUAL_COLS], units="(KES MM)")
-    _write_formula_row(ws, R, "Customer Deposits", [_ref_f(M['dep_total'], c) for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Customer Deposits", [_ref_f(M['dep_total'], c) for c in ACTUAL_COLS], units=_units(config))
+    _write_formula_row(ws, R, "Customer Deposits", [_ref_f(M['dep_total'], c) for c in DATA_COLS], units=_units(config))
     R += 1
     other_liab_ref_row = R
     _write_actual_row(ws, R, "Other Liabilities (Due to Banks, Borrowings, Lease Liabilities, "
                              "Accruals & Provisions, Tax Liability — see detail above)",
-                       [_ref_f(other_liab_row, c) for c in ACTUAL_COLS], units="(KES MM)")
+                       [_ref_f(other_liab_row, c) for c in ACTUAL_COLS], units=_units(config))
     _write_formula_row(ws, R, "Other Liabilities (Due to Banks, Borrowings, Lease Liabilities, "
                               "Accruals & Provisions, Tax Liability — see detail above)",
-                        [_ref_f(other_liab_row, c) for c in DATA_COLS], units="(KES MM)")
+                        [_ref_f(other_liab_row, c) for c in DATA_COLS], units=_units(config))
     R += 1
     blank_row(ws, R); R += 1
 
@@ -1258,24 +1268,24 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
     retained_earnings_row = R + 6
     equity_row = R + 8  # + 1 blank row before the total
 
-    _write_actual_row(ws, share_capital_row, "Share Capital", [_actual(config, y, "share_capital") for y in ay], units="(KES MM)")
-    _write_formula_row(ws, share_capital_row, "Share Capital", [f"={_assum_ref(A, 'share_capital_opening')}" for _ in DATA_COLS], units="(KES MM)")
-    _write_actual_row(ws, share_premium_row, "Share Premium", [_actual(config, y, "share_premium") for y in ay], units="(KES MM)")
-    _write_formula_row(ws, share_premium_row, "Share Premium", [f"={_assum_ref(A, 'share_premium_opening')}" for _ in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, share_capital_row, "Share Capital", [_actual(config, y, "share_capital") for y in ay], units=_units(config))
+    _write_formula_row(ws, share_capital_row, "Share Capital", [f"={_assum_ref(A, 'share_capital_opening')}" for _ in DATA_COLS], units=_units(config))
+    _write_actual_row(ws, share_premium_row, "Share Premium", [_actual(config, y, "share_premium") for y in ay], units=_units(config))
+    _write_formula_row(ws, share_premium_row, "Share Premium", [f"={_assum_ref(A, 'share_premium_opening')}" for _ in DATA_COLS], units=_units(config))
 
     def _grown_reserve_row(row, label, key, alt_idx):
         actual_vals = [_actual(config, y, key) for y in ay]
         proj_vals = [f"={_prev(i, row)}*(1+{_assum_ref(A, 'other_bs_items_growth')})" for i in range(len(DATA_COLS))]
-        _write_actual_row(ws, row, label, actual_vals, units="(KES MM)", alt_idx=alt_idx)
-        _write_formula_row(ws, row, label, proj_vals, units="(KES MM)", alt_idx=alt_idx)
+        _write_actual_row(ws, row, label, actual_vals, units=_units(config), alt_idx=alt_idx)
+        _write_formula_row(ws, row, label, proj_vals, units=_units(config), alt_idx=alt_idx)
 
     _grown_reserve_row(revaluation_row, "Revaluation Surplus", "revaluation_surplus", 0)
     _grown_reserve_row(fv_reserve_row, "Fair Value Reserve", "fair_value_reserve", 1)
     _grown_reserve_row(statutory_reserve_row, "Statutory Reserve", "statutory_reserve", 0)
 
     div_formula = lambda c: f"={_cell(M['pat'], c)}*{_assum_ref(A, 'dividend_payout')}"
-    _write_actual_row(ws, proposed_div_row, "Proposed Dividends", [_actual(config, y, "proposed_dividends") for y in ay], units="(KES MM)", alt_idx=1)
-    _write_formula_row(ws, proposed_div_row, "Proposed Dividends", [div_formula(c) for c in DATA_COLS], units="(KES MM)", alt_idx=1)
+    _write_actual_row(ws, proposed_div_row, "Proposed Dividends", [_actual(config, y, "proposed_dividends") for y in ay], units=_units(config), alt_idx=1)
+    _write_formula_row(ws, proposed_div_row, "Proposed Dividends", [div_formula(c) for c in DATA_COLS], units=_units(config), alt_idx=1)
 
     # Retained Earnings: real disclosed fact for actual years. For projected years, it's
     # the residual/plug that preserves the exact pre-existing Total Equity roll-forward
@@ -1289,8 +1299,8 @@ def _build_cash_flow_balance_sheet_section(ws, config, A, M, R):
             f"={old_mechanic_equity}-{_cell(share_capital_row, col)}-{_cell(share_premium_row, col)}"
             f"-{_cell(revaluation_row, col)}-{_cell(fv_reserve_row, col)}-{_cell(statutory_reserve_row, col)}"
             f"-{_cell(proposed_div_row, col)}")
-    _write_actual_row(ws, retained_earnings_row, "Retained Earnings", re_actual, units="(KES MM)")
-    _write_formula_row(ws, retained_earnings_row, "Retained Earnings", re_proj, units="(KES MM)")
+    _write_actual_row(ws, retained_earnings_row, "Retained Earnings", re_actual, units=_units(config))
+    _write_formula_row(ws, retained_earnings_row, "Retained Earnings", re_proj, units=_units(config))
     M["retained_earnings"] = retained_earnings_row
 
     R = retained_earnings_row + 1
@@ -1341,13 +1351,13 @@ def _build_capital_liquidity_section(ws, config, A, M, R):
     write(ws, R, LABEL_COL, "Risk-Weighted Assets", bold=True, txt_color=NAVY); R += 1
     loan_rwa_row = R
     _write_actual_row(ws, R, "Loan Book RWA (modeled, own risk-weight assumptions)",
-                       [_loan_rwa_formula(c) for c in ACTUAL_COLS], units="(KES MM)")
+                       [_loan_rwa_formula(c) for c in ACTUAL_COLS], units=_units(config))
     _write_formula_row(ws, R, "Loan Book RWA (modeled, own risk-weight assumptions)",
-                        [_loan_rwa_formula(c) for c in DATA_COLS], units="(KES MM)")
+                        [_loan_rwa_formula(c) for c in DATA_COLS], units=_units(config))
     R += 1
     ob_rwa_note_row = R
-    _write_actual_row(ws, R, "Off-Balance-Sheet RWA (modeled)", [f"={_cell(M['ob_rwa'], c)}" for c in ACTUAL_COLS], units="(KES MM)")
-    _write_formula_row(ws, R, "Off-Balance-Sheet RWA (modeled)", [f"={_cell(M['ob_rwa'], c)}" for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Off-Balance-Sheet RWA (modeled)", [f"={_cell(M['ob_rwa'], c)}" for c in ACTUAL_COLS], units=_units(config))
+    _write_formula_row(ws, R, "Off-Balance-Sheet RWA (modeled)", [f"={_cell(M['ob_rwa'], c)}" for c in DATA_COLS], units=_units(config))
     R += 1
     rwa_row = R
     # Actual years: RWA is Family Bank's own disclosed aggregate (Capital Management note —
@@ -1361,9 +1371,9 @@ def _build_capital_liquidity_section(ws, config, A, M, R):
                 f"+{_cell(M['agg_gross_total'], c)}*{_assum_ref(A, 'other_rwa_pct_of_gross_loans')}"
                 for c in DATA_COLS]
     _write_actual_row(ws, R, "Total RWA (disclosed for actuals; modeled for projected)",
-                       rwa_actual, bold=True, units="(KES MM)")
+                       rwa_actual, bold=True, units=_units(config))
     _write_formula_row(ws, R, "Total RWA (disclosed for actuals; modeled for projected)",
-                        rwa_proj, bold=True, units="(KES MM)")
+                        rwa_proj, bold=True, units=_units(config))
     R += 1
     blank_row(ws, R); R += 1
     M["loan_rwa"] = loan_rwa_row
@@ -1372,20 +1382,20 @@ def _build_capital_liquidity_section(ws, config, A, M, R):
     write(ws, R, LABEL_COL, "Regulatory Capital — Tier 1 Build-up (Actuals, disclosed)",
           bold=True, txt_color=NAVY); R += 1
     rc_share_cap_row = R
-    _write_actual_row(ws, R, "Share Capital (regulatory)", [rc[y]["share_capital"] for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Share Capital (regulatory)", [None] * len(DATA_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Share Capital (regulatory)", [rc[y]["share_capital"] for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Share Capital (regulatory)", [None] * len(DATA_COLS), units=_units(config))
     R += 1
     rc_share_prem_row = R
-    _write_actual_row(ws, R, "Share Premium", [rc[y]["share_premium"] for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Share Premium", [None] * len(DATA_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Share Premium", [rc[y]["share_premium"] for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Share Premium", [None] * len(DATA_COLS), units=_units(config))
     R += 1
     rc_re_row = R
-    _write_actual_row(ws, R, "Retained Earnings (regulatory)", [rc[y]["retained_earnings"] for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Retained Earnings (regulatory)", [None] * len(DATA_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Retained Earnings (regulatory)", [rc[y]["retained_earnings"] for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Retained Earnings (regulatory)", [None] * len(DATA_COLS), units=_units(config))
     R += 1
     rc_dta_row = R
-    _write_actual_row(ws, R, "Less: Deferred Tax", [rc[y]["deferred_tax"] for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Less: Deferred Tax", [None] * len(DATA_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Less: Deferred Tax", [rc[y]["deferred_tax"] for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Less: Deferred Tax", [None] * len(DATA_COLS), units=_units(config))
     R += 1
     tier1_row = R
     tier1_actual = [f"={_cell(rc_share_cap_row, c)}+{_cell(rc_share_prem_row, c)}"
@@ -1393,30 +1403,30 @@ def _build_capital_liquidity_section(ws, config, A, M, R):
     # Projected years: no forward-looking regulatory-bridge methodology is disclosed, so
     # Tier 1 is modeled as a fixed % of Total Equity, calibrated to the real FY2025 anchor.
     tier1_proj = [f"={_cell(M['total_equity'], c)}*{_assum_ref(A, 'tier1_pct_of_equity')}" for c in DATA_COLS]
-    _write_actual_row(ws, R, "Total Tier 1 Capital (regulatory)", tier1_actual, bold=True, units="(KES MM)")
-    _write_formula_row(ws, R, "Total Tier 1 Capital (regulatory)", tier1_proj, bold=True, units="(KES MM)")
+    _write_actual_row(ws, R, "Total Tier 1 Capital (regulatory)", tier1_actual, bold=True, units=_units(config))
+    _write_formula_row(ws, R, "Total Tier 1 Capital (regulatory)", tier1_proj, bold=True, units=_units(config))
     R += 1
     blank_row(ws, R); R += 1
 
     write(ws, R, LABEL_COL, "Regulatory Capital — Tier 2 Build-up (Actuals, disclosed)",
           bold=True, txt_color=NAVY); R += 1
     rc_reval_row = R
-    _write_actual_row(ws, R, "Revaluation Reserve (25% eligible)", [rc[y]["revaluation_reserve"] for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Revaluation Reserve (25% eligible)", [None] * len(DATA_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Revaluation Reserve (25% eligible)", [rc[y]["revaluation_reserve"] for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Revaluation Reserve (25% eligible)", [None] * len(DATA_COLS), units=_units(config))
     R += 1
     rc_subdebt_row = R
-    _write_actual_row(ws, R, "Subordinated Term Debt", [rc[y]["subordinated_debt"] for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Subordinated Term Debt", [None] * len(DATA_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Subordinated Term Debt", [rc[y]["subordinated_debt"] for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Subordinated Term Debt", [None] * len(DATA_COLS), units=_units(config))
     R += 1
     rc_statres_row = R
-    _write_actual_row(ws, R, "Statutory Reserve", [rc[y]["statutory_reserve"] for y in ay], units="(KES MM)")
-    _write_formula_row(ws, R, "Statutory Reserve", [None] * len(DATA_COLS), units="(KES MM)")
+    _write_actual_row(ws, R, "Statutory Reserve", [rc[y]["statutory_reserve"] for y in ay], units=_units(config))
+    _write_formula_row(ws, R, "Statutory Reserve", [None] * len(DATA_COLS), units=_units(config))
     R += 1
     tier2_row = R
     tier2_actual = [f"={_cell(rc_reval_row, c)}+{_cell(rc_subdebt_row, c)}+{_cell(rc_statres_row, c)}" for c in ACTUAL_COLS]
     tier2_proj = [f"={_assum_ref(A, 'reg_tier2_opening')}" for _ in DATA_COLS]
-    _write_actual_row(ws, R, "Total Tier 2 Capital (regulatory)", tier2_actual, bold=True, units="(KES MM)")
-    _write_formula_row(ws, R, "Total Tier 2 Capital (regulatory)", tier2_proj, bold=True, units="(KES MM)")
+    _write_actual_row(ws, R, "Total Tier 2 Capital (regulatory)", tier2_actual, bold=True, units=_units(config))
+    _write_formula_row(ws, R, "Total Tier 2 Capital (regulatory)", tier2_proj, bold=True, units=_units(config))
     R += 1
     total_cap_row = R
     total_row(ws, R, "Total Regulatory Capital", [f"={_cell(tier1_row, c)}+{_cell(tier2_row, c)}" for c in ACTUAL_COLS], ACTUAL_COLS, label_col=LABEL_COL)
@@ -1446,8 +1456,8 @@ def _build_capital_liquidity_section(ws, config, A, M, R):
     write(ws, R, LABEL_COL, "Liquidity", bold=True, txt_color=NAVY); R += 1
     liquid_assets_row = R
     la_f = lambda c: f"={_cell(M['cash'], c)}+{_cell(M['sec_balance'], c)}"
-    _write_actual_row(ws, R, "Liquid Assets (Cash + Securities)", [la_f(c) for c in ACTUAL_COLS], units="(KES MM)")
-    _write_formula_row(ws, R, "Liquid Assets (Cash + Securities)", [la_f(c) for c in DATA_COLS], units="(KES MM)")
+    _write_actual_row(ws, R, "Liquid Assets (Cash + Securities)", [la_f(c) for c in ACTUAL_COLS], units=_units(config))
+    _write_formula_row(ws, R, "Liquid Assets (Cash + Securities)", [la_f(c) for c in DATA_COLS], units=_units(config))
     R += 1
     liquidity_ratio_row = R
     _write_actual_row(ws, R, "Liquidity Ratio", [_ratio_f(liquid_assets_row, M["dep_total"], c) for c in ACTUAL_COLS], fmt='0.0%')
@@ -1464,7 +1474,7 @@ def _build_capital_liquidity_section(ws, config, A, M, R):
 # MODEL SHEET — Master Check (filled in last, once all rows exist)
 # ─────────────────────────────────────────────
 
-def _build_master_check(ws, A, M, title_row):
+def _build_master_check(ws, config, A, M, title_row):
     """Reserves/fills rows just below the title with OK/ERROR status formulas. Called
     after the rest of the Model sheet is built so the referenced rows exist."""
     from openpyxl.formatting.rule import FormulaRule
@@ -1482,10 +1492,10 @@ def _build_master_check(ws, A, M, title_row):
     all_cols = _all_cols()
     _status_row("Balance Sheet Check (Assets = Liab + Equity)",
                  [f'=IF(ABS({_cell(M["bs_check"], col)})<0.01,"OK","ERROR")' for col in all_cols])
-    _status_row("Capital Adequacy Check (Total Capital ≥ CBK minimum)",
+    _status_row(f"Capital Adequacy Check (Total Capital ≥ {config.REGULATOR_NAME} minimum)",
                  [f'=IF({_cell(M["total_capital_ratio"], col)}>={_assum_ref(A, "total_min")},"OK","ERROR")'
                   for col in all_cols])
-    _status_row("Liquidity Check (≥ CBK statutory minimum)",
+    _status_row(f"Liquidity Check (≥ {config.REGULATOR_NAME} statutory minimum)",
                  [f'=IF({_cell(M["liquidity_ratio"], col)}>={_assum_ref(A, "liquidity_min")},"OK","ERROR")'
                   for col in all_cols])
 
@@ -1542,7 +1552,7 @@ def build_model(wb, config, A):
         R = fn(ws, config, A, M, R)
     blocks.append((block_start, R - 1))
 
-    _build_master_check(ws, A, M, master_check_title_row)
+    _build_master_check(ws, config, A, M, master_check_title_row)
     _apply_print_setup(ws, blocks=blocks, right=get_column_letter(right_col))
 
     return M
@@ -1572,11 +1582,11 @@ def build_summary(wb, config, A, M, scenarios, sensitivity):
         nii = data["nii"]["nii"]
         total_income = [nii[i] + data["income_stmt"]["non_interest_income"][i] for i in range(len(nii))]
         data_row(ws, R, "Total Income (NII + Non-Interest)", total_income, DATA_COLS, label_col=LABEL_COL,
-                 units="(KES MM)", units_col=UNITS_COL, bold=True, alt_idx=0); R += 1
+                 units=_units(config), units_col=UNITS_COL, bold=True, alt_idx=0); R += 1
         data_row(ws, R, "Net Interest Income", nii, DATA_COLS, label_col=LABEL_COL,
-                 units="(KES MM)", units_col=UNITS_COL, alt_idx=1); R += 1
+                 units=_units(config), units_col=UNITS_COL, alt_idx=1); R += 1
         data_row(ws, R, "Net Profit After Tax", pat, DATA_COLS, label_col=LABEL_COL,
-                 units="(KES MM)", units_col=UNITS_COL, bold=True, alt_idx=0); R += 1
+                 units=_units(config), units_col=UNITS_COL, bold=True, alt_idx=0); R += 1
         data_row(ws, R, "Total Capital Ratio", data["capital"]["total_capital_ratio"], DATA_COLS,
                  label_col=LABEL_COL, fmt='0.0%', alt_idx=1); R += 1
         data_row(ws, R, "NPL Ratio", data["loan_book"]["npl_ratio"], DATA_COLS, label_col=LABEL_COL,
@@ -1588,7 +1598,7 @@ def build_summary(wb, config, A, M, scenarios, sensitivity):
     _kpi_block("WORST CASE — Financial Summary", scenarios["worst"], RED_DARK)
 
     shares = config.SHARES_OUTSTANDING_2025
-    section_header(ws, R, "IMPLIED VALUE PER SHARE BY SCENARIO (KES per share)"); R += 1
+    section_header(ws, R, "IMPLIED VALUE PER SHARE BY SCENARIO (" + config.CURRENCY + " per share)"); R += 1
     write(ws, R, 10, "Base/Best/Worst are Python-computed static values, same convention as the "
                      "Financial Summary blocks above — only the Base Case gets live Model-sheet-"
                      "linked valuation formulas (see the Output sheet).",
@@ -1774,9 +1784,9 @@ def build_scenarios_sheet(wb, config, scenarios):
         non_int = data["income_stmt"]["non_interest_income"]
         total_income = [nii[i] + non_int[i] for i in range(len(nii))]
         return {
-            "Total Income": (total_income, "KES MM", '#,##0.0'),
-            "Net Interest Income": (nii, "KES MM", '#,##0.0'),
-            "Net Profit After Tax": (pat, "KES MM", '#,##0.0'),
+            "Total Income": (total_income, f"{config.CURRENCY} {config.CURRENCY_UNIT_ABBR}", '#,##0.0'),
+            "Net Interest Income": (nii, f"{config.CURRENCY} {config.CURRENCY_UNIT_ABBR}", '#,##0.0'),
+            "Net Profit After Tax": (pat, f"{config.CURRENCY} {config.CURRENCY_UNIT_ABBR}", '#,##0.0'),
             "NPL Ratio": (data["loan_book"]["npl_ratio"], None, '0.0%'),
             "Total Capital Ratio": (data["capital"]["total_capital_ratio"], None, '0.0%'),
             "Liquidity Ratio": (data["liquidity"]["ratio"], None, '0.0%'),
@@ -1825,11 +1835,11 @@ def build_output_sheet(wb, config, A, M):
     year_header_row(ws, R, _period_labels_proj(config), DATA_COLS, label_col=LABEL_COL); R += 1
     div_row = R
     _write_formula_row(ws, R, "Dividends", [f"='Model'!{_cell(M['dividends'], col)}" for col in DATA_COLS],
-                        units="(KES MM)")
+                        units=_units(config))
     R += 1
     pv_div_row = R
     pv_formulas = [f"={_cell(div_row, col)}/(1+{coe_cell})^{i+1}" for i, col in enumerate(DATA_COLS)]
-    _write_formula_row(ws, R, "PV of Dividends", pv_formulas, units="(KES MM)")
+    _write_formula_row(ws, R, "PV of Dividends", pv_formulas, units=_units(config))
     R += 1
     write(ws, R, LABEL_COL, "Terminal value (Gordon growth)")
     terminal_formula = (f"={_cell(div_row, DATA_COLS[-1])}*(1+{_assum_ref(A, 'terminal_growth')})"
@@ -1843,7 +1853,7 @@ def build_output_sheet(wb, config, A, M):
     num(ws, R, ASSUM_COL, ddm_formula, fmt='#,##0.0', bold=True, txt_color=NAVY)
     ddm_value_row = R
     R += 1
-    write(ws, R, LABEL_COL, "DDM Implied Value Per Share (KES)", bold=True, txt_color=NAVY)
+    write(ws, R, LABEL_COL, "DDM Implied Value Per Share (" + config.CURRENCY + ")", bold=True, txt_color=NAVY)
     num(ws, R, ASSUM_COL, f"={_cell(ddm_value_row, ASSUM_COL)}/{_assum_ref(A, 'shares_outstanding')}",
         fmt='#,##0.00', bold=True, txt_color=NAVY)
     ddm_per_share_row = R
@@ -1853,7 +1863,7 @@ def build_output_sheet(wb, config, A, M):
     year_header_row(ws, R, _period_labels_proj(config), DATA_COLS, label_col=LABEL_COL); R += 1
     equity_row_ref = R
     _write_formula_row(ws, R, "Book Equity (period-end)", [f"='Model'!{_cell(M['total_equity'], col)}" for col in DATA_COLS],
-                        units="(KES MM)")
+                        units=_units(config))
     R += 1
     roe_row_ref = R
     roe_formulas = []
@@ -1867,12 +1877,12 @@ def build_output_sheet(wb, config, A, M):
     for i, col in enumerate(DATA_COLS):
         prev_eq = _assum_ref(A, "opening_tier1") if i == 0 else _cell(equity_row_ref, DATA_COLS[i - 1])
         ri_formulas.append(f"=({_cell(roe_row_ref, col)}-{coe_cell})*{prev_eq}")
-    _write_formula_row(ws, R, "Residual Income", ri_formulas, units="(KES MM)")
+    _write_formula_row(ws, R, "Residual Income", ri_formulas, units=_units(config))
     R += 1
     pv_ri_row = R
     _write_formula_row(ws, R, "PV of Residual Income",
                         [f"={_cell(ri_row, col)}/(1+{coe_cell})^{i+1}" for i, col in enumerate(DATA_COLS)],
-                        units="(KES MM)")
+                        units=_units(config))
     R += 1
     write(ws, R, LABEL_COL, "Terminal residual income value")
     ri_terminal_formula = (f"={_cell(ri_row, DATA_COLS[-1])}*(1+{_assum_ref(A, 'terminal_growth')})"
@@ -1888,7 +1898,7 @@ def build_output_sheet(wb, config, A, M):
     num(ws, R, ASSUM_COL, ri_value_formula, fmt='#,##0.0', bold=True, txt_color=NAVY)
     ri_value_row = R
     R += 1
-    write(ws, R, LABEL_COL, "Residual Income Implied Value Per Share (KES)", bold=True, txt_color=NAVY)
+    write(ws, R, LABEL_COL, "Residual Income Implied Value Per Share (" + config.CURRENCY + ")", bold=True, txt_color=NAVY)
     num(ws, R, ASSUM_COL, f"={_cell(ri_value_row, ASSUM_COL)}/{_assum_ref(A, 'shares_outstanding')}",
         fmt='#,##0.00', bold=True, txt_color=NAVY)
     ri_per_share_row = R
@@ -1906,7 +1916,7 @@ def build_output_sheet(wb, config, A, M):
     num(ws, R, ASSUM_COL, pb_value_formula, fmt='#,##0.0', bold=True, txt_color=NAVY)
     pb_value_row = R
     R += 1
-    write(ws, R, LABEL_COL, "P/B-ROE Regression Implied Value Per Share (KES)", bold=True, txt_color=NAVY)
+    write(ws, R, LABEL_COL, "P/B-ROE Regression Implied Value Per Share (" + config.CURRENCY + ")", bold=True, txt_color=NAVY)
     num(ws, R, ASSUM_COL, f"={_cell(pb_value_row, ASSUM_COL)}/{_assum_ref(A, 'shares_outstanding')}",
         fmt='#,##0.00', bold=True, txt_color=NAVY)
     pb_per_share_row = R
@@ -1914,8 +1924,8 @@ def build_output_sheet(wb, config, A, M):
 
     section_header(ws, R, "SUMMARY — IMPLIED EQUITY VALUE BY METHOD"); R += 1
     write(ws, R, LABEL_COL, "Method", bold=True)
-    write(ws, R, ASSUM_COL, "Total (KES MM)", bold=True, txt_color=MID_GRAY, halign="center")
-    write(ws, R, ASSUM_COL + 1, "Per Share (KES)", bold=True, txt_color=MID_GRAY, halign="center")
+    write(ws, R, ASSUM_COL, "Total (" + config.CURRENCY + " " + config.CURRENCY_UNIT_ABBR + ")", bold=True, txt_color=MID_GRAY, halign="center")
+    write(ws, R, ASSUM_COL + 1, "Per Share (" + config.CURRENCY + ")", bold=True, txt_color=MID_GRAY, halign="center")
     R += 1
     for label, value_row, per_share_row in [
         ("Dividend Discount Model (DDM)", ddm_value_row, ddm_per_share_row),
@@ -1939,7 +1949,7 @@ def build_output_sheet(wb, config, A, M):
     num(ws, R, ASSUM_COL, blended_formula, fmt='#,##0.0', bold=True, txt_color=NAVY)
     blended_value_row = R
     R += 1
-    write(ws, R, LABEL_COL, "Blended Implied Value Per Share (KES)", bold=True, txt_color=NAVY)
+    write(ws, R, LABEL_COL, "Blended Implied Value Per Share (" + config.CURRENCY + ")", bold=True, txt_color=NAVY)
     num(ws, R, ASSUM_COL, f"={_cell(blended_value_row, ASSUM_COL)}/{_assum_ref(A, 'shares_outstanding')}",
         fmt='#,##0.00', bold=True, txt_color=NAVY)
     blended_per_share_row = R
@@ -1957,7 +1967,7 @@ def build_output_sheet(wb, config, A, M):
     year_header_row(ws, R, _period_labels_actual(config), ACTUAL_COLS, label_col=LABEL_COL); R += 1
     bvps_formulas = [f"=IFERROR('Model'!{_cell(M['total_equity'], c)}/{_actual(config, y, 'share_capital')},0)"
                      for y, c in zip(config.ACTUAL_YEARS, ACTUAL_COLS)]
-    _write_actual_row(ws, R, "Book Value Per Share (KES)", bvps_formulas, fmt='#,##0.00', bold=True)
+    _write_actual_row(ws, R, "Book Value Per Share (" + config.CURRENCY + ")", bvps_formulas, fmt='#,##0.00', bold=True)
     R += 1
     blank_row(ws, R); R += 1
 
@@ -1990,7 +2000,7 @@ def build_output_sheet(wb, config, A, M):
             avg_ta_formulas.append(f"=({total_assets_ref(ACTUAL_COLS[i-1])}+{total_assets_ref(col)})/2")
     avg_ta_row = R
     _write_actual_row(ws, R, "Average Total Assets (2023: period-end — no 2022 figure on record)",
-                       avg_ta_formulas, units="(KES MM)")
+                       avg_ta_formulas, units=_units(config))
     R += 1
     accruals_row = R
     accruals_formulas = [f"=({pat_ref(col)}-{ocf_ref(col)})/{_cell(avg_ta_row, col)}" for col in ACTUAL_COLS]
@@ -1999,10 +2009,10 @@ def build_output_sheet(wb, config, A, M):
 
     section_header(ws, R, "Profitability vs. Operating Cash Flow Trend"); R += 1
     _write_actual_row(ws, R, "Net Profit After Tax (PAT)", [f"={pat_ref(col)}" for col in ACTUAL_COLS],
-                       units="(KES MM)")
+                       units=_units(config))
     R += 1
     _write_actual_row(ws, R, "Operating Cash Flow (OCF)", [f"={ocf_ref(col)}" for col in ACTUAL_COLS],
-                       units="(KES MM)")
+                       units=_units(config))
     R += 1
     ocf_pat_row = R
     _write_actual_row(ws, R, "OCF / PAT",
@@ -2105,6 +2115,68 @@ def build_output_sheet(wb, config, A, M):
 
 
 # ─────────────────────────────────────────────
+# SOURCES SHEET — third-party market-data citations (see config.SOURCES)
+# ─────────────────────────────────────────────
+
+def build_sources_sheet(wb, config):
+    """Renders config.SOURCES (if present) as a numbered references list — one row per
+    citation, in the standard equity-research convention: item/value, publisher/source,
+    accessed date, with a live hyperlink where a URL is available. Optional: skipped
+    entirely for an institution whose config.py doesn't define SOURCES (no external
+    market-data inputs to cite)."""
+    sources = getattr(config, "SOURCES", None)
+    if not sources:
+        return
+
+    ws = wb.create_sheet("Sources", index=6)
+    ws.sheet_view.showGridLines = False
+    set_col_widths(ws, {'A': 2, 'B': 2, 'C': 4, 'D': 62, 'E': 12, 'F': 40, 'G': 14, 'H': 4})
+
+    header_row(ws, 1, f"{config.BUSINESS_NAME.upper()} — DATA SOURCES & REFERENCES",
+                merge_to_col=7, start_col=3)
+    write(ws, 2, 3,
+          "Third-party market data used in this model's Output-sheet valuation (CAPM inputs, "
+          "peer bank P/B multiples). Family Bank's own audited financial-statement figures "
+          "are cited separately via research_output.md and the Assumptions sheet's "
+          "data-provenance color legend.",
+          italic=True, txt_color=MID_GRAY, size=9, wrap=True)
+    ws.row_dimensions[2].height = 28
+    R = 4
+
+    section_header(ws, R, "REFERENCES", bg=NAVY, txt_color=WHITE); R += 1
+    write(ws, R, 3, "#", bold=True, txt_color=NAVY)
+    write(ws, R, 4, "Item / Value", bold=True, txt_color=NAVY)
+    write(ws, R, 5, "Value", bold=True, txt_color=NAVY, halign="center")
+    write(ws, R, 6, "Source", bold=True, txt_color=NAVY)
+    write(ws, R, 7, "Accessed", bold=True, txt_color=NAVY, halign="center")
+    R += 1
+
+    for i, src in enumerate(sources, start=1):
+        write(ws, R, 3, f"[{i}]", txt_color=MID_GRAY)
+        write(ws, R, 4, src["item"], wrap=True)
+        write(ws, R, 5, src.get("value", ""), halign="center")
+        if src.get("url"):
+            safe_source = src["source"].replace('"', "'")  # Excel formula string literals can't hold bare quotes
+            write(ws, R, 6, f'=HYPERLINK("{src["url"]}","{safe_source}")', txt_color=TEAL)
+        else:
+            write(ws, R, 6, src["source"])
+        write(ws, R, 7, src.get("accessed", ""), halign="center")
+        ws.row_dimensions[R].height = 26
+        R += 1
+
+    R += 1
+    write(ws, R, 3,
+          "Convention: Item/Value cited, Source (publisher — hyperlinked where a URL is "
+          "available), Accessed (date the figure was pulled). Matches standard equity-"
+          "research citation practice — see research_output.md for the full research log "
+          "behind each entry.",
+          italic=True, txt_color=MID_GRAY, size=9, wrap=True)
+
+    ws.page_setup.orientation = "landscape"
+    ws.print_area = f"$A$1:$G${R}"
+
+
+# ─────────────────────────────────────────────
 # COVER SHEET
 # ─────────────────────────────────────────────
 
@@ -2133,9 +2205,12 @@ def build_cover(wb, config):
         write(ws, row, 7, value, txt_color=DARK)
 
     write(ws, 17, LABEL_COL, "Model Contents", bold=True, size=13, txt_color=NAVY)
-    for i, tab in enumerate(["Summary", "Assumptions", "Scenarios",
-                              "Model (Loan Book, IFRS 9, Statements, Capital, Liquidity)",
-                              "Output (DDM, Residual Income, P/B-ROE)"]):
+    tabs = ["Summary", "Assumptions", "Scenarios",
+            "Model (Loan Book, IFRS 9, Statements, Capital, Liquidity)",
+            "Output (DDM, Residual Income, P/B-ROE)"]
+    if getattr(config, "SOURCES", None):
+        tabs.append("Sources (external market-data references)")
+    for i, tab in enumerate(tabs):
         write(ws, 19 + i, 4, f"•  {tab}", txt_color=MID_GRAY)
 
     # Static single page — no scenario banner (nothing scenario-dependent here) and its own
@@ -2169,6 +2244,7 @@ def build_excel(config, results, output_path):
     build_summary(wb, config, A, M, scenarios, sensitivity)
     build_scenarios_sheet(wb, config, scenarios)
     build_output_sheet(wb, config, A, M)
+    build_sources_sheet(wb, config)
 
     wb.save(output_path)
     return output_path

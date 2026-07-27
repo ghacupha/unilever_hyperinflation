@@ -2,11 +2,12 @@
 REM Windows launcher: creates the venv if missing, activates it, builds the model into a
 REM timestamped output\ subfolder (matching the colossal-visuals convention).
 REM
-REM Set REPORT=1 to also run the full equity-research-report pipeline (Stages 1-6 -- see
-REM BLUEPRINT.md's "Equity Research Report pipeline" section) and produce a PDF alongside
-REM the Excel model, e.g.:
+REM Reads a repo-root .env file automatically (see .env.example) -- set REPORT=1 there to
+REM also run the full equity-research-report pipeline (Stages 1-6 -- see BLUEPRINT.md's
+REM "Equity Research Report pipeline" section) and produce a PDF alongside the Excel
+REM model, instead of passing it inline every run. Inline still works too:
 REM   set REPORT=1 & scripts\launch.bat family_bank_kenya
-REM Reads TICKER/EXCHANGE from that institution's config.py; override with
+REM Reads TICKER/EXCHANGE from that institution's config.py; override via .env or
 REM set TICKER=... & set EXCHANGE=... if the config doesn't have them.
 REM This makes several `claude -p` calls (subscription-billed, not separately metered)
 REM and takes noticeably longer than the Excel-only path.
@@ -18,6 +19,16 @@ set "VENV_DIR=%ROOT_DIR%\.venv"
 set "BANK=%~1"
 if "%BANK%"=="" set "BANK=family_bank_kenya"
 set "CONFIG_SRC=%ROOT_DIR%\examples\%BANK%\config.py"
+
+REM Load repo-root .env (git-ignored, see .env.example), if present -- lets
+REM REPORT=1/TICKER/EXCHANGE/ANTHROPIC_KEY be set once instead of inline every run. A
+REM variable already set before calling this script wins over the .env file's value
+REM (matches standard dotenv precedence); comment/blank lines are skipped.
+if exist "%ROOT_DIR%\.env" (
+    for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%ROOT_DIR%\.env") do (
+        if not defined %%A set "%%A=%%B"
+    )
+)
 
 if not exist "%VENV_DIR%\Scripts\python.exe" (
     echo No virtual environment found — creating one at %VENV_DIR%...

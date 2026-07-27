@@ -17,14 +17,22 @@ Prerequisites: Python 3 (any recent 3.x). Nothing else needs to be installed man
 # Unix / macOS / Linux
 ./scripts/launch.sh
 
-# Windows
+# Windows (Command Prompt)
 scripts\launch.bat
+
+# Windows (PowerShell)
+.\scripts\launch.ps1
 ```
 
-Either launcher will, in order:
+Any of the three launchers will, in order:
 1. Create a `.venv` at the repo root if one doesn't already exist.
-2. Install the one runtime dependency (`openpyxl`) into it.
+2. Install the runtime dependencies (`openpyxl`, `reportlab`, `matplotlib`) into it.
 3. Build the model and write it to a timestamped folder under `output/`.
+
+All three also load a repo-root `.env` file automatically, if one exists (copy
+`.env.example` to `.env` to set up — see "Equity Research Report" below for what goes in
+it). A variable already set in your shell before invoking the launcher wins over `.env`'s
+value.
 
 To target a different bank instance (once more than one exists under `examples/`), pass
 its folder name as the first argument:
@@ -43,26 +51,38 @@ If you already have the venv active, you can run the entry point directly:
 
 ## Equity Research Report (optional — `REPORT=1`)
 
-**By default, `launch.sh`/`launch.bat` only build the Excel model.** To also generate a
+**By default, the launchers only build the Excel model.** To also generate a
 Morningstar-style equity research PDF (valuation methodology, sensitivity analysis,
 Bulls/Bears, a mechanical Buy/Hold/Sell call, market-consensus comparison, risks —
 see `BLUEPRINT.md`'s "Equity Research Report pipeline" section for the full design), set
-`REPORT=1`:
+`REPORT=1`, either inline:
 
 ```bash
 # Unix / macOS / Linux
 REPORT=1 ./scripts/launch.sh family_bank_kenya
 
-# Windows
+# Windows (Command Prompt)
 set REPORT=1 & scripts\launch.bat family_bank_kenya
+
+# Windows (PowerShell)
+$env:REPORT = "1"; .\scripts\launch.ps1 family_bank_kenya
+```
+
+or once, persistently, via a repo-root `.env` file (copy `.env.example` to `.env` and set
+`REPORT=1` there — all three launchers pick it up automatically on every run, so you don't
+need to remember the flag each time):
+
+```bash
+cp .env.example .env
+# then edit .env: uncomment/set REPORT=1, and ANTHROPIC_KEY/TICKER/EXCHANGE if needed
 ```
 
 This is **opt-in, not the default**, because it makes several `claude -p` calls (research,
 drafting, review — all billed through your existing Claude Code subscription, not a
 separate metered API) and takes noticeably longer than the Excel-only path — expect
 several minutes, not seconds. It reads `TICKER`/`EXCHANGE` from that institution's
-`config.py` automatically; override with `TICKER=... EXCHANGE=...` env vars if needed.
-Output lands in the same timestamped `output/<run>/` folder as the Excel model:
+`config.py` automatically; override with `TICKER=... EXCHANGE=...` (inline or in `.env`)
+if needed. Output lands in the same timestamped `output/<run>/` folder as the Excel model:
 `<Prefix>_Equity_Research_Report.pdf` alongside `<Prefix>_Financial_Model.xlsx`.
 
 ## Expected output

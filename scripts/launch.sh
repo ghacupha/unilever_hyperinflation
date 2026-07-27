@@ -2,12 +2,14 @@
 # Unix/macOS/Linux launcher: creates the venv if missing, activates it, builds the model
 # into a timestamped output/ subfolder (matching the colossal-visuals convention).
 #
-# Set REPORT=1 to also run the full equity-research-report pipeline (Stages 1-6 -- see
-# BLUEPRINT.md's "Equity Research Report pipeline" section) and produce a PDF alongside
-# the Excel model, e.g.:
+# Reads a repo-root .env file automatically (see .env.example) -- set REPORT=1 there to
+# also run the full equity-research-report pipeline (Stages 1-6 -- see BLUEPRINT.md's
+# "Equity Research Report pipeline" section) and produce a PDF alongside the Excel model,
+# instead of passing it inline every run. Inline still works too:
 #   REPORT=1 ./scripts/launch.sh family_bank_kenya
-# Reads TICKER/EXCHANGE from that institution's config.py; override with env vars
-# (TICKER=... EXCHANGE=...) if the config doesn't have them or you want a different pair.
+# Reads TICKER/EXCHANGE from that institution's config.py; override via .env or inline
+# env vars (TICKER=... EXCHANGE=...) if the config doesn't have them or you want a
+# different pair.
 # This makes several `claude -p` calls (subscription-billed, not separately metered --
 # same convention as scripts/source_model.py) and takes noticeably longer than the
 # Excel-only path.
@@ -18,6 +20,20 @@ ROOT_DIR="$(dirname "$SCRIPTS_DIR")"
 VENV_DIR="$ROOT_DIR/.venv"
 BANK="${1:-family_bank_kenya}"
 CONFIG_SRC="$ROOT_DIR/examples/$BANK/config.py"
+
+# Load repo-root .env (git-ignored, see .env.example) into the environment, if present --
+# lets REPORT=1/TICKER/EXCHANGE/ANTHROPIC_KEY be set once instead of inline every run.
+# A variable already exported by the calling shell (e.g. REPORT=0 ./launch.sh) wins over
+# the .env file's value, matching standard dotenv precedence.
+if [ -f "$ROOT_DIR/.env" ]; then
+    while IFS='=' read -r key value; do
+        [ -z "$key" ] && continue
+        case "$key" in \#*) continue ;; esac
+        if [ -z "${!key+x}" ]; then
+            export "$key=$value"
+        fi
+    done < "$ROOT_DIR/.env"
+fi
 
 if [ ! -f "$VENV_DIR/bin/python" ]; then
     echo "No virtual environment found — creating one at $VENV_DIR..."

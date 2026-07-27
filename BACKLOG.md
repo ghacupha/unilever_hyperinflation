@@ -742,6 +742,72 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       import smoke test, and re-running Stage 1/validation/Stage 6 against already-known-
       good data to confirm identical output post-move.
 
+## Phase 25 — Reapplied genericity fixes + Sources sheet (2026-07-27) — DONE
+
+Redone after a `git fetch`/fast-forward pulled 16 remote commits (Phase 24's equity-report
+pipeline work, live-tested peer P/B and beta research) — the local-only genericity fixes
+from a prior session were stashed rather than merged in to avoid touching files the remote
+had also changed, then reapplied by hand on top of the new base. Renumbered from the
+prior session's "Phase 23" since the remote had already used that number.
+
+- [x] Re-added `BS_SPLIT_RATIOS`, `CURRENCY_UNIT_ABBR`/`_units(config)`, `REGULATOR_NAME`,
+      the sector-concentration graceful-skip guard, and the three `config_loader.
+      REQUIRED_FIELDS` additions — same fixes as before, reapplied against
+      `bank_excel_renderer.py`'s current (larger) form post-merge. Verified: rebuilt into a
+      scratch dir, all labels/split-ratio formulas numerically and textually identical to
+      pre-refactor; Model sheet formula count (832) unaffected.
+- [x] **Verified the remote's own market-data research is real, not fabricated**: spot
+      -checked the 2026-07-26 "Equity risk premium, beta, and remaining peer P/B ratios
+      resolved" research_output.md entry via live web search — Damodaran's Jan 2026 country
+      -risk-premium data update and Kenya-specific ERP figure are genuine and current;
+      exact source URLs check out. One freshness caveat flagged (not changed): a live check
+      of Kenya's 10Y bond yield shows it may have moved from the config's cited 12.32%
+      (2 Jul 2026 snapshot) — bond yields are a genuinely time-varying CAPM input; the
+      existing "secondary source, reasonable as-is" framing in research_output.md already
+      anticipates this, so left as-is rather than overwritten on an imprecise re-scrape.
+- [x] New `config.SOURCES` (optional, not in `REQUIRED_FIELDS`) — structured citations
+      (item, value, source/publisher, URL, accessed date) for every external market-data
+      input behind the Output sheet's valuation (CAPM risk-free rate/ERP/beta, all 9 peer
+      bank P/B ratios), extracted from the prose already in `config.py`'s comments and
+      `research_output.md`'s research log. Company-disclosed financial-statement figures
+      keep their existing separate provenance channel ([DISCLOSED] tags + research log) —
+      this is specifically for third-party market data.
+  - [x] New `build_sources_sheet()` renders `config.SOURCES` as a numbered references list
+      (standard equity-research citation convention: item/value, source with a live
+      `HYPERLINK()` where a URL exists, accessed date) on a new "Sources" tab — skipped
+      entirely for an institution whose config doesn't define `SOURCES`. Wired into
+      `build_excel()` and the Cover sheet's "Model Contents" list (conditionally).
+  - [x] **Real bug caught during verification**: the Damodaran citation's source label
+      contains embedded double quotes ("Country Default Spreads and Risk Premiums"), which
+      corrupted the generated `HYPERLINK()` formula's string literal. Fixed by escaping
+      embedded quotes before building the formula string; re-verified the formula parses
+      correctly.
+
+## Phase 26 — PowerShell launcher + .env-driven REPORT config (2026-07-27) — DONE
+
+- [x] New `scripts/launch.ps1` — PowerShell-native launcher mirroring `launch.sh`/
+      `launch.bat`'s behavior exactly (venv creation, dependency install, timestamped
+      `output/` folder, REPORT=1 branch to the equity-report pipeline). Invokes the venv's
+      `python.exe` directly rather than dot-sourcing `Activate.ps1`, so it works regardless
+      of the caller's PowerShell execution policy.
+- [x] All three launchers (`launch.sh`, `launch.bat`, `launch.ps1`) now load a repo-root
+      `.env` file automatically if present — a variable already set in the calling shell
+      wins over `.env`'s value (standard dotenv precedence). `launch.sh` uses bash's
+      indirect-parameter check (`${!key+x}`); `launch.bat` uses `if not defined %%A` (no
+      delayed-expansion needed, so the pre-existing `%REPORT%`/`%TICKER_ARG%` logic further
+      down the script is untouched); `launch.ps1` checks `Test-Path Env:\$key`.
+- [x] New `.env.example` (checked in) documenting `ANTHROPIC_KEY`/`REPORT`/`TICKER`/
+      `EXCHANGE`; local `.env` (git-ignored, pre-existing) updated with `REPORT=1` so every
+      launch on this machine also produces the equity-report PDF by default.
+- [x] `README.md` updated: PowerShell invocation added to Quick Start, `.env`
+      -file convenience documented alongside the existing inline-env-var instructions.
+- [x] Verified: ran `launch.ps1 family_bank_kenya` twice — once with `$env:REPORT`
+      pre-set to `"0"` (confirmed it took the Excel-only path, i.e. the inline override
+      beat `.env`'s `REPORT=1`), and once exercising the `.env`-parsing snippet directly
+      with no pre-set override (confirmed it picked up `REPORT=1` from `.env`). Did not
+      execute a real `REPORT=1` run end-to-end (it makes several billed `claude -p` calls)
+      — only the dotenv-precedence mechanism itself was verified.
+
 ## Follow-ups (not blocking)
 
 - [x] Real P/B for Absa/Co-op/DTB/Equity/KCB/SCB/Stanbic — resolved via live web lookup

@@ -7,6 +7,42 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — PowerShell launcher + .env-driven REPORT config (2026-07-27)
+- New `scripts/launch.ps1`, a PowerShell-native counterpart to `launch.sh`/`launch.bat`
+  (same venv/dependency/timestamped-output/REPORT=1 behavior; invokes the venv's
+  `python.exe` directly instead of dot-sourcing `Activate.ps1`, so it isn't blocked by
+  execution-policy restrictions on activation scripts).
+- All three launchers now auto-load a repo-root `.env` file (existing shell-set variables
+  win over `.env`'s value). New `.env.example` documents `ANTHROPIC_KEY`/`REPORT`/
+  `TICKER`/`EXCHANGE`; the local (git-ignored) `.env` now sets `REPORT=1` so this machine's
+  launches produce the equity-report PDF by default without passing the flag inline every
+  time. `README.md` updated with the PowerShell invocation and `.env` convenience. Closes
+  BACKLOG.md Phase 26.
+
+### Added — Sources sheet + market-data citation convention (2026-07-27)
+- New `config.SOURCES` (optional list of `item`/`value`/`source`/`url`/`accessed` dicts)
+  and `build_sources_sheet()` in `bank_excel_renderer.py`: renders every external
+  market-data input behind the Output sheet's valuation (CAPM risk-free rate/ERP/beta, all
+  9 peer bank P/B ratios) as a numbered references list on a new "Sources" tab, in standard
+  equity-research citation form (item cited, source hyperlinked where a URL exists, date
+  accessed) — pulled from the sourcing already documented in `config.py` comments and
+  `research_output.md`. Skipped entirely for an institution whose config doesn't define
+  `SOURCES`. Spot-checked the underlying 2026-07-26 market research (Damodaran Kenya ERP,
+  peer beta average) via live web search — genuine and current; flagged one freshness
+  caveat (the risk-free rate's 2 Jul snapshot may already have moved) without silently
+  overwriting a number with an unverified re-scrape. Caught and fixed a real bug during
+  verification: the Damodaran citation's embedded quotes corrupted its generated
+  `HYPERLINK()` formula — fixed by escaping quotes in the source label before building the
+  formula string. Closes BACKLOG.md Phase 25.
+
+### Changed — Reapplied genericity fixes on top of the merged remote history (2026-07-27)
+- A prior session's uncommitted genericity fixes (`BS_SPLIT_RATIOS`, `CURRENCY_UNIT_ABBR`/
+  `_units()`, `REGULATOR_NAME`, sector-concentration graceful skip) were stashed rather than
+  merged before fast-forwarding 16 incoming commits, then reapplied by hand on the new base
+  once the equity-report pipeline restructure landed — same fixes, renumbered to Phase 25
+  since the remote had already used "Phase 23"/"Phase 24" for unrelated work. Verified
+  identical rebuild output to before the refactor. Closes BACKLOG.md Phase 25.
+
 ### Changed — Restructured the equity-report pipeline into `bizplan/report/` (2026-07-27)
 - Moved all generic, institution-agnostic equity-report logic into a new `bizplan/report/`
   package (`data.py`, `validation.py`, `recommendation.py`, `pdf.py` — moved as-is from

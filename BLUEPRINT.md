@@ -4,6 +4,28 @@
 (Blu Containers) and reworked 2026-07-06 — see `BACKLOG.md` for current status and next
 steps, `CHANGELOG.md` for what has actually landed.
 
+## 2026-07-27 — Reconciled with remote history; Sources sheet
+
+A local session's uncommitted genericity fixes (config-driven currency/regulator labels,
+Balance Sheet split ratios) predated a `git fetch` that pulled 16 remote commits (the
+Phase 24 equity-report pipeline, live-tested peer P/B/beta market research). Per user
+direction, the remote was adopted as the base — local changes were stashed (not merged),
+the branch fast-forwarded, then the genericity fixes reapplied by hand on the new code
+(BACKLOG.md Phase 25, renumbered since the remote already used Phase 23/24).
+
+While reconciling, also added a **Sources sheet**: `config.SOURCES`, an optional structured
+citation list (item, value, source/publisher, URL, accessed date) for every third-party
+market-data input behind the Output sheet's valuation — CAPM risk-free rate/ERP/beta, all 9
+peer bank P/B ratios — rendered as a numbered references list in standard equity-research
+citation form, with a live hyperlink where a URL exists. This is deliberately separate from
+Family Bank's own audited financial-statement figures, which keep their existing
+provenance channel (the `[DISCLOSED]` tags throughout `config.py` plus
+`research_output.md`'s research log) — `SOURCES` is specifically for externally-sourced
+market data. Spot-checked the underlying research via live web search before building on
+top of it — genuine and dated, with one flagged (not silently "fixed") freshness caveat on
+the risk-free rate, since bond yields move and re-scraping an unverified new figure would
+trade one snapshot for an equally-unverified one.
+
 ## 2026-07-06 (later still) — Bank-only data, full Balance Sheet detail, scroll-safe headers
 
 Two problems surfaced from reviewing the rendered workbook directly against Family Bank's

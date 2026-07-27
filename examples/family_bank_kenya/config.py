@@ -27,6 +27,9 @@ BUSINESS_NAME = "Family Bank Limited"
 OUTPUT_PREFIX = "Family_Bank_Kenya"
 CURRENCY = "KES"
 CURRENCY_UNIT = "Millions"
+CURRENCY_UNIT_ABBR = "MM"  # short form for sheet column headers, e.g. "(KES MM)"
+REGULATOR_NAME = "CBK"  # [DISCLOSED] Central Bank of Kenya — prudential regulator whose
+                         # minimums the Capital Adequacy/Liquidity checks are measured against
 TICKER = "FMLY"  # [DISCLOSED] NSE ticker — listed by introduction 23 Jun 2026
 EXCHANGE = "NSE"  # Nairobi Securities Exchange — optional, read by the equity-report
 # pipeline's price/consensus research stage (bizplan/report/price_research.py) as the
@@ -36,6 +39,15 @@ EXCHANGE = "NSE"  # Nairobi Securities Exchange — optional, read by the equity
 ACTUAL_YEARS = [2023, 2024, 2025]
 YEARS = [2026, 2027, 2028, 2029, 2030]
 TAX_RATE = 0.30  # [DISCLOSED] Kenya standard corporate tax rate
+
+# Balance Sheet presentational splits — projected years split one existing driver total
+# (Cash Flow's cash_row / Investment Securities' sec_balance) into its disclosed sub-lines
+# via the FY2025 actual mix, so the underlying Cash Flow/Securities mechanic is unchanged.
+# [DISCLOSED-DERIVED] from the FY2025 Bank-column Balance Sheet (research_output.md).
+BS_SPLIT_RATIOS = dict(
+    cbk_pct=0.554516, due_from_pct=0.445484,      # Cash and Balances with CBK vs Due from Banks
+    amort_pct=0.536160, fvoci_pct=0.463840,        # Government Securities: Amortised Cost vs FVOCI
+)
 
 # ─────────────────────────────────────────────
 # ACTUALS — real disclosed figures for 2023-2025, KES millions, all [DISCLOSED] from
@@ -452,6 +464,54 @@ PEER_BANKS = [
     dict(name="Stanbic Holdings", eps_fy24=34.7, eps_fy25=34.7, roae_fy24=0.193, roae_fy25=0.180, payout_fy25=0.644, pb_placeholder=1.44),  # [DISCLOSED-DERIVED] BVPS 202.74 / price 292.00
     dict(name="StanChart", eps_fy24=52.7, eps_fy25=32.5, roae_fy24=0.301, roae_fy25=0.180, payout_fy25=0.955, pb_placeholder=1.81),  # [DISCLOSED-DERIVED] BVPS 184.79 / price 334.25 (ticker SCBK)
 ]  # [DISCLOSED] EPS/ROAE/payout from MTN Information Memorandum 2026, p.65
+
+# ─────────────────────────────────────────────
+# SOURCES — third-party market-data citations for the Output sheet's valuation inputs
+# (CAPM risk-free rate/ERP/beta, peer bank P/B ratios): rendered verbatim on the
+# workbook's own "Sources" sheet, one row per citation, in the standard equity-research
+# convention (item, value, source/publisher, accessed date). Family Bank's own audited
+# financial-statement figures have a separate provenance channel — the [DISCLOSED] tags
+# throughout this file plus research_output.md's full sourcing log — this list is
+# specifically for data pulled from external market sources, not company filings.
+# Optional: not in config_loader.REQUIRED_FIELDS, so an institution with no external
+# market-data inputs (e.g. no peer-multiple cross-check) can omit it entirely.
+# ─────────────────────────────────────────────
+SOURCES = [
+    dict(item="Risk-free rate — Kenya 10-Year Government Bond Yield", value="12.32%",
+         source="Trading Economics", url="https://tradingeconomics.com/kenya/government-bond-yield",
+         accessed="2026-07-02"),
+    dict(item="Equity risk premium — Kenya (total: mature-market ERP + country risk premium)",
+         value="13.94%",
+         source="Aswath Damodaran, \"Country Default Spreads and Risk Premiums\" (NYU Stern, Jan 2026 data update)",
+         url="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/ctryprem.html",
+         accessed="2026-07-24"),
+    dict(item="Beta — average of 6 NSE-listed Kenyan peer bank equity betas "
+              "(Absa 0.44, Co-op 0.52, DTB 0.28, Equity Group 0.59, I&M 0.80, KCB 0.66)",
+         value="0.55", source="MyStocks Kenya", url="https://live.mystocks.co.ke/",
+         accessed="2026-07-24"),
+    dict(item="Absa Bank Kenya — Price/Book (BVPS 19.58, share price 33.00)", value="1.69x",
+         source="StockAnalysis.com", url="https://stockanalysis.com/", accessed="2026-07-24"),
+    dict(item="Co-operative Bank of Kenya — Price/Book (BVPS 29.61, share price 35.00)", value="1.18x",
+         source="StockAnalysis.com", url="https://stockanalysis.com/", accessed="2026-07-24"),
+    dict(item="Diamond Trust Bank (DTB, ticker DTK) — Price/Book (BVPS 377.77, share price 150.75)",
+         value="0.36x", source="StockAnalysis.com",
+         url="https://stockanalysis.com/quote/nase/DTK/statistics/", accessed="2026-07-24"),
+    dict(item="Equity Group Holdings — Price/Book (BVPS 86.57, share price 87.00)", value="0.96x",
+         source="StockAnalysis.com", url="https://stockanalysis.com/", accessed="2026-07-24"),
+    dict(item="I&M Group — Price/Book (Book Value Per Share KES 66; share price ~42.50, company chart)",
+         value="0.64x", source="I&M Group FY2025 Integrated Report, p.120", url=None,
+         accessed="2026-07-06"),
+    dict(item="KCB Group — Price/Book (BVPS 109.61, share price 82.50)", value="0.73x",
+         source="StockAnalysis.com", url="https://stockanalysis.com/", accessed="2026-07-24"),
+    dict(item="NCBA Group — Price/Book (directly disclosed)", value="1.2x",
+         source="NCBA Group Plc FY2025 Annual Integrated Report, p.32", url=None,
+         accessed="2026-07-06"),
+    dict(item="Stanbic Holdings — Price/Book (BVPS 202.74, share price 292.00)", value="1.44x",
+         source="StockAnalysis.com", url="https://stockanalysis.com/", accessed="2026-07-24"),
+    dict(item="Standard Chartered Bank Kenya (ticker SCBK) — Price/Book (BVPS 184.79, share price 334.25)",
+         value="1.81x", source="StockAnalysis.com",
+         url="https://stockanalysis.com/quote/nase/SCBK/statistics/", accessed="2026-07-24"),
+]
 
 COVER_INFO = dict(**{
     "Projection Period": f"{YEARS[0]} to {YEARS[-1]} ({len(YEARS)} Years)",
