@@ -31,6 +31,8 @@ GOLD = colors.HexColor("#c98500")
 GRAY = colors.HexColor("#52514e")
 HAIRLINE = colors.HexColor("#e1e0d9")
 ALT_ROW = colors.HexColor("#f4f4f2")
+WARN_RED = colors.HexColor("#b3261e")
+WARN_BG = colors.HexColor("#fbeceb")
 
 _CHART_BLUE = "#2a78d6"
 _CHART_GOLD = "#eda100"
@@ -47,6 +49,10 @@ def _styles():
                                spaceAfter=4, leading=13))
     styles.add(ParagraphStyle("QuoteReport", parent=styles["BodyText"], leftIndent=14,
                                textColor=GRAY, fontName="Helvetica-Oblique", leading=13))
+    styles.add(ParagraphStyle("H2Warning", parent=styles["Heading2"], textColor=WARN_RED,
+                               spaceBefore=14, spaceAfter=6))
+    styles.add(ParagraphStyle("WarningBody", parent=styles["BodyText"], spaceAfter=8,
+                               leading=14, textColor=WARN_RED))
     return styles
 
 
@@ -186,9 +192,58 @@ def _peer_table_flowables(report_json, styles):
     return flowables
 
 
-def build_pdf(output_dir, pdf_path):
+def _qa_flags_flowables(findings, styles):
+    """Renders unresolved coherence-gate findings as a distinct, clearly-labeled
+    appendix -- never mixed into the narrative sections. Only called when the coherence
+    gate (coherence.py) did not converge within its iteration budget; an empty/absent
+    findings list means this section is omitted entirely."""
+    flowables = [
+        PageBreak(),
+        Paragraph("Unresolved QA Flags", styles["H2Warning"]),
+        Paragraph(
+            "The automated coherence check below found issues in this report that could "
+            "not be automatically resolved within the retry budget. These are listed here "
+            "for transparency rather than silently omitted -- verify the flagged items "
+            "against the underlying financial model before relying on this report.",
+            styles["WarningBody"],
+        ),
+        Spacer(1, 6),
+    ]
+    header = ["Severity", "Section", "Description", "Model value", "Report states"]
+    data = [header] + [
+        [
+            str(f.get("severity", "")),
+            str(f.get("section", "")),
+            str(f.get("description", "")),
+            str(f.get("expected_value", "") or ""),
+            str(f.get("actual_value", "") or ""),
+        ]
+        for f in findings
+    ]
+    table = Table(data, colWidths=[50, 70, 210, 90, 90], repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), WARN_RED),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, WARN_BG]),
+        ("GRID", (0, 0), (-1, -1), 0.4, HAIRLINE),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]))
+    flowables.append(table)
+    return flowables
+
+
+def build_pdf(output_dir, pdf_path, unresolved_findings=None):
     """Reads Stage 1/2/3's JSON and Stage 5's report_reviewed.md from `output_dir`,
-    writes the final PDF to `pdf_path`. Returns `pdf_path`."""
+    writes the final PDF to `pdf_path`. Returns `pdf_path`.
+
+    `unresolved_findings`: leftover findings from the coherence gate (coherence.py) that
+    didn't converge within its iteration budget. If `None`, falls back to reading
+    `review_findings.json` from `output_dir` if present (so Stage 6 still surfaces flags
+    when run standalone, not only via the full pipeline). An empty list/file means no
+    appendix is rendered.
+    """
     output_dir = str(output_dir)
     with open(os.path.join(output_dir, "valuation_inputs.json")) as f:
         report_json = json.load(f)
@@ -198,6 +253,14 @@ def build_pdf(output_dir, pdf_path):
         decision_json = json.load(f)
     with open(os.path.join(output_dir, "report_reviewed.md")) as f:
         report_md = f.read()
+
+    if unresolved_findings is None:
+        findings_path = os.path.join(output_dir, "review_findings.json")
+        if os.path.exists(findings_path):
+            with open(findings_path) as f:
+                unresolved_findings = json.load(f)
+        else:
+            unresolved_findings = []
 
     styles = _styles()
     price = price_json["share_price"]["value"]
@@ -222,6 +285,8 @@ def build_pdf(output_dir, pdf_path):
             flowables.append(Image(chart_path, width=6 * inch, height=3.2 * inch))
             flowables.append(Spacer(1, 10))
         flowables += _peer_table_flowables(report_json, styles)
+        if unresolved_findings:
+            flowables += _qa_flags_flowables(unresolved_findings, styles)
 
         doc.build(flowables)
     return pdf_path

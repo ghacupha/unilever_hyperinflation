@@ -36,6 +36,12 @@ findable:
   instead — e.g. the peer set's average trading multiple (P/B, P/E) applied to this
   institution's own book value/earnings, or the stock's own price trend since listing.
   Label it as a proxy, not a real consensus, and say why you chose it.
+  **If the proxy needs this institution's own book value per share (or any other figure
+  the model itself computes), read it from `valuation_inputs.json`'s `company_facts`
+  block — you'll be given its path. Do not independently research or derive that figure
+  from a filing or web source.** That JSON is the model's own corrected, Bank-basis
+  ground truth; a live web search can turn up a different (e.g. Group/Consolidated-basis)
+  figure that looks equally plausible but is inconsistent with the rest of this report.
 
 ## 4. Output format
 

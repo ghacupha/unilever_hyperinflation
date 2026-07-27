@@ -58,6 +58,45 @@ def financial_health_grade(capital_ratio, capital_min, liquidity_ratio, liquidit
     )
 
 
+def _net_loans(actuals_year):
+    """Sum of (gross - ECL) across every disclosed loan segment for one ACTUALS year —
+    mirrors bank_calculations.py's own net-loans aggregation exactly (same per-segment
+    gross_s1/s2/s3 minus ecl_s1/s2/s3 shape), so this never drifts from the model's own
+    Bank-basis figure."""
+    total = 0.0
+    for segment in actuals_year["loan_segments"].values():
+        gross = segment["gross_s1"] + segment["gross_s2"] + segment["gross_s3"]
+        ecl = segment["ecl_s1"] + segment["ecl_s2"] + segment["ecl_s3"]
+        total += gross - ecl
+    return total
+
+
+def company_facts(config):
+    """The single authoritative source for company 'hard facts' (total assets/equity/
+    deposits/net loans/book value per share) that report-writing stages must use instead
+    of re-deriving or pulling from research_output.md's prose. Sourced strictly from
+    config.ACTUALS[latest actual year] -- the same Bank-basis (not Consolidated/Group)
+    figures the rest of the model is built on, per BLUEPRINT.md's "Bank vs Consolidated"
+    correction. research_output.md may contain earlier, superseded, or Group-basis tables
+    from the research process -- those are for qualitative/business context only and must
+    never be treated as authoritative for any figure covered here.
+    """
+    latest_year = max(config.ACTUAL_YEARS)
+    actuals = config.ACTUALS[latest_year]
+    net_loans = _net_loans(actuals)
+    total_equity = actuals["total_equity"]
+    share_capital = actuals["share_capital"]  # KES 1.00 par value -> also the share count
+    return dict(
+        as_of_year=latest_year,
+        total_assets=actuals["total_assets"],
+        total_liabilities=actuals["total_liabilities"],
+        total_equity=total_equity,
+        deposits_total=actuals["deposits_total"],
+        net_loans=net_loans,
+        book_value_per_share=total_equity / share_capital,
+    )
+
+
 def compute(config):
     """Runs the full Python calculation pipeline once. Returns the raw dicts so callers
     (e.g. `validation.validate_model()`) can share this computation instead of each
@@ -94,6 +133,7 @@ def to_report_json(config, computed):
         currency=config.CURRENCY,
         currency_unit=config.CURRENCY_UNIT,
         years=list(config.YEARS),
+        company_facts=company_facts(config),
         shares_outstanding_mm=shares,
         cost_of_equity=valuation["cost_of_equity"],
         blend_weights=valuation["blend_weights"],

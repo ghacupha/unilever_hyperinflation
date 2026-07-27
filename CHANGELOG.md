@@ -7,6 +7,33 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Coherence gate (Stage 5.5) + repeatable refresh pipeline (2026-07-27)
+- Fixed the root cause of two coherence bugs found in a real pipeline run: new
+  `company_facts` block in `bizplan/report/data.py`'s `to_report_json()` (total
+  assets/equity/deposits/net loans/book value per share, sourced only from
+  `config.ACTUALS[latest actual year]` — the corrected Bank-basis figures). Updated
+  `drafting.py`'s Investment Thesis SOP and `price_research.py` (+ its SOP) to require
+  `company_facts` for these figures instead of `research_output.md` prose or independent
+  live web research, which had let a superseded Consolidated-basis total-equity figure
+  and book-value-per-share drift back into the report after this repo already fixed the
+  same Bank-vs-Consolidated mixup once in `config.py`.
+- Split Stage 5's (`review.py`) output into two files — `report_reviewed.md`
+  (client-facing only) and a new structured `review_findings.json` — closing a real
+  defect: Stage 5 had correctly diagnosed an arithmetic error in a drafted section but
+  only described it in a `## Review Notes` header that Stage 6 rendered verbatim into the
+  shipped PDF, uncorrected.
+- New Stage 5.5, `bizplan/report/coherence.py` (`run_coherence_gate`) — an
+  evaluator-optimizer loop (Stage 5 evaluates, a new targeted correction pass
+  optimizes/fixes, up to 10 iterations) wired into `pipeline.py` between drafting/review
+  and PDF assembly. Never re-fetches external data mid-loop; the Excel model / JSON
+  ground truth always outranks report prose. `pdf.py` now renders a distinct "Unresolved
+  QA Flags" appendix if the gate doesn't converge, instead of blocking forever or
+  silently shipping a known-wrong report.
+- New `scripts/refresh_report.py`, wiring `agent/cli.py update` (or `source_model.py`'s
+  Stage 0 for an explicit re-anchor) into the full report pipeline as one repeatable,
+  schedulable command — reuses all existing code, no new calculation/rendering logic.
+  Closes BACKLOG.md Phase 27.
+
 ### Added — PowerShell launcher + .env-driven REPORT config (2026-07-27)
 - New `scripts/launch.ps1`, a PowerShell-native counterpart to `launch.sh`/`launch.bat`
   (same venv/dependency/timestamped-output/REPORT=1 behavior; invokes the venv's

@@ -38,13 +38,20 @@ def _resolve_ticker_exchange(institution, ticker, exchange):
     return ticker, exchange
 
 
-def _task_prompt(institution, ticker, exchange, reference_date, output_path):
+def _task_prompt(institution, ticker, exchange, reference_date, output_path, valuation_inputs_path):
     return (
         f"Follow the price/consensus research SOP above for institution='{institution}' "
         f"(ticker={ticker}, exchange={exchange}).\n\n"
         f"Reference date: {reference_date}\n\n"
+        f"Read {valuation_inputs_path} first — its `company_facts` block (book value per "
+        f"share, total equity, etc.) is this model's own authoritative, already-computed "
+        f"figures. If your proxy math needs the institution's book value per share, use "
+        f"`company_facts.book_value_per_share` from that file — do not independently "
+        f"research or derive it from a filing or web source; the model has already "
+        f"computed it correctly and consistently with the rest of the report.\n\n"
         f"Write your JSON output to exactly this file path: {output_path}\n\n"
-        f"Use your web-search tools directly to find real data — do not fabricate."
+        f"Use your web-search tools directly to find real data (share price, consensus, "
+        f"comparable transaction multiples) — do not fabricate."
     )
 
 
@@ -56,8 +63,9 @@ def research_price_consensus(institution, output_dir, ticker=None, exchange=None
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "price_consensus_research.json"
+    valuation_inputs_path = output_dir / "valuation_inputs.json"
 
-    task = _task_prompt(institution, ticker, exchange, reference_date, output_path)
+    task = _task_prompt(institution, ticker, exchange, reference_date, output_path, valuation_inputs_path)
     claude_cli.run_stage(SOP_PATH, task, cwd=REPO_ROOT)
 
     if not output_path.exists():

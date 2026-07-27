@@ -808,8 +808,90 @@ prior session's "Phase 23" since the remote had already used that number.
       execute a real `REPORT=1` run end-to-end (it makes several billed `claude -p` calls)
       — only the dotenv-precedence mechanism itself was verified.
 
+## Phase 27 — Coherence gate (Stage 5.5) + repeatable refresh pipeline (2026-07-27) — DONE
+
+Prompted by a real run (`output/2026-07-27_105743`) that surfaced two coherence bugs
+between the Excel model and its equity-research PDF — full findings reported to the user
+in-session, then turned into a plan and executed. Terminology/design grounded in
+Anthropic's "Building Effective Agents" **evaluator-optimizer** workflow pattern (one call
+generates, another evaluates against explicit criteria, bounded iteration) and the
+research finding that LLMs can't reliably self-correct without external grounding — so
+this design leans on the model's own deterministic JSON output as the ground truth an
+LLM-based evaluator checks against, rather than trusting a second guess alone.
+
+- [x] **Fixed the drift at its source**, not just its symptom. New `company_facts` block
+      in `bizplan/report/data.py`'s `to_report_json()` — total assets/liabilities/equity,
+      deposits, net loans (summed the same way `bank_calculations.py` does), and book
+      value per share, computed strictly from `config.ACTUALS[latest actual year]` (the
+      corrected Bank-basis figures, matching the Output sheet's own cross-check row
+      exactly: verified `book_value_per_share` = 19.31098754702569 against the FY2025
+      config). This is now the single authoritative source for any "hard fact" the model
+      already computes.
+- [x] `.devops/agents/equity-report/section-investment-thesis.md` and
+      `bizplan/report/price_research.py` (+ its SOP,
+      `price-consensus-research.md`) updated to require `company_facts` for these figures
+      instead of `research_output.md` prose or independent live web research —
+      `research_output.md` may still contain earlier/superseded/Group-basis tables from
+      the research process, but those are for qualitative context only now, never treated
+      as authoritative over `company_facts`. `price_research.py`'s task prompt now passes
+      `valuation_inputs.json`'s path to Stage 2 explicitly (it previously had no way to
+      read it even if instructed to).
+- [x] **Stage 5's output contract split in two**, per
+      `review-plagiarism-references.md`: `report_reviewed.md` (client-facing document
+      only, never QA commentary) and a new `review_findings.json` (structured array,
+      empty if clean). This closes the actual defect found in the live run — Stage 5 had
+      correctly diagnosed a real arithmetic error (a stated "spread of KES 21.66" that
+      should have been KES 25.97) but only wrote the diagnosis into a `## Review Notes`
+      header that Stage 6 then rendered verbatim into the client PDF, uncorrected.
+- [x] **New Stage 5.5 — the coherence gate** (`bizplan/report/coherence.py`,
+      `run_coherence_gate()`): an evaluator-optimizer loop — Stage 5 (evaluator) runs,
+      and if `review_findings.json` is non-empty, a new targeted correction pass
+      (`.devops/agents/equity-report/coherence-apply-fixes.md`, the "optimizer") fixes
+      only the named section file(s), then Stage 5 re-runs to confirm. Per the user's
+      explicit reliability decisions: capped at 10 iterations (`DEFAULT_MAX_ITERATIONS`),
+      never re-fetches external data mid-loop (findings are text-vs-already-fetched
+      -ground-truth mismatches, not missing research), and the Excel model / JSON ground
+      truth always outranks report prose — corrections conform text to the model, never
+      the reverse.
+- [x] `bizplan/report/pdf.py` — Stage 6 now renders a distinct, clearly-labeled
+      "Unresolved QA Flags" appendix (its own page, red-themed table: severity/section/
+      description/model value/report-stated value) if the gate doesn't converge within
+      its iteration budget, instead of either blocking forever or silently shipping a
+      known-wrong report. `build_pdf()` accepts `unresolved_findings` explicitly (from
+      the gate's return value) or falls back to reading `review_findings.json` if run
+      standalone.
+- [x] `bizplan/report/pipeline.py`'s `generate()` now calls the coherence gate between
+      Stage 5 and Stage 6.
+- [x] New `scripts/refresh_report.py` — wires `agent/cli.py update` (checks for newer
+      filings, raw-API-billed) or `scripts/source_model.py`'s Stage 0 (`--as-of`, for an
+      explicit re-anchor/backtest instead of "whatever's newest") into the full report
+      pipeline (`claude -p` subscription-billed), writing a new timestamped `output/`
+      folder — the single repeatable unit this repo's `schedule` skill can run on a cron
+      for the model+report to stay current as new information arrives, without a human
+      re-running each stage by hand. Reuses every existing piece; no new calculation or
+      rendering logic. Scheduling itself (cadence, whether to actually register the cron)
+      is a follow-up requiring the user's input, not set up in this pass.
+- [x] Verified without a live billed pipeline run (all `claude -p`/API-calling stages are
+      real per-run cost — confirmed with the user's original request but a full live run
+      wasn't separately re-authorized for this specific change): `company_facts` computed
+      correctly against the real `family_bank_kenya` config (total_equity 32107.51,
+      book_value_per_share ~19.31, matching the model's own actuals rather than the
+      superseded 32.6bn/19.62 Group-basis figures the live run had produced);
+      `bizplan.report.pipeline` imports cleanly with the gate wired in;
+      `bizplan/report/pdf.py`'s `build_pdf()` smoke-tested three ways (no findings, with
+      fake findings producing the appendix, and the standalone fallback read path) against
+      the real run's JSON data — all three produced valid PDFs of the expected size.
+
 ## Follow-ups (not blocking)
 
+- [ ] First live end-to-end run of the coherence gate against a real `REPORT=1` pipeline
+      run — this session's verification was static (unit-level) only, since a real run
+      makes several billed `claude -p` calls; confirm the gate actually catches and fixes
+      a real drafting-stage mistake (or deliberately reintroduce one, per the original
+      plan's verification section) before relying on it unattended.
+- [ ] Decide and register an actual scheduled cadence for `scripts/refresh_report.py` via
+      the `schedule` skill, once the user has a cadence preference (quarterly for filings,
+      or another interval) — the script itself is ready, nothing is scheduled yet.
 - [x] Real P/B for Absa/Co-op/DTB/Equity/KCB/SCB/Stanbic — resolved via live web lookup
       (current NSE price / book value per share), not company filings; see
       `research_output.md` 2026-07-26 entry

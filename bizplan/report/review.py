@@ -1,10 +1,17 @@
 """Stage 5 of the equity-report pipeline: plagiarism + references review.
 
 One `claude -p` call over the *whole* assembled draft (all Stage 4 section files plus
-the Stage 1/2/3 JSON files) — cross-checks every claim against source, flags
+the Stage 1/2/3 JSON files) — cross-checks every claim against source (including against
+`valuation_inputs.json`'s `company_facts`, the model's own authoritative figures), flags
 near-verbatim copying and cross-section contradictions, assembles a deduplicated
-References section, and appends the standard Disclaimer. Writes `report_reviewed.md`.
+References section, and appends the standard Disclaimer.
+
+Writes two separate files, per the SOP's "two files, never mixed" contract:
+- `report_reviewed.md` — client-facing document only, no QA commentary.
+- `review_findings.json` — a JSON array of unresolved issues (empty if none). The
+  coherence gate (`coherence.py`, Stage 5.5) reads this to decide whether to loop.
 """
+import json
 from pathlib import Path
 
 from bizplan.report import claude_cli
@@ -18,18 +25,21 @@ SOP_PATH = REPO_ROOT / ".devops" / "agents" / "equity-report" / "review-plagiari
 SECTION_FILES = [f"{name}.md" for name, _ in SECTIONS]
 
 
-def _task_prompt(institution, output_dir):
+def _task_prompt(institution, output_dir, document_path, findings_path):
     section_list = "\n".join(f"- {output_dir}/sections/{f}" for f in SECTION_FILES)
     return (
         f"Review {institution}'s assembled equity research report per the SOP above.\n\n"
         f"Read these section files, in this order, with your Read tool:\n{section_list}\n\n"
         f"Also read for cross-checking:\n"
-        f"- {output_dir}/valuation_inputs.json\n"
+        f"- {output_dir}/valuation_inputs.json (company_facts is the authoritative source "
+        f"for total assets/equity/deposits/net loans/book value per share)\n"
         f"- {output_dir}/price_consensus_research.json\n"
         f"- {output_dir}/recommendation_decision.json\n"
         f"- examples/{institution}/research_output.md\n\n"
-        f"Write the final assembled document to exactly this file path: "
-        f"{output_dir}/report_reviewed.md"
+        f"Write the assembled document (file 1, client-facing only) to exactly this path: "
+        f"{document_path}\n\n"
+        f"Write the findings array (file 2, per the SOP's JSON shape) to exactly this "
+        f"path: {findings_path}"
     )
 
 
@@ -39,11 +49,17 @@ def review_report(institution, output_dir):
     if missing:
         raise RuntimeError(f"Missing section file(s), run Stage 4 first: {missing}")
 
-    task = _task_prompt(institution, output_dir)
+    document_path = output_dir / "report_reviewed.md"
+    findings_path = output_dir / "review_findings.json"
+
+    task = _task_prompt(institution, output_dir, document_path, findings_path)
     claude_cli.run_stage(SOP_PATH, task, cwd=REPO_ROOT)
 
-    out_path = output_dir / "report_reviewed.md"
-    if not out_path.exists():
-        raise RuntimeError(f"Expected output not found: {out_path}")
-    print(f"Wrote {out_path}")
-    return out_path
+    if not document_path.exists():
+        raise RuntimeError(f"Expected output not found: {document_path}")
+    if not findings_path.exists():
+        raise RuntimeError(f"Expected output not found: {findings_path}")
+    findings = json.loads(findings_path.read_text(encoding="utf-8"))
+    print(f"Wrote {document_path}")
+    print(f"Wrote {findings_path} ({len(findings)} finding(s))")
+    return document_path, findings

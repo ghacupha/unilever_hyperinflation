@@ -6,8 +6,15 @@ and `recommendation_decision.json` from the paths you're given, plus the institu
 `research_output.md` for business context.
 
 Write 200-400 words covering, in order:
-1. What the institution is and its market position (from `research_output.md` —
-   headline scale, e.g. total assets/deposits/loans, and its listing status).
+1. What the institution is and its market position: use `research_output.md` for
+   qualitative context (business description, listing status, market position) and
+   `valuation_inputs.json`'s `company_facts` block for headline scale (total assets,
+   total equity, deposits, net loans, book value per share). **`company_facts` is the
+   only authoritative source for these hard numbers** — it's the model's own corrected
+   Bank-basis figures. `research_output.md` may still contain earlier, superseded, or
+   Group/Consolidated-basis versions of the same figures from the research process; never
+   use a number from there if the same fact exists in `company_facts`, even if it looks
+   more precise or recent.
 2. The valuation conclusion: blended fair value per share vs. current price
    (`valuation_inputs.json`'s `valuation_per_share.blended` and
    `price_consensus_research.json`'s `share_price.value`), stated as a plain percentage.

@@ -4,6 +4,58 @@
 (Blu Containers) and reworked 2026-07-06 — see `BACKLOG.md` for current status and next
 steps, `CHANGELOG.md` for what has actually landed.
 
+## 2026-07-27 (later) — Coherence gate (Stage 5.5): evaluator-optimizer loop for the equity-report pipeline
+
+A real pipeline run (`output/2026-07-27_105743`) surfaced two coherence bugs between the
+Excel model and its PDF report: (1) Stage 5 (`review.py`) correctly diagnosed a real
+arithmetic error in the drafted report but only described it in a `## Review Notes`
+header that Stage 6 then rendered verbatim into the client-facing PDF, uncorrected; (2)
+the Bank-vs-Consolidated (Group) mixup this repo already fixed once in `config.py`
+(2026-07-06 entry, above) came back through the report layer — `drafting.py` fed the LLM
+the whole `research_output.md` file, stale Consolidated-basis tables included, and Stage
+2's price research independently re-derived book value per share via live web search
+rather than reading the model's own corrected figure.
+
+**Design, and what it's called**: this is Anthropic's own **evaluator-optimizer**
+workflow pattern (from "Building Effective Agents") — one call generates a candidate,
+another evaluates it against explicit criteria and feeds critique back, bounded by a max
+-iteration count. The wider agentic-AI literature calls the same shape the **reflection
+pattern**/**generator-critic**. The load-bearing research finding behind this specific
+design: LLMs cannot reliably self-correct without *external* grounding — pure self
+-critique is one of three known variants, and the more reliable ones are cross-model
+critique and **tool-grounded critique** (checking against a deterministic source). This
+repo already has that deterministic ground truth sitting right there
+(`config.py`'s `ACTUALS`, `valuation_inputs.json`), so the fix leans on it directly. The
+whole multi-stage pipeline (source → compute → research → draft → review → gate →
+publish) is itself an **Orchestrator-Workers** pattern with an **Evaluator-Optimizer**
+gate at the end — "agentic workflow" territory, not a fully autonomous "agent": stage
+order is fixed/orchestrated, not decided by the model at runtime, which is the right
+level of autonomy where every number must stay traceable.
+
+**What changed**: `report_data.to_report_json()` gained a `company_facts` block (total
+assets/equity/deposits/net loans/book value per share, sourced *only* from
+`config.ACTUALS[latest actual year]`) as the one authoritative source for these figures —
+closing the drift at its root, before any LLM stage gets a chance to reintroduce it.
+Stage 5's output contract split into two files (`report_reviewed.md`, client-facing only,
+plus a structured `review_findings.json`) so a QA finding can no longer leak into the
+document it's found in. A new Stage 5.5 (`bizplan/report/coherence.py`) loops evaluator
+(Stage 5) and a new targeted-correction "optimizer" pass
+(`.devops/agents/equity-report/coherence-apply-fixes.md`) up to 10 iterations (per the
+user's explicit reliability decision), never re-fetching external data mid-loop and
+always treating the Excel model / JSON ground truth as authoritative over report prose.
+If the loop doesn't converge, Stage 6 (`pdf.py`) now renders a distinct "Unresolved QA
+Flags" appendix rather than either blocking forever or silently shipping a known-wrong
+number. See `BACKLOG.md` Phase 27 for the full file-by-file change list and verification
+detail (static/unit-level only — a live end-to-end billed run is a follow-up, not yet
+done).
+
+Also added: `scripts/refresh_report.py`, wiring the already-existing "check for new
+filings" mechanisms (`agent/cli.py update`, or `scripts/source_model.py`'s Stage 0 for an
+explicit re-anchor) into the full report pipeline as one repeatable command — the unit
+intended for scheduling (via the `schedule` skill) so the whole model+report can stay
+current as new market information arrives without a human re-running each stage by hand.
+No new calculation or rendering logic; pure orchestration of existing pieces.
+
 ## 2026-07-27 — Reconciled with remote history; Sources sheet
 
 A local session's uncommitted genericity fixes (config-driven currency/regulator labels,
