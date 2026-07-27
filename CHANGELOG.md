@@ -7,6 +7,26 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Added — Equity Research Report pipeline, Stage 6: PDF assembly + full orchestration (2026-07-26)
+- `bizplan/financial/report_pdf.py`: pure Python, no LLM. Cover page, a lightweight
+  markdown-to-flowables converter scoped to what the section SOPs actually produce,
+  3 matplotlib charts (valuation-by-method vs. price, sensitivity, scenario
+  comparison), and a peer-comparables table, via ReportLab (no system dependencies,
+  so `launch.bat` keeps working unattended on Windows).
+- `scripts/build_report_pdf.py` (Stage 6 CLI) and `scripts/generate_equity_report.py`
+  (full Stages 1-6 orchestrator).
+- `launch.sh`/`launch.bat` gained an opt-in `REPORT=1 TICKER=... EXCHANGE=...` mode;
+  the default (no `REPORT`) path is unchanged and re-verified working.
+- Added `reportlab` and `matplotlib` to `scripts/requirements.txt`.
+- **Live-tested twice**: an isolated Stage 6 run produced a valid 11-page PDF (verified
+  via `pypdf`) from the earlier Stage 1-5 test output. Then a fully unattended full-
+  pipeline run hit the Claude subscription's session usage limit partway through Stage
+  5 — Stage 5 had already written a complete, valid `report_reviewed.md` before the
+  process exited non-zero, so recovery was just re-running Stage 6 against the
+  already-good file. Final deliverables (workbook + PDF) landed correctly together in
+  `output/<timestamp>/`. See BLUEPRINT.md for the full finding, including the
+  idempotent-by-file-existence lesson for production hardening.
+
 ### Added — Equity Research Report pipeline, Stage 5: plagiarism/references review (2026-07-26)
 - `.devops/agents/equity-report/review-plagiarism-references.md`: SOP for the one
   whole-document pass over all 8 Stage 4 sections — cross-checks claims against source,

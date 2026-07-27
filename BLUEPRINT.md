@@ -373,9 +373,13 @@ incidentally also enables backtesting a report's call against what actually happ
   `.devops/agents/equity-report/section-*.md`, live-tested full batch) -> Stage 5
   plagiarism/references review (**done**, `scripts/review_report.py` +
   `.devops/agents/equity-report/review-plagiarism-references.md`, one whole-document
-  `claude -p` pass — live-tested, see finding below) -> Stage 6 PDF assembly (pure
-  Python, ReportLab + matplotlib, no system deps so `launch.bat` stays Windows-friendly
-  — not started).
+  `claude -p` pass — live-tested, see finding below) -> Stage 6 PDF assembly (**done**,
+  pure Python, `bizplan/financial/report_pdf.py`, ReportLab + matplotlib, no system deps
+  so `launch.bat` stays Windows-friendly). **All 6 stages now built and live-tested**;
+  `scripts/generate_equity_report.py` orchestrates the full sequence, and
+  `launch.sh`/`.bat` gained an opt-in `REPORT=1 TICKER=... EXCHANGE=...` mode (default
+  path unchanged) — see the Stage 6 entry below and BACKLOG.md's Phase 24 for the full
+  end-to-end test.
 - **Stage 5 finding — the review pass genuinely earns its keep**: run against the real
   Stage 4 output, it caught 2 real arithmetic errors introduced during independent
   section drafting (a "more than double" comparison that was actually ~1.62x; a
@@ -387,6 +391,25 @@ incidentally also enables backtesting a report's call against what actually happ
   (KCB/Co-op Bank differ slightly — worth investigating, not yet reconciled). All four
   were flagged under a `## Review Notes` header rather than silently rewritten, per the
   SOP's explicit instruction — this is the intended behavior, not a gap.
+- **Stage 6 / full-pipeline finding — a real session-limit hit, and a clean resume**: a
+  fully unattended `generate_equity_report.py` run hit the Claude subscription's session
+  usage limit partway through Stage 5. This is exactly the "retry/failure handling for
+  `claude -p` stages" question flagged as open above — now observed for real rather than
+  hypothetical. What actually happened was informative: Stage 5's `claude -p` call had
+  already written a complete, valid `report_reviewed.md` via its own Write tool before
+  the surrounding process exited non-zero on the limit — so recovery was simply
+  re-running Stage 6 against the already-good file, not redoing any research or
+  drafting. A production version of this pipeline should check for a already-complete
+  output file before re-running a stage (idempotent-by-file-existence), rather than
+  assuming a non-zero exit means nothing was produced. Separately, this run's
+  independent Stage 2 price/consensus research considered a different peer set and
+  reached a different proxy value (9 peers, ~1.11x P/B, ~KES 23.26 implied) than an
+  earlier test run (2 peers, ~0.93x, ~KES 18.25) — real run-to-run variability in how
+  much the web-research stage decides to gather, on top of the Recommendation section's
+  already-documented judgment variability. Both are evidence that this pipeline's
+  LLM-driven stages are genuinely non-deterministic in scope and conclusion, not just in
+  wording — worth designing for explicitly in any real deployment (e.g. logging what was
+  actually searched/considered per run, not just the final answer).
 - **Stage 4 section list, consolidated from the original ~13-section proposal**:
   Investment Thesis, Bulls Say/Bears Say, Economic Moat, Valuation/Sensitivity/Scenarios
   (merged — all three just narrate the same `valuation_inputs.json`), Financial Health,

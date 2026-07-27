@@ -695,7 +695,34 @@ AND an "as-of" anchor period (3 actuals ending there, 5 years projected forward)
       "flag, don't silently fix" instruction — content below was left unchanged. Also
       assembled a clean, deduplicated, dated References section (14 sources) and
       appended the standard Disclaimer.
-- [ ] Stage 6 — PDF assembly (ReportLab + matplotlib), `launch.sh` wiring
+- [x] Stage 6 — PDF assembly (ReportLab + matplotlib, no LLM) + `launch.sh`/`launch.bat`
+      wiring. `bizplan/financial/report_pdf.py` (cover page, a lightweight
+      markdown-to-flowables converter scoped exactly to what the section SOPs actually
+      produce, 3 matplotlib charts — valuation-by-method vs. price, sensitivity, scenario
+      comparison — and a peer-comparables table) + `scripts/build_report_pdf.py` (CLI) +
+      `scripts/generate_equity_report.py` (full Stages 1-6 orchestrator, builds the Excel
+      model directly via `bank_calculations`/`bank_excel_renderer` rather than
+      re-invoking `build_bank_model.py`). `launch.sh`/`.bat` gained an opt-in
+      `REPORT=1 TICKER=... EXCHANGE=...` mode; the default (no `REPORT`) path is
+      unchanged and re-verified working.
+      **Live-tested end-to-end, twice**: an isolated Stage 6 run against the earlier
+      Stage 1-5 test output produced a valid 11-page PDF (cover page, all 8 sections
+      including Review Notes, all 3 charts embedded, peer table, References,
+      Disclaimer — verified via `pypdf`, including that ampersands like "I&M Group"
+      render correctly rather than breaking the PDF's internal markup). Then a genuinely
+      clean, fully unattended run of `generate_equity_report.py` end-to-end: **it hit the
+      Claude subscription's session usage limit partway through Stage 5**, a real-world
+      constraint the plan had flagged as an open "retry/failure handling" question —
+      Stage 5's `claude -p` call had actually already written a complete, valid
+      `report_reviewed.md` via its own Write tool before the surrounding process exited
+      non-zero, so resuming was just re-running Stage 6 against the already-good file,
+      not redoing any research/drafting. Final deliverables
+      (`Family_Bank_Kenya_Financial_Model.xlsx` + `Family_Bank_Kenya_Equity_Research_
+      Report.pdf`) landed correctly side by side in the same `output/<timestamp>/`
+      folder. Also notable: this run's independent Stage 2 research found a different
+      peer set/proxy value (9 peers, ~1.11x, ~KES 23.26) than the earlier test run (2
+      peers, ~0.93x, ~KES 18.25) — real run-to-run variability in web research scope,
+      on top of the Stage 4 recommendation variability already documented above.
 
 ## Follow-ups (not blocking)
 
