@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "years": [
+    {
+      "year": 2026,
+      "balance_sheet_ok": true,
+      "balance_sheet_value": -1.4551915228366852e-11,
+      "capital_adequacy_ok": true,
+      "total_capital_ratio": 0.19632063314406387,
+      "total_capital_min": 0.145,
+      "liquidity_ok": true,
+      "liquidity_ratio": 0.537199247698189,
+      "liquidity_min": 0.2
+    },
+    {
+      "year": 2027,
+      "balance_sheet_ok": true,
+      "balance_sheet_value": 2.9103830456733704e-11,
+      "capital_adequacy_ok": true,
+      "total_capital_ratio": 0.19818088857694302,
+      "total_capital_min": 0.145,
+      "liquidity_ok": true,
+      "liquidity_ratio": 0.5570277629205171,
+      "liquidity_min": 0.2
+    },
+    {
+      "year": 2028,
+      "balance_sheet_ok": true,
+      "balance_sheet_value": 0.0,
+      "capital_adequacy_ok": true,
+      "total_capital_ratio": 0.1982868622481029,
+      "total_capital_min": 0.145,
+      "liquidity_ok": true,
+      "liquidity_ratio": 0.574831983201305,
+      "liquidity_min": 0.2
+    },
+    {
+      "year": 2029,
+      "balance_sheet_ok": true,
+      "balance_sheet_value": 7.275957614183426e-12,
+      "capital_adequacy_ok": true,
+      "total_capital_ratio": 0.19695910518425822,
+      "total_capital_min": 0.145,
+      "liquidity_ok": true,
+      "liquidity_ratio": 0.5908166053242714,
+      "liquidity_min": 0.2
+    },
+    {
+      "year": 2030,
+      "balance_sheet_ok": true,
+      "balance_sheet_value": 0.0,
+      "capital_adequacy_ok": true,
+      "total_capital_ratio": 0.1944442952557891,
+      "total_capital_min": 0.145,
+      "liquidity_ok": true,
+      "liquidity_ratio": 0.6051967579716357,
+      "liquidity_min": 0.2
+    }
+  ]
+}

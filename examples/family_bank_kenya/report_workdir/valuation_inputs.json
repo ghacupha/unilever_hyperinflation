@@ -1,0 +1,213 @@
+{
+  "business_name": "Family Bank Limited",
+  "currency": "KES",
+  "currency_unit": "Millions",
+  "years": [
+    2026,
+    2027,
+    2028,
+    2029,
+    2030
+  ],
+  "company_facts": {
+    "as_of_year": 2025,
+    "total_assets": 208626.792,
+    "total_liabilities": 176519.282,
+    "total_equity": 32107.51,
+    "deposits_total": 152437.336,
+    "net_loans": 105898.91199999998,
+    "book_value_per_share": 19.31098754702569
+  },
+  "shares_outstanding_mm": 1662.655,
+  "cost_of_equity": 0.19987,
+  "blend_weights": {
+    "ddm": 0.5,
+    "ri": 0.3,
+    "pb": 0.2
+  },
+  "valuation_per_share": {
+    "ddm": 7.723814776603902,
+    "residual_income": 11.987741277849459,
+    "pb_regression": 33.68792242874724,
+    "blended": 14.195814257406237
+  },
+  "valuation_by_scenario": {
+    "base": {
+      "ddm_per_share": 7.723814776603902,
+      "residual_income_per_share": 11.987741277849459,
+      "pb_regression_per_share": 33.68792242874724,
+      "blended_per_share": 14.195814257406237
+    },
+    "best": {
+      "ddm_per_share": 9.57706406182019,
+      "residual_income_per_share": 17.825587258613414,
+      "pb_regression_per_share": 41.9027408584631,
+      "blended_per_share": 18.516756380186738
+    },
+    "worst": {
+      "ddm_per_share": 5.160060551548762,
+      "residual_income_per_share": 3.983977985498895,
+      "pb_regression_per_share": 22.844509021339864,
+      "blended_per_share": 8.344125475692023
+    }
+  },
+  "sensitivity_factors": [
+    {
+      "name": "Loan/balance-sheet growth",
+      "category": "Macro \u2014 credit demand cycle",
+      "detail": "Worst 0.70x / Best 1.20x growth multiplier",
+      "downside": -0.195466931497656,
+      "upside": 0.1402992073050251
+    },
+    {
+      "name": "Asset yield (lending rate)",
+      "category": "Bank-specific \u2014 rate cycle / repricing",
+      "detail": "+/-100bp parallel shift on loan yields",
+      "downside": -0.14975091563535384,
+      "upside": 0.1497509156353536
+    },
+    {
+      "name": "Cost of funds (deposit pricing)",
+      "category": "Macro \u2014 policy rate transmission",
+      "detail": "+/-100bp parallel shift on deposit cost",
+      "downside": -0.22683004997780543,
+      "upside": 0.22683004997780543
+    }
+  ],
+  "base_avg_pat": 7466.88320389291,
+  "roe_series": [
+    0.2108855587585485,
+    0.19335111183315468,
+    0.17558065952916635,
+    0.16159320744571035,
+    0.150138075370672
+  ],
+  "pat_series": [
+    6771.010186695683,
+    7189.909517567552,
+    7475.908398620508,
+    7786.389881950714,
+    8111.198034630094
+  ],
+  "capital": {
+    "total_capital_ratio": [
+      0.19632063314406387,
+      0.19818088857694302,
+      0.1982868622481029,
+      0.19695910518425822,
+      0.1944442952557891
+    ],
+    "total_capital_min": 0.145
+  },
+  "liquidity": {
+    "ratio": [
+      0.537199247698189,
+      0.5570277629205171,
+      0.574831983201305,
+      0.5908166053242714,
+      0.6051967579716357
+    ],
+    "min": 0.2
+  },
+  "npl_ratio": [
+    0.10770862814056806,
+    0.09527460059494551,
+    0.08669025988842191,
+    0.08071982199395002,
+    0.07653694880745758
+  ],
+  "peer_banks": [
+    {
+      "name": "Absa",
+      "eps_fy24": 3.8,
+      "eps_fy25": 4.2,
+      "roae_fy24": 0.27,
+      "roae_fy25": 0.247,
+      "payout_fy25": 0.486,
+      "pb_placeholder": 1.69
+    },
+    {
+      "name": "Co-op Bank",
+      "eps_fy24": 4.3,
+      "eps_fy25": 5.0,
+      "roae_fy24": 0.197,
+      "roae_fy25": 0.191,
+      "payout_fy25": 0.496,
+      "pb_placeholder": 1.18
+    },
+    {
+      "name": "DTB",
+      "eps_fy24": 27.3,
+      "eps_fy25": 33.7,
+      "roae_fy24": 0.098,
+      "roae_fy25": 0.103,
+      "payout_fy25": 0.267,
+      "pb_placeholder": 0.36
+    },
+    {
+      "name": "Equity Group",
+      "eps_fy24": 12.3,
+      "eps_fy25": 19.1,
+      "roae_fy24": 0.211,
+      "roae_fy25": 0.265,
+      "payout_fy25": 0.302,
+      "pb_placeholder": 0.96
+    },
+    {
+      "name": "I&M Group",
+      "eps_fy24": 8.9,
+      "eps_fy25": 10.8,
+      "roae_fy24": 0.162,
+      "roae_fy25": 0.18,
+      "payout_fy25": 0.348,
+      "pb_placeholder": 0.64
+    },
+    {
+      "name": "KCB Group",
+      "eps_fy24": 18.7,
+      "eps_fy25": 20.8,
+      "roae_fy24": 0.246,
+      "roae_fy25": 0.225,
+      "payout_fy25": 0.337,
+      "pb_placeholder": 0.73
+    },
+    {
+      "name": "NCBA",
+      "eps_fy24": 13.3,
+      "eps_fy25": 14.2,
+      "roae_fy24": 0.212,
+      "roae_fy25": 0.197,
+      "payout_fy25": 0.5,
+      "pb_placeholder": 1.2
+    },
+    {
+      "name": "Stanbic Holdings",
+      "eps_fy24": 34.7,
+      "eps_fy25": 34.7,
+      "roae_fy24": 0.193,
+      "roae_fy25": 0.18,
+      "payout_fy25": 0.644,
+      "pb_placeholder": 1.44
+    },
+    {
+      "name": "StanChart",
+      "eps_fy24": 52.7,
+      "eps_fy25": 32.5,
+      "roae_fy24": 0.301,
+      "roae_fy25": 0.18,
+      "payout_fy25": 0.955,
+      "pb_placeholder": 1.81
+    }
+  ],
+  "financial_health": {
+    "overall_grade": "C",
+    "capital_grade": "A",
+    "capital_ratio": 0.19632063314406387,
+    "capital_min": 0.145,
+    "liquidity_grade": "A",
+    "liquidity_ratio": 0.537199247698189,
+    "liquidity_min": 0.2,
+    "npl_grade": "C",
+    "npl_ratio": 0.10770862814056806
+  }
+}

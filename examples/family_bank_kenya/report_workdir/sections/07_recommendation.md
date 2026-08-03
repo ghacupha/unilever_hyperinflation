@@ -1,0 +1,9 @@
+## Price vs. Fair Value & Recommendation
+
+**Recommendation: Sell**
+
+Family Bank last traded at KES 31.45, versus a blended fair value of KES 14.20 per share — a gap of +121.5%. That blend weights three methods (DDM 50%, residual income 30%, P/B regression 20%): DDM points to KES 7.72, residual income to KES 11.99, and the P/B regression — anchored on peer multiples — to KES 33.69. The wide spread between these methods (a method-spread ratio of ~2.17) places this call in the "Extreme" uncertainty tier, where Morningstar's own margin-of-safety convention requires the price to be up more than 300% above fair value before a Sell is mechanically triggered on arithmetic alone. At +121.5%, this name sits inside that band, so the raw signal is Hold.
+
+The reason to override that Hold is specific to how this stock is currently priced. Family Bank listed on the NSE by introduction only on 2026-06-23 — about 5.5 weeks before this valuation date — after decades trading OTC. No analyst coverage or consensus target exists yet for a name this newly seasoned. As a market-implied check, applying the peer-average trading P/B (1.11x, across nine NSE-listed peers) to Family Bank's own book value of KES 19.31 implies a value of only KES 21.48 — well below the KES 31.45 traded price (itself a P/B of ~1.63x). That gap is consistent with a listing-related scarcity/liquidity premium: a thin free float and elevated post-introduction volatility (52-week range KES 18.00–50.00) inflating the price above what peer multiples or fundamentals currently support. As trading matures, free float deepens, and analyst coverage initiates, this premium should compress toward peer-implied and fundamental levels — the direction the +121.5% mispricing already implies.
+
+Timing is genuinely uncertain: there is no price history or beta yet to gauge how quickly this normalizes, so this is a valuation-anchored Sell rather than an event with a fixed date.

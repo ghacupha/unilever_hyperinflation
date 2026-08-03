@@ -1,0 +1,16 @@
+{
+  "price": 31.45,
+  "blended_fair_value": 14.195814257406237,
+  "pct_diff": 1.215441779508485,
+  "method_values": {
+    "ddm": 7.723814776603902,
+    "residual_income": 11.987741277849459,
+    "pb_regression": 33.68792242874724
+  },
+  "uncertainty_tier": "Extreme",
+  "method_spread": 2.1658882228396883,
+  "buy_threshold": 0.75,
+  "sell_threshold": 3.0,
+  "mechanical_signal": "Hold",
+  "rationale": "Price is +121.5% vs. blended fair value \u2014 within the Extreme-uncertainty band (Buy below -75%, Sell above +300%). Mechanically Hold: the report-writing stage must identify a specific, plausible catalyst to argue Sell instead; absent one, the recommendation stays Hold."
+}
