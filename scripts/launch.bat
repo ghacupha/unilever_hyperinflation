@@ -21,7 +21,7 @@ if "%BANK%"=="" set "BANK=family_bank_kenya"
 set "CONFIG_SRC=%ROOT_DIR%\examples\%BANK%\config.py"
 
 REM Load repo-root .env (git-ignored, see .env.example), if present -- lets
-REM REPORT=1/TICKER/EXCHANGE/ANTHROPIC_KEY be set once instead of inline every run. A
+REM REPORT=1/TICKER/EXCHANGE be set once instead of inline every run. A
 REM variable already set before calling this script wins over the .env file's value
 REM (matches standard dotenv precedence); comment/blank lines are skipped.
 if exist "%ROOT_DIR%\.env" (

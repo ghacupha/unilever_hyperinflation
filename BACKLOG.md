@@ -1,4 +1,4 @@
-# BACKLOG — Bank Financial Model Generator
+# BACKLOG — Family Bank Kenya Financial Model
 
 Tracks status against `BLUEPRINT.md`. Check items off as they land; append the
 corresponding entry to `CHANGELOG.md` when you do. This is the "what's next" doc — read it
@@ -485,7 +485,12 @@ but flagged for refinement.
       reverse-engineered against both the reference and the user's own partial manual
       attempt during planning, so a follow-up phase wouldn't start from scratch.
 
-## Phase 18 — Standalone Python onboarding/update agent (2026-07-14) — DONE
+## Phase 18 — Standalone Python onboarding/update agent (2026-07-14) — DONE, removed 2026-08-09
+
+> **Removed 2026-08-09**: the repo was refocused to be specifically about Family Bank
+> Kenya (pushed to its own `model_family_bank` repo) and no longer needs multi-institution
+> onboarding. `agent/` and `.devops/agents/bank-onboarding.md` were deleted; `AGENTS.md`
+> updated accordingly. History below kept for context.
 
 - [x] `agent/` package (`cli.py`, `research.py`, `config_writer.py`, `manifest.py`,
       `build_runner.py`) — a standalone program (not a Claude Code subagent) that calls the

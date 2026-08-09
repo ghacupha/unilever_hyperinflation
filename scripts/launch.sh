@@ -22,7 +22,7 @@ BANK="${1:-family_bank_kenya}"
 CONFIG_SRC="$ROOT_DIR/examples/$BANK/config.py"
 
 # Load repo-root .env (git-ignored, see .env.example) into the environment, if present --
-# lets REPORT=1/TICKER/EXCHANGE/ANTHROPIC_KEY be set once instead of inline every run.
+# lets REPORT=1/TICKER/EXCHANGE be set once instead of inline every run.
 # A variable already exported by the calling shell (e.g. REPORT=0 ./launch.sh) wins over
 # the .env file's value, matching standard dotenv precedence.
 if [ -f "$ROOT_DIR/.env" ]; then

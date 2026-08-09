@@ -7,6 +7,16 @@ All meaningful changes to the bank financial model generator. Each entry should 
 
 ## [Unreleased]
 
+### Changed — Refocused repo onto Family Bank Kenya specifically (2026-08-09)
+- Retired the generic multi-institution "onboarding" framing: deleted `agent/` (standalone
+  onboarding/update agent) and `.devops/agents/bank-onboarding.md` (its SOP) — see
+  `BACKLOG.md` Phase 18. Updated `AGENTS.md` and `CLAUDE.md` to drop references to them.
+- Rewrote `README.md` and `CLAUDE.md` framing from "reusable bank financial model
+  generator" to "Family Bank Kenya financial model"; `BLUEPRINT.md`/`BACKLOG.md` titles
+  updated to match (history entries left as-is).
+- Repointed `origin` at `https://github.com/ghacupha/model_family_bank.git` and pushed to
+  its `main` branch.
+
 ### Added — Coherence gate (Stage 5.5) + repeatable refresh pipeline (2026-07-27)
 - Fixed the root cause of two coherence bugs found in a real pipeline run: new
   `company_facts` block in `bizplan/report/data.py`'s `to_report_json()` (total

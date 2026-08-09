@@ -6,23 +6,13 @@ rendering logic here — this only orchestrates already-built pieces).
                                       [--reference-date YYYY-MM-DD] [--as-of YEAR]
                                       [--skip-update]
 
-Two ways to bring `config.py` up to date before the report runs, mutually exclusive:
-
-- Default (no `--as-of`): runs `agent/cli.py update <institution>` first. That's the
-  standalone onboarding/update agent (raw Anthropic API, requires `ANTHROPIC_KEY` in
-  `.env` — real per-token cost, separate from the `claude -p` subscription billing the
-  report pipeline itself uses) — it checks whether a newer annual/quarterly filing has
-  been published and, if so, mechanically rolls `config.py`'s `ACTUALS`/`YEARS` forward.
-  If nothing newer is found, or `ANTHROPIC_KEY` isn't set, this step is skipped with a
-  warning rather than failing the whole refresh — checking for new filings is a nice-to
-  -have on every run, not a hard requirement for regenerating today's report.
-- `--as-of YEAR`: instead runs Stage 0 (`scripts/source_model.py`'s `source_model()`),
-  which re-anchors `config.py` to an explicit year (roll-forward *or* roll-backward, e.g.
-  for a historical backtest) rather than "whatever's newest". Use this when you want a
-  specific anchor, not just "the latest available."
-- `--skip-update`: skip both of the above and just regenerate the report from
-  `config.py` exactly as it stands (e.g. you already ran `agent update` yourself, or you
-  only want fresh price/consensus research without touching the model's anchor).
+Bringing `config.py` up to date before the report runs is opt-in via `--as-of YEAR`,
+which runs Stage 0 (`scripts/source_model.py`'s `source_model()`) to re-anchor `config.py`
+to an explicit year (roll-forward *or* roll-backward, e.g. for a historical backtest).
+Without `--as-of`, the update step is skipped and the report regenerates from `config.py`
+exactly as it stands — e.g. you only want fresh price/consensus research without touching
+the model's anchor. `--skip-update` is equivalent to omitting `--as-of` and exists for
+explicitness in scripts/cron jobs.
 
 After the model is up to date, always runs the full equity-report pipeline
 (`bizplan.report.pipeline.generate`) — Stage 2's price/consensus research is always
@@ -36,7 +26,6 @@ re-running each stage by hand.
 """
 import argparse
 import datetime
-import subprocess
 import sys
 from pathlib import Path
 
@@ -44,25 +33,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from bizplan.report.pipeline import generate  # noqa: E402
-
-
-def _run_agent_update(institution):
-    """Runs `agent/cli.py update <institution>` as a subprocess (it has its own
-    ANTHROPIC_KEY-based client setup, separate from this process). Returns True if it
-    ran successfully, False if skipped/failed -- a failure here does not abort the
-    refresh, since a fresh report can still be regenerated from the current config.py."""
-    print("=== Checking for newer filings (agent update) ===")
-    result = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "agent" / "cli.py"), "update", institution],
-        cwd=REPO_ROOT, capture_output=True, text=True,
-    )
-    print(result.stdout)
-    if result.returncode != 0:
-        print(f"agent update did not complete (exit {result.returncode}); continuing "
-              f"the refresh from config.py as it currently stands.\n{result.stderr}",
-              file=sys.stderr)
-        return False
-    return True
 
 
 def _run_source_model(institution, as_of):
@@ -73,11 +43,8 @@ def _run_source_model(institution, as_of):
 
 def refresh(institution, ticker=None, exchange=None, reference_date=None,
             as_of=None, skip_update=False):
-    if not skip_update:
-        if as_of is not None:
-            _run_source_model(institution, as_of)
-        else:
-            _run_agent_update(institution)
+    if not skip_update and as_of is not None:
+        _run_source_model(institution, as_of)
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
     output_dir = REPO_ROOT / "output" / timestamp
@@ -102,10 +69,10 @@ def main():
     parser.add_argument("--reference-date", default=None,
                          help="YYYY-MM-DD; defaults to today (see Stage 2's backtest caveat)")
     parser.add_argument("--as-of", type=int, default=None,
-                         help="Explicit re-anchor year (Stage 0) instead of agent update's "
-                              "'whatever's newest' check")
+                         help="Explicit re-anchor year (Stage 0); omit to leave config.py's "
+                              "anchor untouched")
     parser.add_argument("--skip-update", action="store_true",
-                         help="Skip both agent update and Stage 0 -- regenerate the report "
+                         help="Equivalent to omitting --as-of -- regenerate the report "
                               "from config.py exactly as it stands")
     args = parser.parse_args()
     refresh(args.institution, ticker=args.ticker, exchange=args.exchange,

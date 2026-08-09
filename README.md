@@ -1,9 +1,9 @@
-# Bank Financial Model Generator
+# Family Bank Kenya Financial Model
 
-A reusable bank/financial-institution model generator that produces an audit-ready, fully
-formula-linked Excel workbook — schedules, scenarios, and an equity valuation, not a
-one-off spreadsheet. **Family Bank Kenya** (a real NSE-listed bank) is the first instance,
-built entirely from its own disclosed annual reports.
+A financial model for **Family Bank Kenya** (a real NSE-listed bank) that produces an
+audit-ready, fully formula-linked Excel workbook — schedules, scenarios, and an equity
+valuation, not a one-off spreadsheet — built entirely from its own disclosed annual
+reports.
 
 Every calculated cell in the generated workbook is a live Excel formula (`=SUM(...)`,
 cross-sheet references, a scenario `CHOOSE()` switch) — nothing is a pasted-in number
@@ -34,18 +34,10 @@ All three also load a repo-root `.env` file automatically, if one exists (copy
 it). A variable already set in your shell before invoking the launcher wins over `.env`'s
 value.
 
-To target a different bank instance (once more than one exists under `examples/`), pass
-its folder name as the first argument:
-
-```bash
-./scripts/launch.sh family_bank_kenya
-```
-
 If you already have the venv active, you can run the entry point directly:
 
 ```bash
-.venv/bin/python scripts/build_bank_model.py                       # default bank
-.venv/bin/python scripts/build_bank_model.py --bank family_bank_kenya
+.venv/bin/python scripts/build_bank_model.py
 .venv/bin/python scripts/build_bank_model.py --config path/to/config.py
 ```
 
@@ -74,7 +66,7 @@ need to remember the flag each time):
 
 ```bash
 cp .env.example .env
-# then edit .env: uncomment/set REPORT=1, and ANTHROPIC_KEY/TICKER/EXCHANGE if needed
+# then edit .env: uncomment/set REPORT=1, and TICKER/EXCHANGE if needed
 ```
 
 This is **opt-in, not the default**, because it makes several `claude -p` calls (research,
@@ -120,7 +112,6 @@ financial_model_template/
 ├── data/                                                ← source PDFs (Family Bank Kenya)
 ├── .venv/                                               ← shared virtual environment
 ├── .devops/agents/
-│   ├── bank-onboarding.md          ← SOP: onboarding a new institution
 │   └── equity-report/              ← SOPs for each equity-report pipeline stage
 ├── bizplan/
 │   ├── config_loader.py            ← load_and_validate() / validate_bank_config()
@@ -128,8 +119,7 @@ financial_model_template/
 │   │   ├── xl_helpers.py           ← formula-capable openpyxl primitives
 │   │   ├── bank_calculations.py    ← all schedules, Python ground truth + scenarios
 │   │   └── bank_excel_renderer.py  ← builds the live-formula workbook
-│   └── report/                     ← the equity-research-report engine (generic,
-│       │                             institution-agnostic — same status as financial/)
+│   └── report/                     ← the equity-research-report engine
 │       ├── data.py, validation.py, recommendation.py, pdf.py   ← pure Python, no LLM
 │       ├── claude_cli.py           ← shared `claude -p` invocation helper
 │       └── sourcing.py, price_research.py, drafting.py, review.py, pipeline.py

@@ -1,4 +1,4 @@
-# Blueprint: Reusable Bank Financial Model Generator
+# Blueprint: Family Bank Kenya Financial Model
 
 **Status:** Design approved 2026-07-05; structurally reviewed against the FMI reference
 (Blu Containers) and reworked 2026-07-06 — see `BACKLOG.md` for current status and next

@@ -79,11 +79,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Use `apply_patch` for manual edits.
 - Avoid destructive git or filesystem operations unless explicitly requested.
 
-## Bank Financial Model Generator — progress tracking
+## Family Bank Kenya Financial Model — progress tracking
 
-This repo's active initiative is a reusable bank financial model generator (Family Bank
-Kenya as first instance). Three root-level files track it — **read them before starting
-work, update them before stopping**:
+This repo's active initiative is a financial model for Family Bank Kenya. Three
+root-level files track it — **read them before starting work, update them before
+stopping**:
 
 - `BLUEPRINT.md` — the design source of truth (schedules, IFRS 9 provisioning design,
   valuation approach, analytical framework). Update it when a design decision changes.
@@ -95,8 +95,5 @@ Primary data source for calibration is the `data/` folder (Family Bank Kenya ann
 2021-2025, MTN Information Memorandum, IPO/listing prospectus docs) — extract targeted
 text/tables and search for key terms rather than reading these PDFs cover-to-cover.
 
-Onboarding a new institution: see `AGENTS.md` for the SOP
-(`.devops/agents/bank-onboarding.md`) and the runnable agent (`agent/`) that executes it —
-researches a new bank's filings, writes `examples/<institution>/config.py` +
-`research_output.md`, and runs the existing renderer. Requires `ANTHROPIC_API_KEY`; each
-run costs real API tokens.
+See `AGENTS.md` for the equity-research-report pipeline (SOPs under
+`.devops/agents/equity-report/`).

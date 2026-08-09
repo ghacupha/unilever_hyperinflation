@@ -2,29 +2,15 @@
 
 Index of agent-related resources in this repo.
 
-## Bank/financial-institution onboarding
-
-- **SOP**: [`.devops/agents/bank-onboarding.md`](.devops/agents/bank-onboarding.md) —
-  the institution-agnostic playbook (data intake, extraction, known pitfalls,
-  `config.py` schema, verification, seasonal updates).
-- **Runnable agent**: [`agent/`](agent/) — a standalone Python program that
-  executes the SOP: researches a new institution's public filings (Anthropic
-  API, server-side web search + native PDF reading), writes
-  `examples/<institution>/config.py` and `research_output.md`, runs the
-  existing renderer, and can be re-run later (`update`) to ingest new
-  annual/quarterly filings and roll the model forward. See `agent/cli.py`
-  for usage. Requires `ANTHROPIC_API_KEY`; each run costs real API tokens.
-
 ## Equity Research Report pipeline (all 6 stages built — see BLUEPRINT.md "2026-07-26 (cont.)")
 
 Produces both the Excel financial model and a Morningstar-style equity research PDF. The
-generic, institution-agnostic engine lives in `bizplan/report/` (same status as
-`bizplan/financial/`); `scripts/*.py` are thin CLI wrappers only — parse args, call into
-`bizplan.report.*`, print. Every LLM-driven stage runs via `claude -p` (Claude Code's own
-headless mode, wrapped by the shared `bizplan/report/claude_cli.py` helper),
+engine lives in `bizplan/report/`; `scripts/*.py` are thin CLI wrappers only — parse args,
+call into `bizplan.report.*`, print. Every LLM-driven stage runs via `claude -p` (Claude
+Code's own headless mode, wrapped by the shared `bizplan/report/claude_cli.py` helper),
 authenticated through a Claude subscription rather than a raw `ANTHROPIC_API_KEY` — no
-separate per-token billing, unlike `agent/` above. Requires the `claude` CLI on `PATH`,
-logged in normally (never pass `--bare`, which forces API-key billing).
+separate per-token billing. Requires the `claude` CLI on `PATH`, logged in normally (never
+pass `--bare`, which forces API-key billing).
 
 - **Run the whole thing**: [`scripts/generate_equity_report.py`](scripts/generate_equity_report.py)
   `<institution> --output-dir <dir>` (`--ticker`/`--exchange` optional, default to
@@ -35,11 +21,9 @@ logged in normally (never pass `--bare`, which forces API-key billing).
   exited non-zero; re-run only the missing stage's script rather than the whole pipeline.
 - **Stage 0 — model sourcing** ([SOP](.devops/agents/equity-report/model-sourcing.md),
   `bizplan/report/sourcing.py`, [`scripts/source_model.py`](scripts/source_model.py)):
-  generalizes `bank-onboarding.md` along a second axis — institution *and* an as-of
-  anchor year (actuals = the 3 years ending there, projections = the next 5 forward).
-  Supports rolling forward (seasonal updates) and rolling backward (backtesting a past
-  vantage point). Not run by `generate_equity_report.py` automatically — run it first if
-  the institution needs onboarding or re-anchoring.
+  handles the institution *and* an as-of anchor year (actuals = the 3 years ending there,
+  projections = the next 5 forward). Supports rolling forward (seasonal updates) and
+  rolling backward (backtesting a past vantage point).
 - **Stage 1/1b — ground truth + validation** (`bizplan/report/data.py`,
   `bizplan/report/validation.py`, pure Python, no LLM): serializes the
   valuation/scenario/sensitivity output and re-implements the Model sheet's Master Check
