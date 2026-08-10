@@ -5,15 +5,18 @@
 # also run the full equity-research-report pipeline (Stages 1-6 -- see BLUEPRINT.md's
 # "Equity Research Report pipeline" section) and produce a PDF alongside the Excel model,
 # instead of passing it inline every run:
-#   .\scripts\launch.ps1 family_bank_kenya
-# Reads TICKER/EXCHANGE from that institution's config.py; override via .env or
+#   .\scripts\launch.ps1 acorn_i_reit
+# NOTE: the REPORT=1 pipeline (bizplan/report/*) still imports the retired
+# bank_calculations/bank_excel_renderer modules and will not currently run -- REIT
+# adaptation is tracked as a follow-up in BACKLOG.md. The default (Excel-only) path works.
+# Reads TICKER/EXCHANGE from that REIT's config.py; override via .env or
 # $env:TICKER / $env:EXCHANGE if the config doesn't have them or you want a different pair.
 # This makes several `claude -p` calls (subscription-billed, not separately metered --
 # same convention as scripts/source_model.py) and takes noticeably longer than the
 # Excel-only path.
 
 param(
-    [string]$Bank = "family_bank_kenya"
+    [string]$Reit = "acorn_i_reit"
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,7 +24,7 @@ $ErrorActionPreference = "Stop"
 $ScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptsDir
 $VenvDir = Join-Path $RootDir ".venv"
-$ConfigSrc = Join-Path $RootDir "examples\$Bank\config.py"
+$ConfigSrc = Join-Path $RootDir "examples\$Reit\config.py"
 
 # Load repo-root .env (git-ignored) into the process environment, if present. Blank lines
 # and lines starting with # are skipped; existing $env: values (e.g. set inline before
@@ -64,12 +67,12 @@ $env:OUTPUT_DIR = $OutDir
 if ($env:REPORT -eq "1") {
     Write-Output "REPORT=1 -- running the full equity-report pipeline (Stages 1-6). This makes"
     Write-Output "several claude -p calls and can take a while -- it is not a quick command."
-    $ReportArgs = @($Bank, "--output-dir", $OutDir)
+    $ReportArgs = @($Reit, "--output-dir", $OutDir)
     if ($env:TICKER) { $ReportArgs += @("--ticker", $env:TICKER) }
     if ($env:EXCHANGE) { $ReportArgs += @("--exchange", $env:EXCHANGE) }
     & $PythonExe (Join-Path $ScriptsDir "generate_equity_report.py") @ReportArgs
 } else {
-    & $PythonExe (Join-Path $ScriptsDir "build_bank_model.py") --bank $Bank
+    & $PythonExe (Join-Path $ScriptsDir "build_reit_model.py") --reit $Reit
 }
 
 Copy-Item $ConfigSrc -Destination $OutDir

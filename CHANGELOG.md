@@ -1,11 +1,40 @@
 # CHANGELOG
 
-All meaningful changes to the bank financial model generator. Each entry should name which
-`BLUEPRINT.md` phase / `BACKLOG.md` item(s) it closes.
+All meaningful changes to this repo. Each entry should name which `BLUEPRINT.md` phase /
+`BACKLOG.md` item(s) it closes. Prior to 2026-08-09, this repo was a Family Bank Kenya
+banking model — that history is preserved below rather than rewritten; the repo pivoted
+to a generic REIT valuation model (first instance Acorn I-REIT) on that date.
 
 ---
 
 ## [Unreleased]
+
+### Changed — Pivoted repo from Family Bank Kenya banking model to a generic REIT valuation model (2026-08-09)
+- Full domain rewrite: a REIT's economics (property portfolio, rental income/NOI, CMA
+  regulatory limits, NAV/DDM/cap-rate valuation) share nothing with a bank's (loan book,
+  IFRS 9 provisioning, deposits/NII, capital adequacy) — see `BLUEPRINT.md` Phase 1.
+- Added `bizplan/financial/reit_calculations.py` and `reit_excel_renderer.py`
+  (replacing `bank_calculations.py`/`bank_excel_renderer.py`, both deleted — recoverable
+  via git history); rewrote `bizplan/config_loader.py`'s schema for REIT config fields.
+- Added `examples/acorn_i_reit/config.py` + `research_output.md`, calibrated from Acorn
+  I-REIT's own H1 2025 interim financial statements and a Kenya REITs/REOCs sector
+  report — real disclosed figures, provenance-tagged, including two documented
+  reconciliation gaps found in the source filing itself. Deleted
+  `examples/family_bank_kenya/`.
+- Verified the generated workbook's formulas with the `formulas` Python package (an
+  actual Excel-formula evaluator, not just openpyxl string-writing) — this caught and
+  fixed 4 real bugs before they shipped: a balance sheet that didn't balance in any
+  projected year, a DDM that discounted historical actual dividends as future cash
+  flows, a missing `Assumptions!` cross-sheet qualifier that made every cross-sheet
+  formula silently read the wrong cell, and a property roll-forward that froze flat
+  after the first projected year. Full detail in `BACKLOG.md` Phase 1.
+- Renamed `scripts/build_bank_model.py` → `build_reit_model.py` (`--bank` → `--reit`,
+  default instance `family_bank_kenya` → `acorn_i_reit`); updated `launch.sh`/
+  `launch.bat`/`launch.ps1` to match, smoke-tested end-to-end.
+- Rewrote `BLUEPRINT.md`/`BACKLOG.md` for the REIT domain; reframed `README.md`/
+  `CLAUDE.md`/`AGENTS.md`. Flagged (not fixed, per `BACKLOG.md` Phase 2) that
+  `bizplan/report/*` — the equity-research-report PDF pipeline — still imports the
+  retired bank modules and will not currently run.
 
 ### Changed — Refocused repo onto Family Bank Kenya specifically (2026-08-09)
 - Retired the generic multi-institution "onboarding" framing: deleted `agent/` (standalone

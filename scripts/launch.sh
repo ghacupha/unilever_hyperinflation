@@ -6,8 +6,11 @@
 # also run the full equity-research-report pipeline (Stages 1-6 -- see BLUEPRINT.md's
 # "Equity Research Report pipeline" section) and produce a PDF alongside the Excel model,
 # instead of passing it inline every run. Inline still works too:
-#   REPORT=1 ./scripts/launch.sh family_bank_kenya
-# Reads TICKER/EXCHANGE from that institution's config.py; override via .env or inline
+#   REPORT=1 ./scripts/launch.sh acorn_i_reit
+# NOTE: the REPORT=1 pipeline (bizplan/report/*) still imports the retired bank_calculations/
+# bank_excel_renderer modules and will not currently run -- REIT adaptation is tracked as a
+# follow-up in BACKLOG.md. The default (Excel-only) path below works.
+# Reads TICKER/EXCHANGE from that REIT's config.py; override via .env or inline
 # env vars (TICKER=... EXCHANGE=...) if the config doesn't have them or you want a
 # different pair.
 # This makes several `claude -p` calls (subscription-billed, not separately metered --
@@ -18,8 +21,8 @@ set -e
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPTS_DIR")"
 VENV_DIR="$ROOT_DIR/.venv"
-BANK="${1:-family_bank_kenya}"
-CONFIG_SRC="$ROOT_DIR/examples/$BANK/config.py"
+REIT="${1:-acorn_i_reit}"
+CONFIG_SRC="$ROOT_DIR/examples/$REIT/config.py"
 
 # Load repo-root .env (git-ignored, see .env.example) into the environment, if present --
 # lets REPORT=1/TICKER/EXCHANGE be set once instead of inline every run.
@@ -62,9 +65,9 @@ if [ "$REPORT" = "1" ]; then
     TICKER_ARGS=()
     [ -n "$TICKER" ] && TICKER_ARGS+=(--ticker "$TICKER")
     [ -n "$EXCHANGE" ] && TICKER_ARGS+=(--exchange "$EXCHANGE")
-    python "$SCRIPTS_DIR/generate_equity_report.py" "$BANK" --output-dir "$OUT_DIR" "${TICKER_ARGS[@]}"
+    python "$SCRIPTS_DIR/generate_equity_report.py" "$REIT" --output-dir "$OUT_DIR" "${TICKER_ARGS[@]}"
 else
-    python "$SCRIPTS_DIR/build_bank_model.py" --bank "$BANK"
+    python "$SCRIPTS_DIR/build_reit_model.py" --reit "$REIT"
 fi
 
 cp "$CONFIG_SRC" "$OUT_DIR/"

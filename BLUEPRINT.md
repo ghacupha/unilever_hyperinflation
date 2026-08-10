@@ -1,829 +1,149 @@
-# Blueprint: Family Bank Kenya Financial Model
-
-**Status:** Design approved 2026-07-05; structurally reviewed against the FMI reference
-(Blu Containers) and reworked 2026-07-06 — see `BACKLOG.md` for current status and next
-steps, `CHANGELOG.md` for what has actually landed.
-
-## 2026-07-27 (later) — Coherence gate (Stage 5.5): evaluator-optimizer loop for the equity-report pipeline
-
-A real pipeline run (`output/2026-07-27_105743`) surfaced two coherence bugs between the
-Excel model and its PDF report: (1) Stage 5 (`review.py`) correctly diagnosed a real
-arithmetic error in the drafted report but only described it in a `## Review Notes`
-header that Stage 6 then rendered verbatim into the client-facing PDF, uncorrected; (2)
-the Bank-vs-Consolidated (Group) mixup this repo already fixed once in `config.py`
-(2026-07-06 entry, above) came back through the report layer — `drafting.py` fed the LLM
-the whole `research_output.md` file, stale Consolidated-basis tables included, and Stage
-2's price research independently re-derived book value per share via live web search
-rather than reading the model's own corrected figure.
-
-**Design, and what it's called**: this is Anthropic's own **evaluator-optimizer**
-workflow pattern (from "Building Effective Agents") — one call generates a candidate,
-another evaluates it against explicit criteria and feeds critique back, bounded by a max
--iteration count. The wider agentic-AI literature calls the same shape the **reflection
-pattern**/**generator-critic**. The load-bearing research finding behind this specific
-design: LLMs cannot reliably self-correct without *external* grounding — pure self
--critique is one of three known variants, and the more reliable ones are cross-model
-critique and **tool-grounded critique** (checking against a deterministic source). This
-repo already has that deterministic ground truth sitting right there
-(`config.py`'s `ACTUALS`, `valuation_inputs.json`), so the fix leans on it directly. The
-whole multi-stage pipeline (source → compute → research → draft → review → gate →
-publish) is itself an **Orchestrator-Workers** pattern with an **Evaluator-Optimizer**
-gate at the end — "agentic workflow" territory, not a fully autonomous "agent": stage
-order is fixed/orchestrated, not decided by the model at runtime, which is the right
-level of autonomy where every number must stay traceable.
-
-**What changed**: `report_data.to_report_json()` gained a `company_facts` block (total
-assets/equity/deposits/net loans/book value per share, sourced *only* from
-`config.ACTUALS[latest actual year]`) as the one authoritative source for these figures —
-closing the drift at its root, before any LLM stage gets a chance to reintroduce it.
-Stage 5's output contract split into two files (`report_reviewed.md`, client-facing only,
-plus a structured `review_findings.json`) so a QA finding can no longer leak into the
-document it's found in. A new Stage 5.5 (`bizplan/report/coherence.py`) loops evaluator
-(Stage 5) and a new targeted-correction "optimizer" pass
-(`.devops/agents/equity-report/coherence-apply-fixes.md`) up to 10 iterations (per the
-user's explicit reliability decision), never re-fetching external data mid-loop and
-always treating the Excel model / JSON ground truth as authoritative over report prose.
-If the loop doesn't converge, Stage 6 (`pdf.py`) now renders a distinct "Unresolved QA
-Flags" appendix rather than either blocking forever or silently shipping a known-wrong
-number. See `BACKLOG.md` Phase 27 for the full file-by-file change list and verification
-detail (static/unit-level only — a live end-to-end billed run is a follow-up, not yet
-done).
-
-Also added: `scripts/refresh_report.py`, wiring the already-existing "check for new
-filings" mechanisms (`agent/cli.py update`, or `scripts/source_model.py`'s Stage 0 for an
-explicit re-anchor) into the full report pipeline as one repeatable command — the unit
-intended for scheduling (via the `schedule` skill) so the whole model+report can stay
-current as new market information arrives without a human re-running each stage by hand.
-No new calculation or rendering logic; pure orchestration of existing pieces.
-
-## 2026-07-27 — Reconciled with remote history; Sources sheet
-
-A local session's uncommitted genericity fixes (config-driven currency/regulator labels,
-Balance Sheet split ratios) predated a `git fetch` that pulled 16 remote commits (the
-Phase 24 equity-report pipeline, live-tested peer P/B/beta market research). Per user
-direction, the remote was adopted as the base — local changes were stashed (not merged),
-the branch fast-forwarded, then the genericity fixes reapplied by hand on the new code
-(BACKLOG.md Phase 25, renumbered since the remote already used Phase 23/24).
-
-While reconciling, also added a **Sources sheet**: `config.SOURCES`, an optional structured
-citation list (item, value, source/publisher, URL, accessed date) for every third-party
-market-data input behind the Output sheet's valuation — CAPM risk-free rate/ERP/beta, all 9
-peer bank P/B ratios — rendered as a numbered references list in standard equity-research
-citation form, with a live hyperlink where a URL exists. This is deliberately separate from
-Family Bank's own audited financial-statement figures, which keep their existing
-provenance channel (the `[DISCLOSED]` tags throughout `config.py` plus
-`research_output.md`'s research log) — `SOURCES` is specifically for externally-sourced
-market data. Spot-checked the underlying research via live web search before building on
-top of it — genuine and dated, with one flagged (not silently "fixed") freshness caveat on
-the risk-free rate, since bond yields move and re-scraping an unverified new figure would
-trade one snapshot for an equally-unverified one.
-
-## 2026-07-06 (later still) — Bank-only data, full Balance Sheet detail, scroll-safe headers
-
-Two problems surfaced from reviewing the rendered workbook directly against Family Bank's
-own disclosures (screenshots of the real Balance Sheet, Assets and Liabilities &
-Shareholders' Funds sides):
-
-- **Every actual figure had been sourced from the Consolidated (Group) column, not the
-  Bank (standalone) column** — both are presented side-by-side in every annual report,
-  for every statement. Per the modeling principle that a bank within a group should be
-  modeled on its own bank data (not diluted/inflated by subsidiary consolidation), every
-  actual figure was re-sourced to the Bank column. This is a genuinely different
-  reconciliation problem from the FY2024 restatement quirks found earlier — Bank vs
-  Consolidated is two DIFFERENT REAL NUMBERS for the same fiscal year, not a
-  report-vintage question. Two of the restatement quirks already documented for
-  Consolidated figures turned out to recur on a Bank basis too (Family Bank's "cash and
-  cash equivalents" definition broadened twice across report vintages) — same "prefer
-  the most recent restatement" convention applied again.
-- **The Model sheet's actual Balance Sheet block showed almost nothing** — a single
-  "TOTAL ASSETS" row (built from aggregates living elsewhere on the sheet) and 3
-  liability/equity lines, when Family Bank discloses ~28 distinct line items. Root cause:
-  since Phase 8, `config.py`'s `ACTUALS` had been blending 5-7 real distinct disclosure
-  lines into single buckets (e.g. `other_assets` blended 7 items; `retained_earnings`
-  blended 5) as a deliberate simplification, which the renderer then surfaced as one row
-  each rather than the real itemized statement.
-
-**Fix, and the key design principle for the rework**: where a specific driver already
-exists and works (Cash via the CF roll-forward, Securities via `INVESTMENT_SECURITIES`
-growth, Loans via the Loan Book schedule, PP&E via its own roll-forward, Retained
-Earnings via the PAT-minus-dividends roll-forward the Balance Sheet Check depends on),
-keep that mechanic completely unchanged and split it into presentational sub-lines via a
-proportional allocation calibrated to the FY2025 actual mix — this preserves every
-existing mechanical linkage exactly. Where no driver exists today (the old blended
-buckets), build bottom-up from real per-line actual facts, each independently growing at
-a new generic `OTHER_BS_ITEMS_GROWTH_RATE` for projected years — strictly additive to a
-schedule's total, so there's no Balance Sheet Check risk either way.
-
-The one place needing real care: Retained Earnings' projected-year value becomes a
-**residual/plug** — `Total Equity(t) [via the unchanged pre-existing roll-forward] − every
-other equity sub-line`. This preserves the exact existing mechanic algebraically (proven,
-not just tested): since every other equity line's value cancels out of the plug
-computation, `Total Equity(t) = _prev(equity_row) + PAT(t) − Dividends(t)` by
-construction, identical to `bank_calculations.py`'s own `tier1[i] = tier1[i-1] + pat[i] -
-dividends[i]` recursion (confirmed: the Python engine's Balance Sheet Check still ties
-across all scenarios with zero code changes there, only the underlying `CAPITAL
-['opening_tier1']` data correction cascading through).
-
-Also fixed (raised in the same conversation): the ~250-row Model sheet only had a year
-header at its very top and one other spot, so scrolling anywhere else lost the
-column-to-period mapping entirely. `_linked_year_header_row()` repeats a **formula
--linked** copy (not a duplicated literal) of the sheet's single master header row at the
-start of every schedule — a single source of truth, changing the master row propagates
-everywhere. Columns relabeled "2023A"/"2026P"-style across every sheet with year columns.
-
-## 2026-07-06 (later) — CLI wiring, regulatory capital bridge, sector concentration
-
-Worked through three of `BACKLOG.md`'s non-blocking follow-ups (CLI wiring, deeper CBK
-compliance detail, full regulatory-capital bridge); the other two (real peer P/B, a true
-regression beta) stayed out of scope — still no data source to unblock them.
-
-- **CLI wiring**: `scripts/build_bank_model.py` takes `--bank NAME`/`--config PATH`;
-  both launchers accept an optional bank-name arg. Makes the generator genuinely reusable
-  across bank instances without editing code, and closes a real validation gap
-  (`config_loader.py` didn't require `ACTUALS`/`ACTUAL_YEARS`, added this session, even
-  though the renderer already depended on them).
-- **Regulatory capital bridge — a real, previously-undiagnosed bug**: `CAPITAL
-  ['opening_tier1']` (32,622.486) turned out to be total accounting equity, not real
-  regulatory Tier 1 capital. Family Bank's own Capital Management note discloses the full
-  Tier 1/Tier 2/RWA build-up for FY2023-FY2025 — real regulatory Tier 1 for FY2025 is
-  24,404.354, an ~8.2bn gap from the accounting-equity figure the model had been using.
-  This is exactly why the modeled Core/Total Capital ratios never reconciled to the
-  disclosed 16.9%/19.6%, despite the earlier design note's acknowledgment of the gap.
-  **Important structural finding**: `opening_tier1`/`opening_tier2` can't simply be
-  repointed to the real regulatory figures — they're load-bearing for the Balance Sheet's
-  opening retained-earnings derivation and the Other Liabilities plug in
-  `bank_calculations.py`. Regulatory capital is a genuinely *parallel* calculation to the
-  accounting Balance Sheet (real Tier 2 includes statutory/revaluation reserve, which sit
-  within accounting equity, not liabilities — the two classifications diverge by design,
-  not by data error). Solution: added `REGULATORY_CAPITAL` (real per-year build-up) plus
-  new, clearly separate projected-year drivers (`tier1_pct_of_equity`,
-  `reg_tier2_opening`, `other_rwa_pct_of_gross_loans`) calibrated to the real FY2025
-  anchor, leaving the Balance Sheet's own accounting-equity mechanics completely
-  untouched. No Basel-style credit/market/operational RWA split exists anywhere in Family
-  Bank's own filings (confirmed via targeted search) — the model's own Loan Book/
-  Off-Balance-Sheet RWA rows remain a useful cross-check but aren't summed into the real
-  disclosed RWA total for actual years.
-- **Sector concentration, scoped down from "CBK compliance detail"**: targeted search
-  confirmed no single-borrower/large-exposure limit or Family Bank's own largest
-  exposures are disclosed anywhere — only generic risk-policy narrative. Rather than
-  fabricate a compliance check against a number that doesn't exist in the disclosure,
-  built a real sector-concentration schedule instead, using Family Bank's actual
-  disclosed loan-by-sector tables (noting the 7-category → 10-category scheme change
-  between FY2023 and FY2024/2025, shown as two separate tables rather than forced into
-  one comparison).
-
-## 2026-07-06 — Historical actuals + Financial Statement Quality Analysis
-
-Revisited the earlier "anchor 2026 to real FY2025 data" decision (above): rather than the
-projection's first year merely being calibrated off real data, the Model sheet now carries
-genuine actual-year columns, matching Blu Containers' own pattern of 3 historical columns
-immediately followed by projected columns on every schedule.
-
-- **3 actual years (2023-2025) + 5 projected years (2026-2030)** on every Model-sheet
-  schedule — Loan Book/IFRS 9, Securities/Deposits/Interest/NII, Income Statement, Cash
-  Flow/Balance Sheet, Capital Adequacy/Liquidity. `ACTUAL_COLS = [H, I, J]`,
-  `DATA_COLS = [K..O]`. Actual-year raw disclosed line items are hardcoded (`BLUE_INPUT`);
-  subtotals/derived rows are still live same-column formulas, not static dumps — matching
-  how the reference's own historical columns work (e.g. its `J13 =J10-J12`).
-- **Mechanical simplification this unlocked**: since real actual columns now exist
-  directly on the Model sheet, the projected recurrence's first period (`_prev(i=0, ...)`)
-  just references the last actual column, same row, same sheet — removed the old
-  Assumptions-sheet "opening scalar" fallback entirely rather than adding a new special
-  case for it.
-- **Actual years use real hardcoded aggregates, not forward-looking assumption rates
-  applied to historical balances** — e.g. Total Interest Income/Expense, Non-Interest
-  Income, Total Opex, PBT, Tax are hardcoded straight from disclosed figures for 2023-2025;
-  granular sub-splits (per-deposit-type interest expense, per-opex-category detail) are
-  left blank where the real disclosure doesn't break them out that finely, rather than
-  fabricated from a forward-looking rate.
-- **Balance sheet definition-of-cash pitfall** (worth flagging for future model
-  instances): a bank's disclosed Cash Flow Statement "cash and cash equivalents" figure
-  and its Balance Sheet's own "cash and balances with CBK + due from banks" figure are
-  *not* the same number — they differ by inter-bank balances. The CF statement's own
-  Ending Cash Balance row must use the CF figure; the Balance Sheet's Total Assets must use
-  the BS figure. Conflating them (reusing one hardcoded cell for both) breaks the Balance
-  Sheet Check by exactly the inter-bank-balances amount.
-- **Financial Statement Quality Analysis** (Output sheet, actuals only — the projection
-  is our own modeling, not a filing to scrutinize): Sloan (1996) Accruals Ratio
-  `(PAT − OCF) / Average Total Assets` (applies to banks unmodified); PAT-vs-OCF trend with
-  a decline flag; the Texas Ratio `Stage 3 Gross NPLs / (Total Equity + Total Loan Loss
-  Reserves)` (a genuinely bank-specific distress metric, >100% historically signals severe
-  distress); and an **adapted Beneish M-Score proxy** — the standard model explicitly
-  excludes financial institutions (Sales/Receivables/Gross-Margin/COGS don't translate to
-  a bank balance sheet), so each component is substituted with a bank-equivalent concept
-  (Total Operating Income for Sales, Net Loans for Receivables, NII/Deposits as a NIM proxy
-  for Gross Margin, Cost-to-Income for SGAI, Other-Assets/Total-Assets for AQI), DEPI is
-  omitted (no actual-year D&A breakdown disclosed), and the rendered section carries a
-  prominent caveat that the original model's -2.22 threshold doesn't apply — interpret
-  directionally only.
-
-## 2026-07-06 structural review & rework
-
-Compared the generated workbook cell-by-cell against `colossal-visuals/references/Blu
-Containers Model - Vertical Complete.xlsx` (the actual FMI reference, not just its
-documented conventions). Findings and what changed as a result:
-
-- **Live scenario switch** — the reference has a single `Scenarios!$D$6`-style switch
-  (`CHOOSE()`-driven) that makes any of Base/Best/Worst the fully-live Model sheet.
-  **Built the same mechanism**: `SWITCH_CELL_REF = 'Scenarios'!$D$5`; every scenario
-  -dependent assumption (loan growth, IFRS 9 loss rates, deposit growth, opex escalation)
-  now renders as 4 rows (Base hardcoded, Best/Worst = Base × a multiplier cell, ACTIVE =
-  `CHOOSE(switch, base, best, worst)`), and Model-sheet formulas reference the ACTIVE row.
-  A "CURRENTLY RUNNING: X SCENARIO" banner (Model sheet, row 1) mirrors the reference
-  exactly.
-- **Multi-scenario Summary is static in the reference too** — confirmed its Base/Best/Worst
-  Summary cells are bare hardcoded floats despite the rest of the workbook being live
-  (makes sense: only one scenario is ever "live" at a time under the CHOOSE design, so
-  showing all three needs a snapshot). Our Python-computed static Best/Worst was already
-  the same solution to the same constraint — no change needed there.
-- **Font color convention verified correct** — cell-by-cell confirmed the reference uses
-  exactly blue/default-black/teal for input/formula/cross-ref, matching our
-  `BLUE_INPUT`/`DARK`/`TEAL` tiers exactly. Our added `ORANGE` tier (modeled proxy) is our
-  own extension, no conflict.
-- **Visual style, Master Check placement** — reference uses zero colored fills anywhere
-  (plain white, bold text, borders for totals) and an inline bare-number check; ours uses
-  colored section bars and a top-of-sheet OK/ERROR panel. **Decision: keep our style** —
-  explicitly chosen over matching the reference's plainer look.
-- **Projection period & opening basis changed**: YEARS is now 2026-2030 (was 2024-2028);
-  opening balance sheet moved from FY2023 to **FY2025 actual** (the 4 previously-broken
-  Family Bank PDFs are now fixed/re-downloaded). All `LOAN_SEGMENTS`/`DEPOSIT_TYPES`/
-  `INVESTMENT_SECURITIES`/`CAPITAL`/`PPE`/`OPEX_ITEMS` opening figures recalibrated to the
-  real FY2025 balance sheet and income statement (see `research_output.md`'s
-  "Update 2026-07-06" section for the full source figures).
-- **Real peer data**: `data/` was reorganized into per-bank subfolders with re-downloaded
-  annual reports for Family Bank + 9 peers. NCBA's P/B (1.2x) is now directly disclosed;
-  I&M's (~0.64x) is computed from disclosed book value per share and share price. The
-  other 7 peers remain `[PLACEHOLDER]` — searched each bank's FY2025 report for book
-  value/price/market cap; not found as extractable text (likely infographic images).
-  Beta remains a reasoned proxy (~1.0, frontier-market bank equity betas typically
-  0.8-1.1x) — no market-data API available here for a true regression.
-
-## 2026-07-14 — Print layout, scenario table redesign, "Output" rename, onboarding agent
-
-- **Print/page setup**: every sheet now gets landscape orientation, scale=95,
-  horizontally-centered — matching the Blu Containers reference. Model gets a multi-block
-  print area (one block per schedule section, computed from the existing section-builder
-  row-chain, not hardcoded); every other sheet gets a single block. `print_title_rows`
-  repeats row 1 (business name + scenario banner) on every physically printed page.
-- **Scenario banner**: consolidated to one `HYPERLINK()`-wrapped cell per sheet, top-right
-  (rightmost content column), linking back to the Scenarios switch cell — replaces the old
-  Model-sheet-only, non-hyperlinked banner.
-- **Scenario metric block redesign**: both the Assumptions sheet's per-item rows and the
-  Scenarios sheet's per-metric blocks follow one compact-table convention: a title bar
-  carrying the metric name/unit once, a blank spacer, an outlined live `CHOOSE()`-driven row,
-  then plain Base/Best/Worst rows below with short labels only — the metric name/unit isn't
-  repeated per row anymore. The Scenarios sheet itself moved from case-grouped (3 case
-  blocks, 8 metrics each) to metric-grouped (8 metric blocks, each with its own live ACTIVE
-  row) so the three cases are directly comparable at a glance. **Corrected same day**: the
-  first implementation had a real bug (`_scenario_metric_block` double-incremented the row
-  cursor after the ACTIVE row, so `CHOOSE()`'s operands pointed one row above where
-  Base/Best/Worst actually landed — Base always read 0) and the block's visuals didn't match
-  intent (every cell individually bordered instead of one outlined group; spacer sat after
-  the ACTIVE row instead of before it). Fixed: spacer now sits between the title bar and the
-  ACTIVE row; `outline_range()` (new, `xl_helpers.py`) draws one bounding rectangle around a
-  contiguous cell group instead of bordering each cell. Applied to both sheets.
-- **Assumptions tables**: the Loan Book and Deposits sections — previously one repeated
-  ~12-row vertical block per category (loan segment / deposit type) — are now one table per
-  section: a header row naming each category once, one row per metric spanning all category
-  columns. Required `_assum_ref()` to resolve either a bare row int (existing keys,
-  unchanged) or a `(row, col)` tuple (new, for table-clustered keys) so per-category
-  assumptions can live in different columns without touching the Model-sheet formula code
-  that reads them. Column count derives from `len(config.LOAN_SEGMENTS)`/
-  `len(config.DEPOSIT_TYPES)`, not hardcoded, so it generalizes to a different product/
-  deposit-type count for a future institution.
-- **Scenario switch UX**: native openpyxl `DataValidation` list dropdown on `Scenarios!D5`
-  — user's explicit choice over a true Excel Forms combo box (which would exactly match
-  the Blu Containers reference but requires raw OOXML zip surgery post-`wb.save()`,
-  something openpyxl has no API for). Kept as a documented, not-yet-committed fallback if
-  the dropdown UX proves insufficient.
-- **"Valuation" → "Output"**: renamed throughout (sheet tab, function name, docstrings) for
-  reusability across future institutions — a "Valuation" sheet name is bank-specific
-  framing; "Output" generalizes. Confirmed fully self-contained (no cross-sheet formula
-  references pointed at it).
-- **Repo cleanup**: root-level `.py` files and a mirrored root `financial/` directory
-  (leftovers from an early flat-layout migration into `bizplan/`) deleted — confirmed
-  byte-identical to their `bizplan/`/`scripts/` counterparts and never imported by the live
-  launch path.
-- **Standalone onboarding/update agent** (`agent/`, new): not a Claude Code subagent — a
-  plain Python program that calls the Anthropic API directly with its own tool-use loop
-  (server-side web search + a custom `download_file` tool) to research a new institution,
-  reads downloaded filings as native PDF document content blocks, writes
-  `examples/<institution>/config.py` + `research_output.md`, and runs the existing
-  renderer unchanged. Python was chosen over Go specifically because this repo already
-  solved the hard part of this problem once — malformed/truncated source PDFs needed
-  `pikepdf`/`pymupdf` recovery — and that toolchain, plus the official `anthropic` SDK, is
-  reused directly rather than reimplemented. `agent update <institution>` re-scopes the
-  research step to "anything newer than what's already ingested" and mechanically rolls
-  the config forward (nearest projected year → `ACTUALS`, `YEARS` extended by one) rather
-  than regenerating from scratch. SOP lives at `.devops/agents/bank-onboarding.md`
-  (distilled from this file's own onboarding history), indexed from `AGENTS.md`. Credentials
-  come from a repo-root `.env` (git-ignored): `ANTHROPIC_KEY`, loaded explicitly by
-  `agent/cli.py` via `python-dotenv` — this repo's own variable name, not the Anthropic
-  SDK's default `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`, so it's wired through by hand
-  rather than relying on the SDK's auto-detection.
-
-## 2026-07-26 — Blended valuation, per-scenario valuation, and Net Income sensitivity
-
-- **Blended valuation — industry-practice research and why we picked this weighting**:
-  researched how real equity-research analysts and Damodaran himself combine DDM, Residual
-  Income, and relative (P/B) valuation into one number for banks. Findings, with sources:
-  - DDM and Residual Income (Excess Return) are consistently reported as the primary
-    *intrinsic* methods analysts use for banks specifically (unlike non-financials, where
-    unlevered DCF/EV-EBITDA dominate) — debt is a bank's raw material, not financing, so
-    FCFF/FCFE break down; this is the same reasoning already in this file's "Why DDM +
-    Excess Return, not FCFE" bullet above. P/B and P/E multiples are the standard *relative*
-    cross-check layered on top, not usually given equal footing with the intrinsic methods.
-    (Gianfrate & Vincenzi, *"How Do Analysts Value Banks?"*; Brownen-Trinh et al. 2023,
-    *"How Do Equity Research Analysts Value Banks?"*; Frensidy et al. 2020, *Journal of
-    Accounting/Sage* target-price-accuracy study — DDM had the best directional accuracy of
-    the models tested, Residual Income outperformed a plain DDM/DCF.)
-  - Damodaran's own stance on mechanically combining methods is skeptical, not endorsing: he
-    treats simple/weighted averaging as one of three blunt options (the others being "pick
-    one method" or "triangulate" — understand *why* methods diverge rather than average the
-    disagreement away). He explicitly favors triangulation: convergence across methods
-    builds conviction, and divergence is itself informative about the market's growth/risk
-    expectations, not noise to be smoothed out. (*Damodaran, "Relative Valuation"* lecture
-    notes and *valuesurvey.pdf*, pages.stern.nyu.edu.)
-  - **No single universal weighting formula exists in the literature or in public sell-side
-    templates** — shops differ, and several practitioner sources explicitly decline to
-    publish one. Given that, we didn't invent a new philosophy: we operationalized the
-    hierarchy this file already stated for the Output sheet before this change ("DDM
-    (primary) + Residual Income/Excess Return (cross-check) + P/B-ROE regression & P/E peer
-    multiples (market sanity check)") into actual weights: **50% DDM / 30% Residual Income /
-    20% P/B-ROE regression**, configurable via `config.VALUATION["blend_weights"]` (also
-    editable live on the Assumptions sheet) since reasonable analysts weight this
-    differently and the choice should be visible and changeable, not buried in code.
-  - **This model's own numbers illustrate exactly the divergence Damodaran warns about**:
-    DDM implies KES 7.72/share, Residual Income KES 11.99, P/B-ROE regression KES 33.69 —
-    a roughly 4.4x spread between the lowest and highest method, against an actual NSE
-    trading range of roughly 18–26 since Family Bank's 23 Jun 2026 listing. Blended (50/30/20)
-    lands at KES 14.20 — below the observed market price. Per Damodaran's framing, this
-    divergence is a finding to flag, not a discrepancy the blend should paper over: either
-    the DDM/RI payout and terminal-growth assumptions are conservative relative to what the
-    market is pricing in, or the peer P/B multiples (freshly researched this session, see
-    `research_output.md`) reflect a scarcity/re-rating premium for NSE bank equity that
-    fundamentals-based methods don't capture. Left as an open question, not resolved here.
-  - Implementation: `bank_calculations.build_valuation()` now returns `blended_value`
-    (equity value, same units as the other three); the Output sheet adds a "Blended
-    Valuation" section right after the existing three-method summary table, as a live
-    formula referencing the three method rows and the new Assumptions-sheet weight cells.
-    `build_scenarios()` already ran the full valuation pipeline (including the new blended
-    figure) for Best/Worst for free, since `build_scenario()` just calls `build_all()` with
-    flexed inputs — no new Python plumbing needed there.
-
-- **Valuation per share by scenario (Summary sheet)**: added a small Base/Best/Worst ×
-  {DDM, Residual Income, P/B-ROE, Blended} table right after the existing three
-  `_kpi_block()` Financial Summary blocks. Follows the same static-Python-value convention
-  as those blocks and the Scenarios sheet (per the existing scoping rule: only Base gets
-  live Model-sheet formulas) — Best/Worst valuation was already computed by
-  `build_scenarios()`, just never rendered anywhere until now.
-
-- **Net Income sensitivity — up to 3 factors moving PAT by >10%**: built
-  `bank_calculations.build_sensitivity()`, which shocks one driver at a time (holding all
-  others at Base) and reports the % change in average projected PAT. This is deliberately
-  different from the existing Best/Worst scenarios, which move growth/loss-rate/opex
-  *together* — isolating one lever at a time shows which single factor actually matters.
-  - **Candidates tested and their isolated impact on average PAT**: loan/balance-sheet
-    growth (existing Worst/Best multipliers, 0.70x/1.20x): **-19.5% / +14.0%**. Asset yield
-    on loans (±100bp parallel shift, the standard shock size used in bank NIM-sensitivity
-    literature — e.g. FDIC/Federal Reserve studies of NIM sensitivity to rate shocks):
-    **±15.0%**. Cost of funds/deposit pricing (±100bp): **±22.7%**. All three comfortably
-    exceed the 10% bar and are the three reported on the Summary sheet — one macro
-    (growth: credit-demand cycle), one bank-specific/rate-cycle (asset yield/repricing), one
-    macro (cost of funds: policy-rate transmission and deposit competition), matching how
-    real bank equity research typically frames rate risk (asset-side and liability-side
-    NIM sensitivity discussed separately, not netted) and credit-cycle risk.
-  - **Honest negative finding, also worth flagging**: at this model's *currently configured*
-    Best/Worst magnitudes, isolating IFRS 9 loss-rate risk alone (1.4x worst-case multiplier)
-    moves average PAT by only **-1.7%**, and opex escalation (1.15x) by only **-3.3%** —
-    neither crosses 10% in isolation, even though credit risk is usually assumed to be a
-    bank's primary risk factor. This likely means the Best/Worst loss-rate/opex multipliers
-    (calibrated early in this project, before the real peer/market research above) are
-    narrower than a genuine stress scenario would be — worth revisiting if this model is
-    used for real stress-testing rather than illustrative scenario comparison; not corrected
-    here since changing those multipliers is a separate calibration decision, not a rendering
-    or methodology fix.
-  - Sources: Gerald A. Hanweck & Lisa H. Ryu, *"The Sensitivity of Bank Net Interest Margins
-    and Profitability to Credit, Interest-Rate, and Term-Structure Shocks"* (FDIC/SSRN); the
-    100bp shock-size convention is standard across this literature.
-
-## 2026-07-26 (cont.) — Equity Research Report pipeline (preliminary architecture)
-
-Next initiative: roll the valuation work above into a standing pipeline that generates
-both the Excel model and a Morningstar-style equity research PDF on request, generic
-across **institution** (already largely true) and an **as-of anchor period** (new —
-actuals = the 3 years ending at that anchor, projections = the next 5 years forward,
-enabling the same institution to be re-run at a different historical vantage point, which
-incidentally also enables backtesting a report's call against what actually happened).
-
-- **Billing constraint, resolved**: the existing `agent/` module (agent/cli.py etc.) calls
-  the raw Anthropic API directly, requires `ANTHROPIC_KEY`, and is separately metered —
-  the user explicitly does not want a second pipeline like that on top of an existing
-  Claude subscription. Confirmed (`claude --help` + docs): `claude -p "prompt"` (headless/
-  print mode), run **without** `--bare`, authenticates via the same subscription OAuth as
-  an interactive session and draws from the same per-seat allowance — not separate
-  per-token billing. `--bare` is the one thing that forces raw-API-key billing. So this
-  pipeline is orchestrated as shell/Python that shells out to `claude -p` with per-stage
-  prompt files, never as a new API-key-calling Python module. This directly extends a
-  pattern this repo already has: `.devops/agents/bank-onboarding.md` is a human-readable
-  SOP that's *also* injected as a system prompt for the (API-billed) `agent/cli.py` today
-  — the new pipeline reuses that same file-based-SOP idea, driven through `claude -p
-  --append-system-prompt "$(cat stage-file.md)"` instead.
-- **Stage sequence** (full detail was captured in a session plan, condensed here as the
-  durable record; status per BACKLOG.md's Phase 24): Stage 0 model sourcing (institution +
-  as-of year -> config.py, generalizing `agent/cli.py`'s `onboard`/`update` into one
-  period-parameterized, subscription-billed stage — **done**, `bizplan/report/sourcing.py`,
-  live-tested) -> Stage 1 numeric ground-truth extraction (pure Python,
-  `bizplan/report/data.py` — **done**) -> Stage 1b model validation (pure
-  Python, `bizplan/report/validation.py` — **done** — mirrors the Model sheet's
-  3-check Master Check exactly: Balance Sheet abs-check < 0.01, Total Capital/RWA >= CBK
-  minimum, Liquidity Ratio >= CBK minimum) -> Stage 2 price/consensus research (`claude
-  -p`, `bizplan/report/price_research.py` — **done**, live-tested, explicit
-  reference-date parameter so a past-anchored run researches price/consensus *as of
-  then*) -> Stage 3 mechanical Buy/Hold/Sell pre-decision (pure Python arithmetic,
-  `bizplan/report/recommendation.py` — **done**, catalyst narrative left to the
-  LLM) -> Stage 4 per-section drafting (one `claude -p` call per Morningstar-style
-  section — **done**, `bizplan/report/drafting.py` + 8 SOPs under
-  `.devops/agents/equity-report/section-*.md`, live-tested full batch) -> Stage 5
-  plagiarism/references review (**done**, `bizplan/report/review.py` +
-  `.devops/agents/equity-report/review-plagiarism-references.md`, one whole-document
-  `claude -p` pass — live-tested, see finding below) -> Stage 6 PDF assembly (**done**,
-  pure Python, `bizplan/report/pdf.py`, ReportLab + matplotlib, no system deps
-  so `launch.bat` stays Windows-friendly). **All 6 stages now built and live-tested**;
-  `bizplan/report/pipeline.py` (invoked via `scripts/generate_equity_report.py`)
-  orchestrates the full sequence, and
-  `launch.sh`/`.bat` gained an opt-in `REPORT=1 TICKER=... EXCHANGE=...` mode (default
-  path unchanged) — see the Stage 6 entry below and BACKLOG.md's Phase 24 for the full
-  end-to-end test.
-- **Stage 5 finding — the review pass genuinely earns its keep**: run against the real
-  Stage 4 output, it caught 2 real arithmetic errors introduced during independent
-  section drafting (a "more than double" comparison that was actually ~1.62x; a
-  spread-to-worst-case ratio conflated with a different best-to-worst ratio), 1 real
-  cross-section inconsistency (two sections quoting different liquidity figures because
-  one had mixed in an FY2025 *actual* disclosed ratio where the projected-series value
-  belonged), and 1 genuine unresolved discrepancy between Stage 2's live-researched peer
-  P/B figures and the ones already baked into `config.py` from earlier in this session
-  (KCB/Co-op Bank differ slightly — worth investigating, not yet reconciled). All four
-  were flagged under a `## Review Notes` header rather than silently rewritten, per the
-  SOP's explicit instruction — this is the intended behavior, not a gap.
-- **Stage 6 / full-pipeline finding — a real session-limit hit, and a clean resume**: a
-  fully unattended `generate_equity_report.py` run hit the Claude subscription's session
-  usage limit partway through Stage 5. This is exactly the "retry/failure handling for
-  `claude -p` stages" question flagged as open above — now observed for real rather than
-  hypothetical. What actually happened was informative: Stage 5's `claude -p` call had
-  already written a complete, valid `report_reviewed.md` via its own Write tool before
-  the surrounding process exited non-zero on the limit — so recovery was simply
-  re-running Stage 6 against the already-good file, not redoing any research or
-  drafting. A production version of this pipeline should check for a already-complete
-  output file before re-running a stage (idempotent-by-file-existence), rather than
-  assuming a non-zero exit means nothing was produced. Separately, this run's
-  independent Stage 2 price/consensus research considered a different peer set and
-  reached a different proxy value (9 peers, ~1.11x P/B, ~KES 23.26 implied) than an
-  earlier test run (2 peers, ~0.93x, ~KES 18.25) — real run-to-run variability in how
-  much the web-research stage decides to gather, on top of the Recommendation section's
-  already-documented judgment variability. Both are evidence that this pipeline's
-  LLM-driven stages are genuinely non-deterministic in scope and conclusion, not just in
-  wording — worth designing for explicitly in any real deployment (e.g. logging what was
-  actually searched/considered per run, not just the final answer).
-- **Stage 4 section list, consolidated from the original ~13-section proposal**:
-  Investment Thesis, Bulls Say/Bears Say, Economic Moat, Valuation/Sensitivity/Scenarios
-  (merged — all three just narrate the same `valuation_inputs.json`), Financial Health,
-  Market Consensus Comparison, Price vs. Fair Value & Recommendation, Risks &
-  Uncertainty — 8 `claude -p` calls instead of ~13, each pointed at Stage 1/2/3's JSON
-  files by path (not pasted into the prompt) so every number stays traceable. Cover/
-  Snapshot, the Peer Comparables table, and the Disclaimer need no LLM at all and are
-  left to Stage 6's pure-Python PDF assembly.
-- **Financial Health grading** (`report_data.financial_health_grade()`, pure Python): a
-  simple, documented threshold rule — buffer above the CBK minimum for capital/liquidity
-  (A/B/C/F bands), absolute bands for the NPL ratio (A/B/C/D) — overall grade is the
-  worst of the three sub-grades, not a weighted composite. Explicitly this repo's own
-  rule, not a published CBK or Morningstar grading scale. Tested: Family Bank Kenya gets
-  A/A capital/liquidity but a C on NPL (10.8%), pulling the overall grade to C — a
-  sensible result (strong balance sheet, asset quality is the actual binding constraint).
-- **Important finding from live-testing Stage 4 — recommendation run-to-run variability**:
-  the Recommendation section was run twice independently on identical input data (once
-  standalone, once as part of the full 8-section batch) and reached **different
-  conclusions** — one run identified post-IPO analyst-coverage initiation as a specific
-  enough catalyst to override Hold toward Sell; the second run considered the same
-  candidate catalyst insufficiently dated/firm, additionally weighed that the P/B-
-  regression method alone argues undervaluation rather than overvaluation, and stayed
-  Hold. Both runs were internally consistent, well-reasoned, and honestly caveated — this
-  is genuine variability in LLM judgment on a genuinely borderline call (Extreme
-  uncertainty tier, price sitting inside a very wide mechanical band), not a bug in the
-  SOP or the arithmetic underneath it. **Not resolved here** — flagged as an open
-  characteristic of any LLM-judgment-dependent pipeline stage: a real deployment would
-  need either (a) accept the variability and present it as a range/confidence statement
-  rather than a single point call, (b) run the section N times and take a majority/
-  consensus view, or (c) tighten the SOP's bar for what counts as "specific and dated"
-  further. Worth remembering when interpreting any single run's Buy/Hold/Sell output as
-  more deterministic than it actually is.
-- **Buy/Hold/Sell threshold — Morningstar's own published framework**: a real, citable
-  "beyond-this-percent-buy/sell-regardless-of-catalyst" convention exists already —
-  Morningstar's star rating is price ÷ Fair Value Estimate with margin-of-safety bands
-  that widen by an Uncertainty Rating (Low: 20% discount / 25% premium; Medium: 30%/35%;
-  High: 40%/55%; Very High: 50%/75%; Extreme: 75%/300%). **Now implemented**
-  (`report_recommendation.py`): this model's own DDM/RI/P-B-ROE spread (coefficient of
-  range: `(max-min)/median`) maps to an Uncertainty tier via this repo's own thresholds
-  (Low <30%, Medium <60%, High <100%, Very High <150%, else Extreme) — explicitly *not* a
-  literal Morningstar practice (their real rating also weighs leverage/cash-flow
-  predictability/competitive position), documented as a heuristic to revisit once tested
-  against more institutions. Tested against Family Bank Kenya: 217% method spread →
-  Extreme tier → a +94.8% price premium to blended fair value still lands inside the
-  (very wide) band → mechanical `Hold`, correctly deferring to a catalyst argument rather
-  than forcing Sell off raw method disagreement.
-- **Explicitly deferred / open**: the market-consensus data source policy for
-  thinly-covered/just-listed stocks generally (Stage 2's SOP handles it per-run with an
-  honest documented proxy, e.g. peer-average P/B, but there's no repo-wide policy
-  document yet); retry/failure handling for `claude -p` stages; model/effort choice per
-  stage; the recommendation-section run-to-run variability noted above; **the peer P/B
-  discrepancy Stage 5 surfaced** (Stage 2's live-researched KCB/Co-op Bank P/B vs. the
-  figures already in `config.py` — likely just different source snapshots on different
-  dates, but not yet actually reconciled or explained). The `TICKER`/`EXCHANGE` gap and
-  Financial Health letter-grade cutoffs are both now resolved (see Stage 2 and Stage 4
-  entries above) — CLI arguments rather than a `config_loader.py` schema change for the
-  former, `report_data.financial_health_grade()`'s documented threshold rule for the
-  latter.
-
-This is the design source of truth. Update it when a design decision changes, not just when
-code changes. If this document and the code disagree, that's a bug in one of them — fix the
-drift, don't let it linger.
-
-## Context
-
-The goal: a **repeatable bank/financial-institution model generator**, first applied to
-Family Bank Kenya (a real NSE-listed bank), producing an audit-ready, fully-formula-linked
-Excel workbook that ends in an **equity valuation** — not a static repeat of numbers we
-already have elsewhere.
-
-## Key decisions
-
-1. **Modeleon spiked and rejected — building on `xl_helpers.py`.** Modeleon (real,
-   Apache-2.0, v0.1.3) genuinely emits live formulas with working recurrence and
-   cross-sheet references. But its Excel writer (`modeleon/compile/excel/writer.py:253-259`)
-   only wires `number_format` through to cells — `bold`/`bg`/`font_color` passed to
-   `set_style()` are silently dropped — and its layout engine is rigid (one row per
-   Variable, fixed label/data columns), incompatible with the FMI vertical convention. The
-   calculation/formula layer is built with the proven `xl_helpers.py` string-formula
-   helpers instead (full control over layout and formatting).
-2. **Full prudential/regulatory fidelity** — CAR, IFRS 9 provisioning, liquidity ratio,
-   segmented loan book — not just an illustrative P&L/BS.
-3. **Calibrate to Family Bank Kenya's real published financials** — primary source is the
-   repo's own `data/` folder (see below), not secondary web summaries.
-4. **Build it as a reusable generator** — a `bizplan` package (`bank_calculations.py` +
-   `bank_excel_renderer.py` + a `config.py` convention), so the next bank engagement just
-   swaps the config rather than rewriting the schedules/renderer.
-5. **The end goal is an equity valuation.** DDM (primary) + Residual Income/Excess Return
-   Model (cross-check) + P/B-ROE regression & P/E peer multiples (market sanity check) —
-   standard practice for banks, since a plain FCFE/FCFF DCF fights with the fact that
-   regulatory capital retention *is* the reinvestment decision for a bank. Cost of equity
-   via CAPM with Kenya-specific inputs (Kenyan government bond yield, Damodaran's Kenya
-   country risk premium, beta from Family Bank/peer Kenyan banks).
-6. **Full ratio disclosures on the Outputs/Summary sheet** — CAMELS-complete: profitability
-   (ROE, ROA, NIM, cost-to-income, DuPont ROA decomposition), capital adequacy (core/total
-   capital ratios), liquidity (statutory liquidity ratio), cash flow ratios.
-
-## Data sources
-
-**`data/` (repo root)** — the primary calibration source:
-- `Integrated-Report-Financial-Statements-2021-1.pdf` … `-2025.pdf` — five years of audited
-  annual reports. Source for the real IFRS 9 note (stage split, ECL roll-forward, cost of
-  risk), segment/sector loan breakdown, and multi-year trend data.
-- `Family-Bank_MTN-_Information-Memorandum.pdf` — Medium Term Note info memorandum; likely
-  has more granular risk-factor and credit-risk disclosure than the annual report.
-- `FBL_LISTING_ABRIDGED_NEWSPAPER_FINAL-1.pdf`, `ke-fmly-2026-ps-00.pdf` — IPO/listing
-  prospectus documents; likely contain the valuation basis used for the listing, peer
-  comparisons, and share pricing rationale — useful for the Output sheet.
-
-**Environment**: repo-root `.venv` (Python 3.13.2) now has `bizplan` (editable),
-`openpyxl`/`python-docx`/`python-pptx`/`anthropic`/`click`, plus `pypdf`/`pdfplumber`/
-`pymupdf`/`pikepdf` for PDF extraction/repair.
-
-**Data quality finding**: 4 of 8 `data/` PDFs are broken (need re-downloading by the user)
-— see `examples/family_bank_kenya/research_output.md` for the full
-diagnosis. The 2023 annual report and the MTN Information Memorandum 2026
-(`ke-fmly-2026-ps-00.pdf`, covers FY2021-2025 with peer comparables and sector outlook)
-are fully usable and are the source for the research pulled so far.
-
-**Working practice**: don't read these PDFs cover-to-cover. Extract text/tables once, then
-search the extracted text for the handful of terms that matter ("Stage 1"/"Stage 2"/
-"Stage 3", "expected credit loss", "non-performing", "capital adequacy", "liquidity ratio",
-"segment information", "core capital") and jump straight to those pages. File size should
-not translate into token spend — targeted lookup, not exhaustive reading.
-
-**Secondary research already pulled** (web search, cross-check only — not calibration of
-record): Family Bank Kenya FY2025 — total assets KES 208.7bn (+23.9%), net loans KES 105.9bn
-(+14.0%), customer deposits KES 151.88bn (+20.1%), net interest income KES 15.63bn (+46.1%),
-gross NPLs KES 17.56bn (+21.5%), total capital/RWA 19.6% vs. ~14.5% regulatory minimum, PAT
-KES 5.38bn (+55.4%). CBK: Basel III-style LCR/NSFR ≥100% guidelines exist; exact current
-core-capital/liquidity minimums need pulling from the CBK Prudential Guidelines PDF directly.
-
-## Analytical framework (sell-side / buy-side practice)
-
-- **CAMELS** (Capital, Asset quality, Management, Earnings, Liquidity, Sensitivity to
-  market risk) — the Ratio Disclosures block should let a reader answer each CAMELS letter.
-- **DuPont ROE decomposition for banks**: ROE = ROA × Equity Multiplier; ROA = NIM +
-  non-interest income ratio − cost ratio − provision ratio − tax ratio (all as % of average
-  assets). Explains *why* ROE moved, not just that it did.
-- **Quality-of-earnings skepticism on provisioning**: credit costs should be sense-checked
-  against a through-the-cycle norm (Family Bank's own 2021-2025 trend from `data/`), not an
-  extrapolation of the latest benign year — provisioning is a common earnings-smoothing lever.
-- **Loan concentration / funding stability**: segment/sector concentration and CASA ratio
-  vs. term/wholesale funding, flagged as risk factors in the Assumptions sheet if high.
-- **Why DDM + Excess Return, not FCFE** (Damodaran, *"Valuing Financial Service Firms,"*
-  NYU Stern): regulatory capital retention is the reinvestment decision for a bank, so FCFE
-  is unreliable; DDM and Excess Return/Residual Income are the standard tools.
-- **P/B-ROE regression, not flat peer-average P/B**: the P/B-ROE relationship is empirically
-  strong for banks (Damodaran) — read off Family Bank's implied P/B at its own ROE from a
-  regression across the peer set, a more defensible cross-check than a simple average.
-- **Blended valuation weighting (50% DDM / 30% Residual Income / 20% P/B-ROE) and the >10%
-  Net Income sensitivity factors** — see the "2026-07-26" section above for the full
-  industry-practice research (Damodaran on triangulation vs. averaging; how sell-side
-  analysts actually weight bank valuation methods) behind these choices.
-
-## Schedule design (`bizplan/financial/bank_calculations.py`)
-
-Config-driven functions (mirrors `calculations.py`'s shape: accept a `config` module,
-return plain dicts of lists), computed per year for the Base Case:
-
-1. **Loan Book / Staging Schedule** — per segment (Retail/MSME/Corporate/Mortgage): opening
-   gross exposure by Stage 1/2/3, new originations (Stage 1), stage transfers via a
-   transition matrix, write-offs, closing gross exposure by stage.
-1b. **IFRS 9 ECL / Provisioning Schedule** — PD/LGD/EAD by stage and segment, forward-looking
-    macro overlay, ECL roll-forward, resulting P&L impairment charge and BS allowance. See
-    "IFRS 9 provisioning design" below.
-2. **Investment Securities Schedule** — government securities balance + yield.
-3. **Deposit/Funding Schedule** — per type (demand/savings/term/wholesale): opening, growth,
-   closing, cost of funds.
-4. **Interest Income** — loan yield × avg loans (by segment) + securities yield × avg
-   securities.
-5. **Interest Expense** — cost of funds × avg deposits by type + cost of borrowings.
-6. **Net Interest Income & NIM** = NII / average earning assets.
-7. **Non-Interest Income** — fees & commissions, forex income, other.
-8. **Operating Expenses** — staff costs, premises, technology, other; cost-to-income ratio.
-9. *(Provisioning P&L charge comes from Schedule 1b, feeds straight into the IS.)*
-10. **Income Statement** — NII + non-interest income − opex − provisions = PBT → tax → PAT.
-11. **Cash Flow Statement** (indirect) — PAT + provisions + D&A ± Δloans ± Δdeposits ±
-    Δsecurities = operating; capex = investing; dividends/capital = financing.
-12. **Balance Sheet** — Assets (cash & balances with CBK, securities, net loans, PP&E,
-    other); Liabilities (deposits, borrowings, other); Equity (share capital, retained
-    earnings, statutory reserve).
-13. **Capital Adequacy** — Core Capital (Tier 1) = share capital + retained earnings −
-    intangibles; Total Capital = Tier 1 + Tier 2; RWA = risk-weighted loans + off-balance
-    sheet; Core/Total Capital Ratio vs. CBK minimums.
-14. **Liquidity** — liquid assets / total deposits vs. CBK statutory minimum.
-15. **Ratio Disclosures** — CAMELS-complete profitability (incl. DuPont decomposition),
-    capital adequacy, liquidity, cash flow ratios.
-16. **Output** — CAPM cost of equity; DDM (multi-stage + Gordon terminal value);
-    Residual Income/Excess Return cross-check; P/B-ROE regression + P/E peer multiples;
-    Blended Valuation (weighted combination, see "2026-07-26" section above); per-scenario
-    valuation and Net Income sensitivity factors surfaced on the Summary sheet.
-
-**Scoping rule**: only the Base Case gets full formula-linked treatment on the Model sheet.
-Best/Worst remain Python-computed static comparison values on the Scenarios sheet — bounds
-the work to one fully-live case instead of three.
-
-### IFRS 9 provisioning design — disclosed vs. modeled
-
-Public disclosure (annual report IFRS 9 note + CBK quarterly disclosure) realistically
-gives us, at the aggregate level: gross NPLs, total loan loss allowance, cost of risk, and
-the CBK 5-category classification (Normal/Watch/Substandard/Doubtful/Loss) that maps loosely
-onto Stage 1/2/3. It essentially never gives us the stage-transition matrix, segment-level
-PD/LGD/EAD, or the macro-sensitivity coefficients — those are proprietary. So the schedule
-is built in two clearly separated layers:
-
-1. **Calibration anchors (disclosed facts)** — opening gross NPLs, total ECL allowance, cost
-   of risk trend, CBK classification split. Year-1 stage split and starting ECL coverage are
-   *reverse-engineered* to tie to these disclosed totals, not invented independently.
-2. **Modeled mechanics (benchmark/analyst-judgment, distinctly tagged)** — stage transition
-   matrix, PD term structure (12-month Stage 1, lifetime/marginal Stage 2/3), LGD by segment
-   (Basel standardized proxies: ~35–45% unsecured retail/MSME, ~20–30% mortgage), EAD/CCF on
-   undrawn commitments, macro-sensitivity coefficients. Every such row carries a `source`
-   note, e.g. `"Modeled — Basel standardized LGD proxy, not company-disclosed"`.
-
-**Data-provenance color convention** (extends the FMI blue/black/green code in
-`xl_helpers.py`): a fourth text color for "Modeled proxy, not disclosed" assumption cells,
-with a legend on the Assumptions sheet — so a reader can visually distinguish hard facts
-from analyst judgment at a glance.
-
-**Mechanics** (per segment, or portfolio-level if segment staging isn't disclosed at that
-granularity — decide during the research pass):
-- Roll-forward gross exposure by stage: opening + new originations (Stage 1) − transfers out
-  + transfers in − write-offs = closing, via the transition matrix.
-- ECL per stage: Stage 1 = 12-month PD × LGD × EAD; Stage 2/3 = lifetime PD × LGD × EAD,
-  discounted at the effective interest rate over remaining expected life.
-- **Forward-looking macro overlay**: 3 macro scenarios (Base/Upside/Downside) from Kenya
-  forward indicators (GDP growth, inflation, CBK rate outlook, KES/USD), probability-weighted
-  (e.g. 60/20/20), each scaling PD by a sensitivity factor
-  (`PD_scenario = PD_base × (1 + sensitivity × macro_deviation)`). This overlay should also
-  drive the existing Base/Best/Worst scenario matrix (loan growth, NPL trend, cost of
-  funds) — one macro assumption set feeding both.
-- **Implemented as a stock, not a rolling allowance**: each stage's ECL is recomputed every
-  period as `loss_rate x closing_gross_balance`, where `loss_rate` is calibrated directly
-  from Family Bank's own disclosed FY2023 stage-level ECL/Gross ratios (not a separate
-  PD x LGD split — disclosure doesn't support that split at this granularity). Under this
-  approach a write-off's effect on the allowance is already embedded in the smaller
-  post-write-off closing balance, so the correct non-double-counting P&L charge is simply
-  **the period-over-period change in the ECL stock** (`ecl_total[i] - ecl_total[i-1]`) —
-  not the textbook `change + writeoffs - recoveries` formula, which would double-count
-  once write-offs are already netted into the stock. Proved algebraically (and confirmed
-  empirically — see CHANGELOG) that this makes the balance sheet tie out exactly.
-- Balance sheet: Gross Loans (Stage 1+2+3) − Total ECL Allowance = Net Loans. Off-balance
-  sheet ECL sits as a separate provision in Other Liabilities, not netted against assets.
-- Disclosure ratios: Stage 3 (NPL) coverage = Stage 3 ECL / Stage 3 gross loans; total
-  coverage = total ECL / total gross loans; cost of risk = P&L impairment charge / average
-  gross loans.
-
-## Renderer design (`bizplan/financial/bank_excel_renderer.py`)
-
-Sheet order: Cover, Summary, Assumptions, Scenarios, Model, **Output**. Built on shared
-primitives in `bizplan/financial/xl_helpers.py` (`fill`, `font`, `align`, `write`, `num`,
-`pct`, `header_row`, `section_header`, `year_header_row`, `data_row`, `total_row`,
-`blank_row`, and the formula helpers `_cell`/`_sum_f`/`_add_rows_f`/`_sub_f`/`_ratio_f`/
-`_ref_f`/`_model_ref`). All Model-sheet calculated rows are formula strings, threaded
-through a `row_refs` dict (referenced as `M` in the code, and `A` for the parallel
-Assumptions-sheet reference dict) so later formulas can reference earlier rows/cells by
-key instead of a hardcoded address.
-
-- **Master Check section** (top of Model sheet): Balance Sheet check
-  (Assets − Liabilities − Equity = 0), Capital Adequacy check (vs. CBK minimum), Liquidity
-  check (vs. CBK minimum) — each an `IF` formula showing "OK"/"ERROR" with conditional
-  formatting (green/red).
-- **Assumptions sheet**: four-color data-provenance convention (disclosed / modeled-
-  benchmark / macro-forecast / analyst-judgment), with a legend.
-- **Summary sheet**: adds a "Ratio Disclosures" block (Schedule 15) alongside the existing
-  revenue/EBITDA KPI blocks.
-- **Output sheet**: CAPM cost-of-equity inputs, DDM (live-linked to Model sheet dividend/
-  PAT rows), Residual Income cross-check, P/B-ROE regression + P/E peer-multiples table —
-  implied share price/equity value from all methods shown side by side.
-
-## Project structure
-
-Everything lives at the repo root — no pip-install/packaging ceremony. Every script does a
-`sys.path.insert` of the repo root, so `bizplan` is importable without an editable install.
-
-```
-financial_model_template/
-├── BLUEPRINT.md, BACKLOG.md, CHANGELOG.md, CLAUDE.md   ← tracking docs (repo root)
-├── data/                                                ← source PDFs (Family Bank Kenya)
-├── .venv/                                               ← shared virtual environment
-├── bizplan/
-│   ├── config_loader.py            ← load_and_validate() / validate_bank_config()
-│   └── financial/
-│       ├── xl_helpers.py           ← formula-capable openpyxl primitives
-│       ├── bank_calculations.py    ← all 16 schedules, Python ground truth + scenarios
-│       └── bank_excel_renderer.py  ← builds the live-formula workbook
-├── examples/
-│   └── family_bank_kenya/
-│       ├── config.py               ← single source of truth for assumptions
-│       └── research_output.md      ← calibration research, sourced and dated
-├── output/                                              ← gitignored; timestamped run folders
-│   └── 2026-07-06_151703/
-│       ├── Family_Bank_Kenya_Financial_Model.xlsx      ← that run's generated workbook
-│       └── config.py                                    ← exact copy of the config that produced it
-└── scripts/
-    ├── build_bank_model.py         ← entry point: config → calc → render → save
-    ├── launch.sh                   ← Unix/macOS/Linux launcher
-    ├── launch.bat                  ← Windows launcher
-    └── requirements.txt            ← runtime deps (openpyxl)
-```
-
-**Launchers** (`scripts/launch.sh`, `scripts/launch.bat`) are the intended entry point —
-only these two, no PowerShell variant. Both do the same three things in order:
-1. Check for `.venv/` at the repo root; if it doesn't exist, create it
-   (`python -m venv .venv` / `python3 -m venv .venv`).
-2. Activate it.
-3. Install/upgrade `scripts/requirements.txt` into it, then run
-   `scripts/build_bank_model.py`.
-
-This means a fresh clone with nothing set up can just run `./scripts/launch.sh` (or
-`scripts\launch.bat` on Windows) and get a built workbook — no manual venv setup, no
-assumption that dependencies are already installed. `scripts/build_bank_model.py` itself
-stays runnable directly too (`.venv/bin/python scripts/build_bank_model.py`) for anyone who
-already has the venv active — the launchers are a convenience wrapper, not the only path in.
-
-**Output folder convention** (matching `colossal-visuals`, checked directly against its
-`scripts/launch.sh` and `output/` folder): each launcher run creates a timestamped
-subfolder under `output/` (`output/<YYYY-MM-DD_HHMMSS>/`) containing that run's generated
-`.xlsx` plus an exact copy of the `config.py` that produced it — every run is a
-reproducible snapshot. `build_bank_model.py` reads the `OUTPUT_DIR` env var (which the
-launcher sets); running it directly without a launcher falls back to writing straight into
-`examples/family_bank_kenya/`, same as before this convention existed. **Never hand-edit
-files in `output/`** — they're regenerated every run; all changes go into `config.py`.
-`output/` is already covered by the root `.gitignore` (unanchored `output/` pattern, so it
-catches this folder at any depth).
-
-## Verification
-
-- Open the `.xlsx`, click into calculated cells, confirm live formulas (`=SUM(...)`,
-  `=H12/H5`), not values.
-- Master Check section shows "OK" for Balance Sheet, Capital Adequacy, Liquidity (Base Case).
-- Year 1 Base Case figures are plausible against the `data/`-derived research figures.
-- Best/Worst scenario columns still render (static values, as designed).
-- Output sheet's three methods each produce a plausible implied value, and DDM/Residual
-  Income formulas trace live back to the Model sheet (not re-typed).
-
-## Open follow-ups (not blocking)
-
-- CLI wiring for the bank path if a nicer UX than the launchers is ever needed.
-- Deeper CBK compliance detail (single-borrower limits, sector concentration limits) if a
-  future engagement needs it.
+# Blueprint: REIT Valuation Model
+
+**Status:** Pivoted 2026-08-09 from a Family Bank Kenya-specific banking model to a generic
+REIT (Real Estate Investment Trust) valuation model, first instance Acorn I-REIT (NSE-listed,
+Kenya). The prior banking-model design history lives in git history and in `CHANGELOG.md`'s
+earlier entries — this file starts fresh for the REIT domain rather than merging the two;
+they share no calculation logic (only the generic `bizplan/config_loader.py` load/validate
+pattern and `bizplan/financial/xl_helpers.py`'s formula/styling primitives carried over).
+
+## Why a REIT is a different domain, not a bank re-skin
+
+A bank's economics center on a loan book (IFRS 9 staged provisioning), deposits (net
+interest income), and regulatory capital adequacy. None of that applies to a REIT. A REIT
+holds income-generating property, earns rental income, and is legally required to
+distribute most of its income to unit-holders rather than retain it as a growth-equity
+would. The schedules, the regulatory framework, and the valuation methodology are all
+different — this is a full rewrite of the calculation and rendering layers, reusing only:
+
+- `bizplan/config_loader.py` — the load/validate pattern (`REQUIRED_FIELDS`,
+  `validate_reit_config`, `load_and_validate`)
+- `bizplan/financial/xl_helpers.py` — formula-capable openpyxl primitives (colors,
+  `header_row`/`data_row`/`total_row`, `_cell`/`_sum_f`/etc. formula-string helpers), and
+  the FMI data-provenance color convention (blue = disclosed input, dark = internal
+  formula, teal = cross-sheet reference, orange = modeled/benchmark proxy)
+- The overall sheet architecture: Cover / Summary / Assumptions / Scenarios / Model /
+  Output / Sources, a Master Check block, and a single scenario-switch cell
+  (`Scenarios!$D$5`, 1=Base/2=Best/3=Worst) that every scenario-dependent Assumptions row
+  resolves to via `CHOOSE()`, so flipping it live-recalculates the whole Model sheet.
+
+## Regulatory framework (CMA I-REIT-specific)
+
+Source: `cma.or.ke/wp-content/uploads/2023/03/REITS.pdf` ("FAQs: Real Estate Investment
+Trusts"), cross-checked against Acorn's own reported compliance figures. Full citations in
+`examples/acorn_i_reit/research_output.md`.
+
+- **Gearing/borrowing limit**: 35% of total asset value; up to 40% with unit-holder
+  ordinary-resolution approval, temporary ≤6 months, no extension.
+- **Income-producing real estate minimum**: 75% of NAV within 2 years of authorization;
+  ≥70% of income from eligible investments after year 2.
+- **Distribution minimum**: ≥80% of taxable/net income to unit-holders.
+- **Minimum initial assets**: KES 300 million (I-REIT).
+- Minimum 7 investors; promoter must retain 20% of NAV year 1, 10% year 2.
+
+These map directly onto the Model sheet's Regulatory Compliance section and the Master
+Check's LTV / Income-Producing-% / Payout status rows (`_build_regulatory_section`,
+`_build_master_check` in `bizplan/financial/reit_excel_renderer.py`).
+
+## Config schema (`bizplan/config_loader.py`, `examples/<reit>/config.py`)
+
+`REQUIRED_FIELDS`: `BUSINESS_NAME`, `OUTPUT_PREFIX`, `CURRENCY`, `CURRENCY_UNIT_ABBR`,
+`YEARS`, `ACTUAL_YEARS`, `TAX_RATE` (0 — REITs are income-tax-exempt on qualifying property
+income), `PROPERTIES` (list of dicts: name/location/rooms/beds/opening_fair_value —
+generic enough for office/retail/industrial REITs, not just student housing),
+`RENTAL_INCOME`, `OPEX_ITEMS`, `CAPITAL` (debt terms), `UNITS` (issuance),
+`REGULATORY` (the CMA limits above, as config so a different jurisdiction/REIT type
+could override them), `MACRO_SCENARIOS`, `SCENARIO_MULTIPLIERS`, `VALUATION` (CAPM inputs
++ cap rate + blend weights), `PEER_REITS`, `ACTUALS` (per-year dict, provenance-tagged).
+Optional: `COVER_INFO`, `SOURCES` (both read defensively via `getattr` in the renderer).
+
+## Schedule design (Model sheet)
+
+Same "3 actual years immediately followed by 5 projected years" convention as the prior
+banking model — actual-year INPUT rows are hardcoded facts (pinned to `config.ACTUALS`),
+DERIVED/subtotal rows are live same-column formulas over those facts (so an actual-year
+hand-edit still re-flows through every subtotal); projected-year rows are fully live
+formulas referencing Assumptions-sheet driver cells or the prior column.
+
+1. **Property Portfolio** — portfolio-*aggregate* fair-value roll-forward (opening +
+   additions/acquisitions + fair value gain = closing). Deliberately aggregate, not
+   per-property, across all 8 years: the source filings only give a per-property
+   snapshot at one point in time (30 Jun 2025), not a multi-year per-property history, so
+   a per-property 8-year roll-forward would be fabricated precision. The per-property
+   snapshot itself is shown as a static reference table on the Assumptions sheet.
+2. **Rental Income & NOI** — occupancy glides from the disclosed portfolio-blended H1
+   2025 rate toward a stabilized target over a configurable recovery period; rental
+   income grows with escalation × the occupancy path.
+3. **Operating Expenses** — admin (property-level) + fund-level (management/trustee/
+   custodian/CMA fees) opex, itemized in config from Acorn's own note structure.
+4. **Debt / Gearing** — borrowings roll-forward, weighted-average interest rate, finance
+   costs.
+5. **Income Statement** — Operating Income → Operating Profit → (+finance income
+   −finance costs +fair value gain) → Net Profit, matching Acorn's own statement
+   structure exactly (see `reit_calculations.py`'s module docstring for how actual-year
+   opex/finance-income are back-solved as a reconciliation residual against the pinned,
+   disclosed Net Profit where the filings don't give item-level actual-year detail).
+6. **Distributable Income & Distributions** — Net Profit minus non-cash items (fair
+   value gain) = Distributable Income; × payout ratio (pinned to the real disclosed
+   ratio in actual years — including where, as in FY2025, it's genuinely below the 80%
+   CMA minimum, a real governance fact carried through rather than smoothed over) ÷
+   units = DPU.
+7. **Balance Sheet** — Total Assets = NAV + Total Liabilities is the *identity itself*
+   for projected years (not an independent sum): NAV rolls forward from retained
+   earnings + unit-issuance proceeds, Total Liabilities from the debt schedule, and
+   Other Assets/cash is the residual plug — exactly how a real cash flow statement's
+   closing cash balance is a residual, not an independently-forecast figure. (An earlier
+   draft grew "other assets" independently of NAV and broke the Master Check's balance
+   check for every projected year — fixed by making assets the identity, not a separate
+   forecast.)
+8. **Regulatory Compliance** — LTV, income-producing-%, both vs. the CMA minimums above.
+
+## Valuation (Output sheet)
+
+Blends three approaches (config-weighted, default NAV 40% / DDM 30% / cap rate 30% — NAV
+weighted heaviest since it's the most reliable anchor for a property-holding entity, and
+the DDM leg rests on the weakest-sourced input, beta):
+
+- **NAV** — the latest projected-year NAV/unit, directly off the Balance Sheet.
+- **DDM** — PV of *projected-year-only* DPU (2023-2025 are actual, already-paid
+  distributions, not future cash flows to discount) + PV of **terminal NAV/unit**, not a
+  pure Gordon-growth-on-dividends model. With payout ratios well below 100%, most of a
+  REIT's total return accrues through NAV growth on retained earnings, not distributions
+  alone, so terminal NAV/unit is the more defensible "exit value" than an infinite-growth
+  dividend annuity — a real methodology choice made after an initial Gordon-growth version
+  produced a DDM value 5x below NAV, an implausible divergence for a property-holding
+  entity in equilibrium.
+- **Direct capitalization / cap rate** — latest NOI run-rate ÷ cap rate = implied
+  property value, less debt, ÷ units.
+- **Peer cross-check** — this REIT's own NAV × the average peer NAV discount/premium
+  (Acorn I-REIT vs. LAPTRUST Imara I-REIT, the only two Kenyan REITs with disclosed
+  NAV-vs-trading-price figures found in research).
+
+Cost of equity: CAPM (Kenya 10-year bond risk-free rate + beta × Kenya equity risk
+premium). Beta has no reliable REIT-specific source (thin/restricted-market trading
+precludes a regression) and is a flagged placeholder — see
+`examples/acorn_i_reit/research_output.md`.
+
+## Known simplifications (see `research_output.md` for full detail and citations)
+
+- **Property Portfolio is portfolio-aggregate, not per-property**, across the projection
+  (data availability, not a design preference — see above).
+- **Opex item-level detail for the thin 2023/2024 actual years** is proportionally
+  allocated from the FY2025 (H1 actual × 2) item-level base, scaled to the reconciled
+  aggregate total — not independently disclosed at item level for those years.
+- **FY2025's closing (31 Dec 2025) balance sheet is modeled**, anchored to three
+  disclosed control totals (NAV/unit 24.30, net profit 670.16m, debt ~1,910.0m) — the
+  filings reviewed give full detail only through the 30 Jun 2025 interim.
+- **Units-in-issue vs. NAV/unit reconciliation gap**: cross-multiplying the disclosed
+  units-in-issue roll-forward against disclosed NAV doesn't exactly reproduce Acorn's own
+  reported NAV/unit headline (~1-2% gap, both period-ends) — most likely a
+  weighted-average-vs-point-in-time unit-count convention difference on Acorn's side, not
+  a data error. Documented, not silently forced to match.
+
+## Follow-up work (not in this pass — see `BACKLOG.md`)
+
+The equity-research-report PDF pipeline (`bizplan/report/*`, SOPs under
+`.devops/agents/equity-report/`) still imports the retired `bank_calculations`/
+`bank_excel_renderer` modules and will not currently run. Its 6-stage `claude -p`
+mechanics are domain-agnostic, but its SOP prose and JSON schemas speak bank language
+(IFRS 9, CAR) and need a REIT-language adaptation pass.

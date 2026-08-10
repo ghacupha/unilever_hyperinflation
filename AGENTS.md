@@ -2,7 +2,18 @@
 
 Index of agent-related resources in this repo.
 
-## Equity Research Report pipeline (all 6 stages built — see BLUEPRINT.md "2026-07-26 (cont.)")
+## Equity Research Report pipeline — NOT CURRENTLY FUNCTIONAL
+
+This repo pivoted from a Family Bank Kenya banking model to a generic REIT valuation
+model on 2026-08-09 (see `BLUEPRINT.md`/`BACKLOG.md`). The pipeline described below still
+imports the retired `bank_calculations`/`bank_excel_renderer` modules (`bizplan/report/
+data.py` at module scope; `sourcing.py`/`pipeline.py` inside function bodies) and will
+raise an `ImportError` or crash if invoked. Its 6-stage `claude -p` mechanics are
+domain-agnostic and the description below is otherwise still accurate — it needs a REIT
+adaptation pass (swap the imports, rewrite the SOPs/section prompts from bank language to
+REIT language) before it will run again. Tracked as `BACKLOG.md` Phase 2.
+
+## Equity Research Report pipeline (all 6 stages built, for the retired banking-model domain)
 
 Produces both the Excel financial model and a Morningstar-style equity research PDF. The
 engine lives in `bizplan/report/`; `scripts/*.py` are thin CLI wrappers only — parse args,

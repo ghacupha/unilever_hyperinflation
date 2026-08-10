@@ -79,21 +79,27 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Use `apply_patch` for manual edits.
 - Avoid destructive git or filesystem operations unless explicitly requested.
 
-## Family Bank Kenya Financial Model — progress tracking
+## REIT Valuation Model — progress tracking
 
-This repo's active initiative is a financial model for Family Bank Kenya. Three
-root-level files track it — **read them before starting work, update them before
-stopping**:
+This repo's active initiative is a generic REIT (Real Estate Investment Trust) valuation
+model, first instance Acorn I-REIT (NSE-listed, Kenya). Three root-level files track it —
+**read them before starting work, update them before stopping**:
 
-- `BLUEPRINT.md` — the design source of truth (schedules, IFRS 9 provisioning design,
-  valuation approach, analytical framework). Update it when a design decision changes.
+- `BLUEPRINT.md` — the design source of truth (schedules, CMA regulatory framework,
+  valuation approach, known simplifications). Update it when a design decision changes.
 - `BACKLOG.md` — phase-by-phase task checklist; read it first to know what's next.
 - `CHANGELOG.md` — append an entry for every meaningful chunk of work, naming which
   blueprint phase / backlog item(s) it closes.
 
-Primary data source for calibration is the `data/` folder (Family Bank Kenya annual reports
-2021-2025, MTN Information Memorandum, IPO/listing prospectus docs) — extract targeted
-text/tables and search for key terms rather than reading these PDFs cover-to-cover.
+Primary data source for calibration is the `data/` folder (a Kenya REITs/REOCs sector
+equity analysis report, plus the target REIT's own annual/interim reports fetched from
+its investor-relations site) — extract targeted text/tables and search for key terms
+rather than reading these PDFs cover-to-cover.
+
+The prior banking-model design lives in git history — `bizplan/financial/bank_calculations.py`
+and `bank_excel_renderer.py` were retired when the repo pivoted to the REIT domain
+(2026-08-09); `bizplan/report/*` (the equity-research-report pipeline) still references
+them and needs a REIT-adaptation pass before `REPORT=1` works again (`BACKLOG.md` Phase 2).
 
 See `AGENTS.md` for the equity-research-report pipeline (SOPs under
 `.devops/agents/equity-report/`).

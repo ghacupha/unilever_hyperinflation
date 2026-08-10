@@ -20,7 +20,7 @@ from bizplan.report.sourcing import source_model  # noqa: E402
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("institution", help="Institution folder name, e.g. 'family_bank_kenya'")
+    parser.add_argument("institution", help="Institution folder name, e.g. 'acorn_i_reit'")
     parser.add_argument("--as-of", type=int, required=True,
                          help="Anchor year: actuals are the 3 years ending here, projections are the next 5")
     parser.add_argument("hints", nargs="*", help="Optional starting URLs")
