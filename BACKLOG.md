@@ -59,17 +59,75 @@ the REIT domain.
       `README.md`, `CLAUDE.md`, `AGENTS.md` reframed from bank to REIT terms.
       `CHANGELOG.md` appended (not rewritten — it's an explicit running log).
 
-## Phase 2 — Not yet done
+## Phase 2 — Adapt bizplan/report/* (equity-research-report pipeline) to the REIT domain (2026-08-11) — DONE
 
-- [ ] `bizplan/report/*` (the equity-research-report PDF pipeline) still imports the
-      retired `bank_calculations`/`bank_excel_renderer` modules directly
-      (`bizplan/report/data.py` at module scope; `sourcing.py`/`pipeline.py` inside
-      function bodies) and **will not currently run**. Needs: (a) swap the imports for
-      `reit_calculations`/`reit_excel_renderer`, (b) rewrite the `.devops/agents/
-      equity-report/*.md` SOPs and `drafting.py`'s section prompts from bank language
-      (IFRS 9, CAR, NIM) to REIT language (NAV, distributable income, cap rate, LTV), (c)
-      re-verify Stage 1's `validation.py` master-check re-implementation matches the new
-      Model sheet's actual row/check set.
+- [x] Swapped `bank_calculations`/`bank_excel_renderer` imports for `reit_calculations`/
+      `reit_excel_renderer` in `sourcing.py` and `pipeline.py`.
+- [x] `bizplan/report/data.py` (Stage 1) rewritten: `company_facts()` now reads
+      total_assets/investment_property/nav/nav_per_unit/borrowings/units_in_issue instead
+      of the bank shape; `financial_health_grade()` now grades LTV/income-producing-%/
+      payout buffers (vs. CMA minimums) instead of capital/liquidity/NPL (vs. CBK
+      minimums); `to_report_json()`'s `valuation_per_unit` (renamed from
+      `valuation_per_share`) reads straight off `reit_calculations.build_valuation()`'s
+      already-per-unit NAV/DDM/cap-rate/blended figures — no shares-outstanding division
+      needed, unlike the bank version. Verified against real Acorn I-REIT data: the
+      financial-health grade correctly comes back **F** overall (LTV and income-producing
+      grade A, payout grades F) — a real, honest signal matching the sector report's own
+      criticism of Acorn I-REIT's below-CMA-minimum FY2025 payout ratio, not a bug.
+- [x] `bizplan/report/validation.py` (Stage 1b) rewritten: Balance Sheet / LTV /
+      Income-Producing-% / Payout, matching the Model sheet's actual 4-row Master Check.
+      **Caught a real design bug before it shipped**: a naive port would have required
+      the Payout check to pass for every year including the 3 actuals, which are
+      *intentionally* below the CMA minimum (real disclosed fact) — that would have made
+      `validate_model()` permanently return `ok=False` for a legitimately-correct model
+      and permanently blocked `sourcing.py`/`pipeline.py`'s hard `RuntimeError` gate.
+      Fixed: the Payout check is required only for projected years; Balance Sheet/LTV/
+      Income-Producing are required for every year. Verified `ok=True` against real data.
+- [x] `bizplan/report/recommendation.py`, `pdf.py` updated: method-value keys `ddm`/
+      `residual_income`/`pb_regression` → `nav`/`ddm`/`cap_rate`; chart labels/axes
+      ("per share"/"average PAT") → REIT terms ("per unit"/"average Net Profit"); peer
+      table `peer_banks` (name/EPS/ROAE/payout/P-B) → `peer_reits` (name/NAV-per-unit/
+      trading-price/discount-premium).
+- [x] `bizplan/report/price_research.py`'s prompt text ("book value per share",
+      "Bank-basis ground truth") updated to "NAV per unit" / generic ground-truth wording.
+- [x] Verified the entire **deterministic** half of the pipeline (Stages 1, 1b, 3, 6 —
+      everything that doesn't call `claude -p`) end-to-end against real Acorn I-REIT data:
+      `data.compute()`/`to_report_json()`, `validation.validate_model()`,
+      `recommendation.mechanical_recommendation()`, and `pdf.build_pdf()` (with hand-built
+      stand-ins for the LLM-drafted Stage 2/4/5 outputs) all ran cleanly and produced a
+      real 4-page PDF with correct cover-page valuation figures and a correct peer table
+      (Acorn I-REIT -4.4% / LAPTRUST Imara +14.0% NAV discount/premium, matching the
+      sector report exactly).
+- [x] `.devops/agents/equity-report/model-sourcing.md` fully rewritten — it previously
+      pointed to `.devops/agents/bank-onboarding.md` for essential onboarding guidance
+      (data intake, known pitfalls, `research_output.md` discipline), but that file was
+      deleted in an earlier session (the Family-Bank-repo-rename pass) and the SOP was
+      silently dangling. Now self-contained for the REIT domain, with pitfalls drawn from
+      the real Acorn I-REIT sourcing work (units-in-issue reconciliation gaps,
+      internally-inconsistent note tables, full-year-headline-vs-interim-detail
+      back-solving, Distributable-Income-vs-Net-Profit, I-REIT-vs-D-REIT regulatory
+      limits).
+- [x] Remaining SOPs updated to REIT language: `price-consensus-research.md`,
+      `review-plagiarism-references.md`, `section-investment-thesis.md`,
+      `section-market-consensus.md` (field-name fixes); `section-economic-moat.md` and
+      `section-valuation-scenarios.md` (full rewrites — REIT moat sources, NAV/DDM/
+      cap-rate blend methodology); `section-financial-health.md` (LTV/income-producing/
+      payout sub-grades, CMA not CBK); `section-risks-uncertainty.md` (occupancy/cost-of-
+      debt examples, NAV/DDM/Cap-Rate spread). `section-bulls-bears.md`,
+      `section-recommendation.md`, `coherence-apply-fixes.md` needed no changes — already
+      domain-generic.
+- [ ] **Not yet exercised**: the actual `claude -p`-driven stages (Stage 0 sourcing,
+      Stage 2 price/consensus research, Stage 4 section drafting, Stage 5 review, Stage
+      5.5 coherence gate) — verifying these requires a real `claude -p` run (subscription
+      usage, several minutes), which wasn't done as part of this adaptation pass. The SOP
+      prompt text has been rewritten and the JSON field contracts it references have been
+      confirmed to match what `data.py` actually emits, but a live run is the only way to
+      confirm the LLM stages produce coherent REIT-domain prose end-to-end. Try
+      `REPORT=1 ./scripts/launch.sh acorn_i_reit` or `python
+      scripts/generate_equity_report.py acorn_i_reit --output-dir <dir>` next.
+
+## Phase 3 — Not yet done
+
 - [ ] Item-level opex detail for FY2023/FY2024 is currently a proportional allocation
       from the FY2025 base (see `BLUEPRINT.md` "Known simplifications") — would benefit
       from real per-year, per-item figures if Acorn's full FY2023/FY2024 annual reports

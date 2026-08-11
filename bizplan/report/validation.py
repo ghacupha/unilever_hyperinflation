@@ -1,15 +1,21 @@
 """Pure-Python re-implementation of the Model sheet's "Master Check" section
-(bank_excel_renderer.py::_build_master_check) — lets a pipeline gate on model integrity
-without a spreadsheet engine. Mirrors the same three checks and tolerances so a workbook
+(reit_excel_renderer.py::_build_master_check) — lets a pipeline gate on model integrity
+without a spreadsheet engine. Mirrors the same four checks and tolerances so a workbook
 and this validator never disagree about what "OK" means:
 
-- Balance Sheet Check: abs(Assets - Liabilities - Equity) < 0.01
-- Capital Adequacy Check: Total Capital / RWA >= CBK minimum
-- Liquidity Check: Liquidity Ratio >= CBK statutory minimum
+- Balance Sheet Check: Total Assets = NAV + Total Liabilities, within 0.01
+- LTV Check: Borrowings / Total Assets <= CMA gearing limit (35%)
+- Income-Producing Check: Investment Property / Total Assets >= CMA minimum (75%)
+- Payout Check: Distribution payout ratio >= CMA minimum (80%)
 
-Only covers the projected years (`bank_calculations.build_all()`'s own scope) — the 3
-actual years are disclosed facts hardcoded into the renderer from `config.ACTUALS`, not
-Python-computed, so there's nothing here to recompute and check for them.
+The Payout Check is expected to read ERROR for the 3 actual years — Acorn I-REIT's own
+disclosed payout ratios (78%/40.5%/34.1%) are genuinely below the CMA's 80% minimum in
+those years (a real governance fact carried through from the filings, not a model
+defect; see BLUEPRINT.md's "Known simplifications" and research_output.md). Requiring
+it there would make `validate_model()` permanently report failure for a legitimately-
+correct model, so the overall `ok` verdict only requires the Payout Check for the
+*projected* years, where it's a live formula floored at the regulatory minimum in Base.
+Balance Sheet / LTV / Income-Producing must hold for every year, actual or projected.
 """
 import json
 import os
@@ -18,29 +24,30 @@ BALANCE_SHEET_TOLERANCE = 0.01
 
 
 def validate_model(config, results):
-    """`results` is a `bank_calculations.build_all(config)`-shaped dict. Returns
+    """`results` is a `reit_calculations.build_all(config)`-shaped dict. Returns
     `dict(ok: bool, years: [per-year check dicts])`."""
-    bs_check = results["bs"]["check"]
-    total_capital_ratio = results["capital"]["total_capital_ratio"]
-    total_min = config.CAPITAL["total_capital_rwa_min"]
-    liquidity_ratio = results["liquidity"]["ratio"]
-    liquidity_min = config.LIQUIDITY_STATUTORY_MIN
+    bs_ok_series = results["bs"]["balance_check"]
+    reg = results["regulatory"]
+    payout_pct = results["distributable"]["payout_ratio"]
+    payout_min = config.REGULATORY["payout_min"]
+    n_actual = len(config.ACTUAL_YEARS)
 
     years = []
     for i, year in enumerate(config.YEARS):
-        bs_ok = abs(bs_check[i]) < BALANCE_SHEET_TOLERANCE
-        capital_ok = total_capital_ratio[i] >= total_min
-        liquidity_ok = liquidity_ratio[i] >= liquidity_min
+        is_actual = year in config.ACTUAL_YEARS
         years.append(dict(
-            year=year,
-            balance_sheet_ok=bs_ok, balance_sheet_value=bs_check[i],
-            capital_adequacy_ok=capital_ok, total_capital_ratio=total_capital_ratio[i],
-            total_capital_min=total_min,
-            liquidity_ok=liquidity_ok, liquidity_ratio=liquidity_ratio[i],
-            liquidity_min=liquidity_min,
+            year=year, is_actual=is_actual,
+            balance_sheet_ok=bs_ok_series[i],
+            ltv_ok=reg["ltv_ok"][i], ltv=reg["ltv"][i], ltv_max=config.REGULATORY["ltv_max"],
+            income_producing_ok=reg["income_producing_ok"][i],
+            income_producing_pct=reg["income_producing_pct"][i],
+            income_producing_min=config.REGULATORY["income_producing_min"],
+            payout_ok=reg["payout_ok"][i], payout_pct=payout_pct[i], payout_min=payout_min,
+            payout_ok_or_expected=(reg["payout_ok"][i] or is_actual),
         ))
 
-    ok = all(y["balance_sheet_ok"] and y["capital_adequacy_ok"] and y["liquidity_ok"] for y in years)
+    ok = all(y["balance_sheet_ok"] and y["ltv_ok"] and y["income_producing_ok"] for y in years) and \
+        all(y["payout_ok"] for y in years[n_actual:])
     return dict(ok=ok, years=years)
 
 

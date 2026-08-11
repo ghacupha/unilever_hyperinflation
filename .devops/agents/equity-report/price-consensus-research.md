@@ -28,19 +28,20 @@ vague "around X". Record the source and the exact date the price is for.
 Search for sell-side analyst coverage: consensus target price, consensus rating
 (Buy/Hold/Sell or equivalent), number of analysts covering the stock. **Be honest when
 coverage is thin or absent** — this is the realistic case for a recently-listed or
-thinly-traded stock (e.g. a bank that IPO'd only months before the reference date). Do
-not fabricate a consensus or pad it with unrelated sources. If no analyst consensus is
-findable:
+thinly-traded stock (e.g. a REIT trading on the NSE's restricted Unquoted Securities
+Platform only months after its supplemental offer). Do not fabricate a consensus or pad
+it with unrelated sources. If no analyst consensus is findable:
 - Say so explicitly (`consensus_found: false`).
 - Propose one documented, clearly-labeled proxy for "what the market currently implies"
-  instead — e.g. the peer set's average trading multiple (P/B, P/E) applied to this
-  institution's own book value/earnings, or the stock's own price trend since listing.
-  Label it as a proxy, not a real consensus, and say why you chose it.
-  **If the proxy needs this institution's own book value per share (or any other figure
-  the model itself computes), read it from `valuation_inputs.json`'s `company_facts`
+  instead — e.g. the peer REIT set's average NAV discount/premium applied to this
+  institution's own NAV, its own distribution yield vs. the peer average, or the stock's
+  own price trend since listing. Label it as a proxy, not a real consensus, and say why
+  you chose it.
+  **If the proxy needs this institution's own NAV per unit (or any other figure the
+  model itself computes), read it from `valuation_inputs.json`'s `company_facts`
   block — you'll be given its path. Do not independently research or derive that figure
-  from a filing or web source.** That JSON is the model's own corrected, Bank-basis
-  ground truth; a live web search can turn up a different (e.g. Group/Consolidated-basis)
+  from a filing or web source.** That JSON is the model's own corrected ground truth; a
+  live web search can turn up a different (e.g. superseded or note-vs-primary-statement)
   figure that looks equally plausible but is inconsistent with the rest of this report.
 
 ## 4. Output format

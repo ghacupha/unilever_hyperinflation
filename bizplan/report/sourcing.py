@@ -56,7 +56,7 @@ def source_model(institution, as_of, hints):
 
 def _validate_and_build(institution):
     from bizplan.config_loader import load_and_validate
-    from bizplan.financial import bank_calculations, bank_excel_renderer
+    from bizplan.financial import reit_calculations, reit_excel_renderer
 
     config_path = REPO_ROOT / "examples" / institution / "config.py"
     config = load_and_validate(str(config_path))
@@ -65,10 +65,11 @@ def _validate_and_build(institution):
     validation = report_validation.validate_model(config, computed["results"])
     if not validation["ok"]:
         failing = [y for y in validation["years"]
-                   if not (y["balance_sheet_ok"] and y["capital_adequacy_ok"] and y["liquidity_ok"])]
+                   if not (y["balance_sheet_ok"] and y["ltv_ok"] and y["income_producing_ok"]
+                           and y["payout_ok_or_expected"])]
         raise RuntimeError(f"Model validation failed for {institution}: {failing}")
 
-    results = bank_calculations.build_all(config)
+    results = reit_calculations.build_all(config)
     output_path = config_path.parent / f"{config.OUTPUT_PREFIX}_Financial_Model.xlsx"
-    bank_excel_renderer.build_excel(config, results, str(output_path))
+    reit_excel_renderer.build_excel(config, results, str(output_path))
     print(f"Sourced, validated, and built {institution}: {output_path}")

@@ -43,11 +43,25 @@ If you already have the venv active, you can run the entry point directly:
 
 ## Equity Research Report (optional — `REPORT=1`)
 
-**Not currently functional for the REIT domain** — the pipeline (`bizplan/report/*`)
-still imports the retired bank-specific calculation/renderer modules from this repo's
-prior life as a banking model. See `BACKLOG.md` Phase 2 for the REIT-adaptation follow-up
-this needs before `REPORT=1` will work again. The default (Excel-only) path above is
-unaffected.
+**By default, the launchers only build the Excel model.** To also generate a
+Morningstar-style equity research PDF (valuation methodology, sensitivity analysis,
+Bulls/Bears, a mechanical Buy/Hold/Sell call, market-consensus comparison, risks — see
+`AGENTS.md` for the pipeline's 6 stages), set `REPORT=1`, either inline:
+
+```bash
+REPORT=1 ./scripts/launch.sh acorn_i_reit
+```
+
+or once, persistently, via a repo-root `.env` file (copy `.env.example` to `.env` and set
+`REPORT=1` there). This makes several `claude -p` calls (subscription-billed, not a
+separately metered API) and takes noticeably longer than the Excel-only path.
+
+The pipeline was adapted from its prior banking-model domain to REIT terms on
+2026-08-11 (see `BACKLOG.md` Phase 2) — its deterministic stages (JSON ground truth,
+Master Check validation, mechanical recommendation, PDF assembly) are verified against
+real Acorn I-REIT data; the `claude -p`-driven stages (sourcing, price research,
+drafting, review) have had their prompts rewritten for the REIT domain but not yet been
+exercised with a live run.
 
 ## Expected output
 

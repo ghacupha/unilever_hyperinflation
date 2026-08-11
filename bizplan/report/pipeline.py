@@ -21,7 +21,7 @@ processes — each of those stages still shells out to `claude -p` itself where 
 from pathlib import Path
 
 from bizplan.config_loader import load_and_validate
-from bizplan.financial import bank_calculations, bank_excel_renderer
+from bizplan.financial import reit_calculations, reit_excel_renderer
 from bizplan.report import coherence, data as report_data
 from bizplan.report import drafting, pdf as report_pdf, price_research, recommendation
 from bizplan.report import validation as report_validation
@@ -53,9 +53,9 @@ def generate(institution, output_dir, ticker=None, exchange=None, reference_date
     report_validation.write_validation_result(config, computed["results"], str(report_workdir))
 
     print("=== Building Excel model ===")
-    results = bank_calculations.build_all(config)
+    results = reit_calculations.build_all(config)
     xlsx_path = output_dir / f"{config.OUTPUT_PREFIX}_Financial_Model.xlsx"
-    bank_excel_renderer.build_excel(config, results, str(xlsx_path))
+    reit_excel_renderer.build_excel(config, results, str(xlsx_path))
 
     print("=== Stage 2: price/consensus research ===")
     price_json = price_research.research_price_consensus(

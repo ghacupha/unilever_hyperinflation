@@ -98,8 +98,9 @@ rather than reading these PDFs cover-to-cover.
 
 The prior banking-model design lives in git history — `bizplan/financial/bank_calculations.py`
 and `bank_excel_renderer.py` were retired when the repo pivoted to the REIT domain
-(2026-08-09); `bizplan/report/*` (the equity-research-report pipeline) still references
-them and needs a REIT-adaptation pass before `REPORT=1` works again (`BACKLOG.md` Phase 2).
+(2026-08-09). `bizplan/report/*` (the equity-research-report pipeline) was adapted to
+REIT terms on 2026-08-11 (`BACKLOG.md` Phase 2) — its deterministic stages are verified
+against real data; the `claude -p`-driven stages haven't yet had a live run.
 
 See `AGENTS.md` for the equity-research-report pipeline (SOPs under
 `.devops/agents/equity-report/`).

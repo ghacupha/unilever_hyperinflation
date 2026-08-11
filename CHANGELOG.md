@@ -9,6 +9,33 @@ to a generic REIT valuation model (first instance Acorn I-REIT) on that date.
 
 ## [Unreleased]
 
+### Changed — Adapted the equity-research-report pipeline (bizplan/report/*) to the REIT domain (2026-08-11)
+- Closes `BACKLOG.md` Phase 2. `bizplan/report/data.py`, `validation.py`,
+  `recommendation.py`, `pdf.py`, `sourcing.py`, `pipeline.py` and `price_research.py`
+  rewritten from bank field names/logic (capital/liquidity/NPL grading, book value per
+  share, DDM/Residual-Income/P-B-ROE, `peer_banks`) to REIT equivalents
+  (LTV/income-producing-%/payout grading, NAV per unit, NAV/DDM/Cap-Rate, `peer_reits`).
+- Caught a real design bug before it shipped: a naive port of the Master Check
+  validator would have required the Payout check to pass for the 3 actual years too —
+  but Acorn I-REIT's own real disclosed payout ratios are genuinely below the CMA's 80%
+  minimum in those years (a governance fact, not a defect), so that would have made
+  `validate_model()` permanently report failure and permanently block the pipeline's
+  hard validation gate. Fixed: Payout is only required to pass for projected years.
+- Verified the deterministic half of the pipeline (Stages 1, 1b, 3, 6 — no `claude -p`
+  involved) end-to-end against real Acorn I-REIT data, including a real generated PDF
+  with a correct cover page, valuation chart, and peer-comparables table. The
+  `claude -p`-driven stages (0, 2, 4, 5, 5.5) have had their SOPs and JSON field
+  contracts rewritten and cross-checked against what `data.py` actually emits, but not
+  yet been exercised with a live run — tracked as the next check in `BACKLOG.md`.
+- Rewrote `.devops/agents/equity-report/model-sourcing.md` from scratch — it silently
+  depended on `.devops/agents/bank-onboarding.md` for essential onboarding guidance, a
+  file deleted in an earlier session; the SOP is now self-contained for the REIT domain.
+  Updated the remaining SOPs; `section-economic-moat.md` and
+  `section-valuation-scenarios.md` needed full rewrites (REIT moat sources, NAV/DDM/
+  cap-rate blend methodology), others needed only field-name fixes, and
+  `section-bulls-bears.md`/`section-recommendation.md`/`coherence-apply-fixes.md` needed
+  no changes at all — already domain-generic.
+
 ### Changed — Pivoted repo from Family Bank Kenya banking model to a generic REIT valuation model (2026-08-09)
 - Full domain rewrite: a REIT's economics (property portfolio, rental income/NOI, CMA
   regulatory limits, NAV/DDM/cap-rate valuation) share nothing with a bank's (loan book,

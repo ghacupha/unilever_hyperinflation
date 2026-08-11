@@ -82,14 +82,14 @@ def _markdown_to_flowables(md_text, styles):
 
 
 def _chart_valuation_methods(report_json, price, path):
-    vps = report_json["valuation_per_share"]
-    labels = ["DDM", "Residual\nIncome", "P/B-ROE", "Blended"]
-    values = [vps["ddm"], vps["residual_income"], vps["pb_regression"], vps["blended"]]
+    vps = report_json["valuation_per_unit"]
+    labels = ["NAV", "DDM", "Cap Rate", "Blended"]
+    values = [vps["nav"], vps["ddm"], vps["cap_rate"], vps["blended"]]
     fig, ax = plt.subplots(figsize=(6, 3.2))
     bars = ax.bar(labels, values, color=[_CHART_BLUE, _CHART_BLUE, _CHART_BLUE, _CHART_GOLD])
     ax.axhline(price, color=_CHART_RED, linestyle="--", linewidth=1.5,
                label=f"Current price ({price:.2f})")
-    ax.set_ylabel(f"{report_json['currency']} per share")
+    ax.set_ylabel(f"{report_json['currency']} per unit")
     ax.set_title("Valuation by method vs. current price")
     ax.legend(loc="upper left", fontsize=8)
     for bar, v in zip(bars, values):
@@ -112,8 +112,8 @@ def _chart_sensitivity(report_json, path):
     ax.set_yticks(y)
     ax.set_yticklabels(names, fontsize=8)
     ax.axvline(0, color="black", linewidth=0.8)
-    ax.set_xlabel("% impact on average PAT")
-    ax.set_title("Net Income sensitivity")
+    ax.set_xlabel("% impact on average Net Profit")
+    ax.set_title("Net Profit sensitivity")
     ax.legend(loc="lower right", fontsize=8)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
@@ -123,11 +123,11 @@ def _chart_sensitivity(report_json, path):
 def _chart_scenarios(report_json, path):
     vbs = report_json["valuation_by_scenario"]
     labels = ["Worst", "Base", "Best"]
-    values = [vbs["worst"]["blended_per_share"], vbs["base"]["blended_per_share"],
-              vbs["best"]["blended_per_share"]]
+    values = [vbs["worst"]["blended_per_unit"], vbs["base"]["blended_per_unit"],
+              vbs["best"]["blended_per_unit"]]
     fig, ax = plt.subplots(figsize=(6, 3.2))
     bars = ax.bar(labels, values, color=[_CHART_RED, _CHART_BLUE, _CHART_GREEN])
-    ax.set_ylabel(f"{report_json['currency']} per share")
+    ax.set_ylabel(f"{report_json['currency']} per unit")
     ax.set_title("Blended fair value by scenario")
     for bar, v in zip(bars, values):
         ax.annotate(f"{v:.2f}", (bar.get_x() + bar.get_width() / 2, v),
@@ -145,7 +145,7 @@ def _cover_flowables(report_json, price_json, decision_json, styles):
         Spacer(1, 12),
     ]
     price = price_json["share_price"]["value"]
-    fair_value = report_json["valuation_per_share"]["blended"]
+    fair_value = report_json["valuation_per_unit"]["blended"]
     currency = report_json["currency"]
 
     data = [
@@ -170,14 +170,15 @@ def _cover_flowables(report_json, price_json, decision_json, styles):
 
 def _peer_table_flowables(report_json, styles):
     flowables = [Paragraph("Peer Comparables", styles["H2Report"])]
-    peers = report_json["peer_banks"]
-    header = ["Bank", "EPS FY25", "ROAE FY25", "Payout FY25", "P/B"]
+    peers = report_json["peer_reits"]
+    currency = report_json["currency"]
+    header = ["REIT", "NAV/Unit", "Trading Price", "Discount/(Premium)"]
     data = [header] + [
-        [p["name"], f"{p['eps_fy25']:.1f}", f"{p['roae_fy25'] * 100:.1f}%",
-         f"{p['payout_fy25'] * 100:.1f}%", f"{p['pb_placeholder']:.2f}"]
+        [p["name"], f"{currency} {p['nav_per_unit']:.2f}", f"{currency} {p['price']:.2f}",
+         f"{p['discount_pct'] * 100:+.1f}%"]
         for p in peers
     ]
-    table = Table(data, colWidths=[140, 70, 70, 80, 60])
+    table = Table(data, colWidths=[160, 90, 90, 100])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),

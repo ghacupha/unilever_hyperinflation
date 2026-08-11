@@ -2,18 +2,7 @@
 
 Index of agent-related resources in this repo.
 
-## Equity Research Report pipeline — NOT CURRENTLY FUNCTIONAL
-
-This repo pivoted from a Family Bank Kenya banking model to a generic REIT valuation
-model on 2026-08-09 (see `BLUEPRINT.md`/`BACKLOG.md`). The pipeline described below still
-imports the retired `bank_calculations`/`bank_excel_renderer` modules (`bizplan/report/
-data.py` at module scope; `sourcing.py`/`pipeline.py` inside function bodies) and will
-raise an `ImportError` or crash if invoked. Its 6-stage `claude -p` mechanics are
-domain-agnostic and the description below is otherwise still accurate — it needs a REIT
-adaptation pass (swap the imports, rewrite the SOPs/section prompts from bank language to
-REIT language) before it will run again. Tracked as `BACKLOG.md` Phase 2.
-
-## Equity Research Report pipeline (all 6 stages built, for the retired banking-model domain)
+## Equity Research Report pipeline (adapted to the REIT domain, 2026-08-11)
 
 Produces both the Excel financial model and a Morningstar-style equity research PDF. The
 engine lives in `bizplan/report/`; `scripts/*.py` are thin CLI wrappers only — parse args,
@@ -22,6 +11,14 @@ Code's own headless mode, wrapped by the shared `bizplan/report/claude_cli.py` h
 authenticated through a Claude subscription rather than a raw `ANTHROPIC_API_KEY` — no
 separate per-token billing. Requires the `claude` CLI on `PATH`, logged in normally (never
 pass `--bare`, which forces API-key billing).
+
+**Verification status**: the deterministic (non-LLM) stages — 1, 1b, 3, 6 — have been
+verified end-to-end against real Acorn I-REIT data (see `BACKLOG.md` Phase 2): the JSON
+ground truth, the Master Check re-implementation, the mechanical recommendation, and PDF
+assembly all produce correct output. The `claude -p`-driven stages (0, 2, 4, 5, 5.5) have
+had their SOP prompts and JSON field contracts rewritten/verified for the REIT domain but
+not yet been run live — that costs real subscription usage and several minutes, and is
+the natural next check (`REPORT=1 ./scripts/launch.sh acorn_i_reit`).
 
 - **Run the whole thing**: [`scripts/generate_equity_report.py`](scripts/generate_equity_report.py)
   `<institution> --output-dir <dir>` (`--ticker`/`--exchange` optional, default to
@@ -34,22 +31,29 @@ pass `--bare`, which forces API-key billing).
   `bizplan/report/sourcing.py`, [`scripts/source_model.py`](scripts/source_model.py)):
   handles the institution *and* an as-of anchor year (actuals = the 3 years ending there,
   projections = the next 5 forward). Supports rolling forward (seasonal updates) and
-  rolling backward (backtesting a past vantage point).
+  rolling backward (backtesting a past vantage point). SOP is self-contained for the REIT
+  domain (data intake, known pitfalls — e.g. units-in-issue reconciliation gaps — config
+  schema contract, validation).
 - **Stage 1/1b — ground truth + validation** (`bizplan/report/data.py`,
   `bizplan/report/validation.py`, pure Python, no LLM): serializes the
   valuation/scenario/sensitivity output and re-implements the Model sheet's Master Check
-  so a broken model is caught before any later stage runs.
-  `data.financial_health_grade()` also lives here (documented threshold rule).
+  (Balance Sheet / LTV / Income-Producing-% / Payout) so a broken model is caught before
+  any later stage runs. The Payout check is only enforced for projected years in the
+  overall pass/fail verdict — Acorn I-REIT's own actual-year payout ratios are genuinely
+  below the CMA minimum (a real disclosed governance fact), not a model defect.
+  `data.financial_health_grade()` also lives here (documented threshold rule, graded off
+  the latest actual/disclosed year).
 - **Stage 2 — price/consensus research** ([SOP](.devops/agents/equity-report/price-consensus-research.md),
   `bizplan/report/price_research.py`,
   [`scripts/research_price_consensus.py`](scripts/research_price_consensus.py)): current
-  share price + analyst consensus, or a documented proxy (e.g. peer-average P/B) when
-  none exists — the realistic case for recently-listed/thinly-covered stocks. Explicit
-  reference-date handling so a backtest run can't leak hindsight.
+  share price + analyst consensus, or a documented proxy (e.g. peer-average NAV discount/
+  premium) when none exists — the realistic case for recently-listed/thinly-covered
+  REITs on the NSE's restricted Unquoted Securities Platform. Explicit reference-date
+  handling so a backtest run can't leak hindsight.
 - **Stage 3 — mechanical Buy/Hold/Sell** (`bizplan/report/recommendation.py`, pure
   Python, no LLM): applies Morningstar's real published margin-of-safety bands, scaled
-  by an Uncertainty tier derived from this model's own DDM/RI/P-B-ROE spread (this repo's
-  own heuristic, documented as such).
+  by an Uncertainty tier derived from this model's own NAV/DDM/Cap-Rate spread (this
+  repo's own heuristic, documented as such).
 - **Stage 4 — per-section drafting** ([SOPs](.devops/agents/equity-report/), 8 files,
   `bizplan/report/drafting.py` — `SECTIONS` is the single source of truth for section
   order, [`scripts/draft_report_sections.py`](scripts/draft_report_sections.py)):
@@ -63,4 +67,6 @@ pass `--bare`, which forces API-key billing).
   errors/inconsistencies, and assembles the References section.
 - **Stage 6 — PDF assembly** (`bizplan/report/pdf.py`,
   [`scripts/build_report_pdf.py`](scripts/build_report_pdf.py), pure Python, no LLM):
-  ReportLab + matplotlib, no system dependencies.
+  ReportLab + matplotlib, no system dependencies. Verified: real Acorn I-REIT figures
+  render correctly on the cover page, valuation chart (NAV/DDM/Cap Rate/Blended), and
+  peer comparables table.

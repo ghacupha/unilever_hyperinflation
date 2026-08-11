@@ -5,7 +5,7 @@ explicitly comparing this model's own view to "the market's."
 
 - If `consensus_found` is `true`: state the consensus target price/rating and number of
   analysts, then compare it directly to this model's blended fair value
-  (`valuation_inputs.json`'s `valuation_per_share.blended`) — state the percentage
+  (`valuation_inputs.json`'s `valuation_per_unit.blended`) — state the percentage
   difference and whether this model is more bullish, more bearish, or aligned.
 - If `consensus_found` is `false`: **say so plainly — do not imply a consensus exists
   when it doesn't.** State why (e.g. recent listing, thin coverage — see `notes` in the

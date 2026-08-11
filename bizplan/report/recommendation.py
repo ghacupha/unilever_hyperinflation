@@ -1,22 +1,22 @@
 """Stage 3 of the equity-report pipeline: mechanical Buy/Hold/Sell pre-decision.
 
 Pure Python arithmetic — no LLM here. Computes price vs. blended intrinsic value,
-assigns an "uncertainty tier" from how much the three valuation methods (DDM, Residual
-Income, P/B-ROE regression) disagree with each other, and applies Morningstar's own
+assigns an "uncertainty tier" from how much the three valuation methods (NAV, DDM,
+Direct Capitalization/cap rate) disagree with each other, and applies Morningstar's own
 published margin-of-safety convention (a star-rating band that widens with uncertainty)
 to produce a mechanical signal: Buy/Sell "regardless of catalyst" if the mispricing
 clears the tier's band, otherwise Hold pending a specific catalyst (left to the
-report-writing stage — see .devops/agents/equity-report/section-recommendation.md, not
-yet written — to argue for or confirm).
+report-writing stage — see .devops/agents/equity-report/section-recommendation.md — to
+argue for or confirm).
 
 The Morningstar bands themselves are real, published figures (see BLUEPRINT.md's
-"2026-07-26 (cont.) — Equity Research Report pipeline" section for citations). The
-**mapping from this model's own method-spread to an Uncertainty Rating tier is this
-repo's own heuristic, not a literal Morningstar practice** — their real Uncertainty
-Rating also weighs balance-sheet leverage, cash-flow predictability, and competitive
-position, none of which this generic bank-model pipeline has per-institution judgment
-on. Flagged as an open design choice, not a solved one; revisit if it proves too coarse
-once tested against more institutions.
+"Equity Research Report pipeline" section for citations). The **mapping from this
+model's own method-spread to an Uncertainty Rating tier is this repo's own heuristic,
+not a literal Morningstar practice** — their real Uncertainty Rating also weighs
+balance-sheet leverage, cash-flow predictability, and competitive position, none of
+which this generic REIT-model pipeline has per-institution judgment on. Flagged as an
+open design choice, not a solved one; revisit if it proves too coarse once tested
+against more institutions.
 """
 import json
 import os
@@ -59,8 +59,8 @@ def mechanical_recommendation(report_json, price):
     """`report_json` is `data.to_report_json()`'s output. `price` is the current
     share price (e.g. from Stage 2's `price_consensus_research.json`). Returns a dict —
     see `write_recommendation` for the JSON shape written to disk."""
-    vps = report_json["valuation_per_share"]
-    method_values = [vps["ddm"], vps["residual_income"], vps["pb_regression"]]
+    vps = report_json["valuation_per_unit"]
+    method_values = [vps["nav"], vps["ddm"], vps["cap_rate"]]
     blended = vps["blended"]
 
     tier, spread = uncertainty_tier(method_values)
@@ -98,8 +98,7 @@ def mechanical_recommendation(report_json, price):
         price=price,
         blended_fair_value=blended,
         pct_diff=pct_diff,
-        method_values=dict(ddm=vps["ddm"], residual_income=vps["residual_income"],
-                            pb_regression=vps["pb_regression"]),
+        method_values=dict(nav=vps["nav"], ddm=vps["ddm"], cap_rate=vps["cap_rate"]),
         uncertainty_tier=tier,
         method_spread=spread,
         buy_threshold=buy_discount,
