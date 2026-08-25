@@ -189,12 +189,190 @@ NSE equities 34.0%/51.0%; 10-year government bonds 12.4%-13.6%/—. `[DISCLOSED]
   This also supports weighting NAV and cap-rate approaches more heavily than DDM in the blended
   valuation, since the DDM leg rests on the weakest-sourced input.
 
-### Not yet pulled
-- LAPTRUST Imara I-REIT's, ILAM Fahari I-REIT's, ALP Industrial REIT's and TRIFIC Green USD
-  I-REIT's own full financial statements — only sector-report summary figures available so far.
-  Only needed once the model is extended to a second REIT instance (per the user's stated
-  intent to "use it to value other REITs" later).
-- A REIT-sector-specific cap rate for direct-capitalization valuation — not directly disclosed
-  anywhere in the sources reviewed; the model derives an implied cap rate from Acorn's own H1
-  2025 NOI and disclosed investment property fair value (NOI run-rate ÷ fair value) as a
-  `[DISCLOSED-DERIVED]` starting point rather than assuming an external market cap rate.
+### Not yet pulled (superseded 2026-08-25 — see dated section below for what's now sourced)
+- ~~LAPTRUST Imara I-REIT's, ILAM Fahari I-REIT's, ALP Industrial REIT's and TRIFIC Green USD
+  I-REIT's own full financial statements~~ — LAPTRUST Imara (3 full audited years) and ILAM
+  Fahari (FY2025 audited + FY2024 comparative) are now fully sourced and ready for a
+  `config.py` build. ALP Industrial only has a maiden H1 2026 interim (no full-year report
+  exists yet). TRIFIC Green USD has no actuals at all yet (listed ~2 months ago) — genuinely
+  not sourceable until it files its first annual report. Full detail below.
+- ~~A REIT-sector-specific cap rate for direct-capitalization valuation~~ — still no single
+  authoritative "Kenya REIT cap rate" is published, but real disclosed segment-level yields
+  are now sourced as cross-checks (ILAM Fahari's own independent valuer's retail/office
+  yields, ALP Industrial's industrial entry yields, general Nairobi residential yields).
+  Acorn's own `[DISCLOSED-DERIVED]` implied cap rate (5.47%) remains the model's direct input
+  — see cross-check below.
+
+## 2026-08-25 — Comparative REIT actuals + sector cap rate cross-check
+
+Researched to fill the two gaps above, per user request. All company-specific figures below
+are `[DISCLOSED]` (straight from each REIT's own primary filings) unless tagged
+`[DISCLOSED-DERIVED]`. No `config.py` changes made for these three REITs yet — that's a
+larger follow-up (BACKLOG.md Phase 3/4), this pass is research-only. Acorn's own `cap_rate`
+input in `config.py` is unchanged; the sector yields below are added as citation/cross-check
+only.
+
+### LAPTRUST Imara I-REIT — 3 years of audited actuals
+Source: LAPTRUST Imara I-REIT's own audited financial statements, NSE-hosted PDFs, FY2023
+(approved 7-May-2024), FY2024 (approved 25-Mar-2025), FY2025 (approved 30-Mar-2026).
+Units-in-issue (346,231,413, constant all 3 years — no issuance since listing)
+`[DISCLOSED-DERIVED]`, cross-checked: Trust Capital 6,924,628,260 ÷ 346,231,413 = exactly
+20.00, the disclosed IPO price.
+
+| | FY2023 | FY2024 | FY2025 |
+|---|---|---|---|
+| Net profit/(loss) | +57.2M | (204.3M) | (280.3M) |
+| Profit before FV changes | 244.6M | 353.9M | 259.8M |
+| Fair value adjustment | (187.4M) | (558.2M) | (540.1M) |
+| Total equity (NAV) | 6,981.9M | 6,452.0M | 5,953.7M |
+| NAV/unit `[DISCLOSED-DERIVED]` | 20.17 | 18.64 | 17.19 |
+| Distribution paid | 195.7M | 283.1M | 207.8M |
+| DPU | 0.57 | 0.82 | 0.60 |
+| Payout ratio `[DISCLOSED-DERIVED]` | 80.0% | 80.0% | 80.0% |
+| Investment property FV | 6,711.7M | 6,195.8M | 5,701.3M |
+| Total assets | 6,762.3M | 6,300.5M | 5,806.3M |
+| Borrowings | 0 | 0 | 0 |
+
+Corrections to BACKLOG.md's prior framing: **not three consecutive loss years** — FY2023 was
+profitable; the NAV-erosion/loss pattern is FY2024-FY2025 (two years), driven entirely by
+investment-property fair-value markdowns (profit *before* FV changes was positive and growing
+through FY2024). LAPTRUST hits the CMA 80% payout minimum exactly every year — a clean
+contrast to Acorn's below-minimum 34.1% FY2025 payout. **Fully ungeared** (zero borrowings)
+all three years, vs. Acorn's ~21-24% LTV. Dec-2025 NAV/unit (17.19) matches the sector
+report's peer table (17.20) almost exactly, cross-validating both sources. Caveat on the
+existing `PEER_REITS` +14.0% "premium" figure: trading price is locked at the Kshs 20.00 IPO
+price by regulatory mandate (restricted-segment REIT), reported to run until March 2026 — this
+may not reflect genuine market-clearing demand. Still not found: per-property portfolio detail
+(the audited statements are one-page aggregate summaries; the REIT manager's full annual
+report, which likely has a property schedule, wasn't reachable — sterlingreit.co.ke link
+returned an error).
+
+Sources: nse.co.ke/wp-content/uploads/Laptrust-Imara-I-REIT-*-Audited-Financial-Statements
+(FY2023/FY2024/FY2025 PDFs, filed under NSE company disclosures).
+
+### ILAM Fahari I-REIT — FY2025 audited actuals (+ FY2024 comparative)
+Source: ilamfahariireit.com — condensed media-set financials and full 110-page annual report,
+FY2025, approved 26-Mar-2026, Grant Thornton LLP unqualified audit opinion.
+
+Property portfolio (30 Dec 2025), valued by Tysons Limited (independent, DCF + cost approach):
+
+| Property | Location | Sector | FV 2025 | FV 2024 |
+|---|---|---|---|---|
+| Greenspan Mall | Nairobi, Block 82/8759 | Retail | 2,500.0M | 2,400.0M |
+| 67 Gitanga Place | L.R. 3734/1426 | Office/light industrial | 650.0M | 650.0M (flat — largely vacant) |
+| **Total** | | | **3,150.0M** | **3,050.0M** |
+
+**Note 11 "unobservable inputs" — a real, independently-disclosed cap-rate cross-check**
+(this is the closest thing to a formal Kenya REIT cap rate found in any source reviewed):
+
+| | Retail 2025 | Retail 2024 | Office & light industrial 2025/2024 |
+|---|---|---|---|
+| Term yield | 13.0% | 12.5% | 12.5% |
+| Reversionary yield | 9.0% | 9.0% | 9.0% |
+| Discount rate | 13.0% | 12.5% | 12.5% |
+
+NAV 3,748,424,278 (2025) vs 3,556,949,033 (2024) → NAV/unit **20.71** (2025) vs 19.65 (2024).
+Net profit 245,766,935 (2025) vs 377,204,674 (2024) — decline from a smaller fair-value gain
+(100.0M vs 263.6M). Distributable earnings 145,766,935 (2025) vs 62,128,812 (2024), +135% YoY.
+Distribution 117,631,995 = 65¢/unit (2025) vs 54,291,995 = 30¢/unit (2024). Payout ratio
+`[DISCLOSED-DERIVED]` 80.7% (2025) — meets the CMA 80% minimum, unlike Acorn. **Zero
+borrowings**, LTV 0%. Units in issue 180,972,300, unchanged both years. Not found: trading
+price / NAV discount-premium — Fahari delisted from the NSE Main Market in Feb-2024 and now
+trades on the Unquoted Securities Platform with no market price disclosed in either document,
+so it can't extend the `PEER_REITS` discount/premium table.
+
+Sources: ilamfahariireit.com/final-results;
+ilamfahariireit.com/assets/files/ILAM_Fahari_I-REIT-Condensed_Media_Set_Audited_Financials_FY2025.pdf;
+ilamfahariireit.com/assets/files/ILAM_Fahari_I-REIT_Annual_Report_FY2025.pdf.
+
+### ALP Industrial REIT — H1 2026 interim (maiden reporting period, USD-denominated)
+CMA-authorized 8-Dec-2025, NSE-listed 11-Mar-2026 — this is its first reporting period, no
+prior-year comparative exists. Source: ALP Industrial REIT Half-Year Report 2026 (unaudited,
+period to 30-Jun-2026), alp.africa/half-year-report-2026.pdf, Trustee-certified 30-Jul-2026
+(Co-operative Bank of Kenya).
+
+| Property | Location | Class | GLA (sqm) | Occupancy | Valuation (USD) | Entry yield |
+|---|---|---|---|---|---|---|
+| ALP North Two | Tatu City, Kiambu | Grade A | 8,066 | 100% | 12,927,967 | 8.17% |
+| Courtyard | Tilisi, Limuru | Grade B | 9,925 | 92% | 6,312,891 | 9.26% |
+| Kyoga | Tilisi, Limuru | Grade B | 15,257 | 100% | 7,290,047 | 8.69% |
+| **Total** | | | **33,248** | **98%** | **26,530,905** | |
+
+Pipeline (not yet acquired at period end): ALP North Three, Tatu City SEZ. Balance sheet:
+total assets $45,177,091; investment properties $26,530,905 (59% of assets); cash
+$14,738,083; NAV (total unitholders' equity) $41,673,057; total liabilities $3,504,035 (all
+current — trade payables + VAT provision, **zero borrowings**, 0% gearing); units in issue
+39,950,000 → NAV/unit `[DISCLOSED-DERIVED]` **$1.0431**. Income statement (H1 2026): rental
+399,737 + other 2,284 = operating income 402,021; less admin 31,962, fund opex 81,289,
+one-off REIT set-up expenses 243,287 → operating profit 45,482; + finance income 187,605 →
+net profit 233,087; EPU $0.0058. **No distributions yet** — first isn't due until after
+year-end under the CMA's 4-month rule. Not found: no full audited annual report exists yet;
+no secondary-market trading price found for a peer discount/premium figure.
+
+Source: alp.africa/investor-relations, alp.africa/half-year-report-2026.pdf.
+
+### TRIFIC Green USD I-REIT — no actuals exist yet (too newly listed)
+Listed 23/29-Jun-2026 (sources disagree by a few days) — ~2 months before this research pass,
+so **no annual or interim report has been published**. Only pre-listing marketing/prospectus
+materials with forward *projections* were found — reporting this as a genuine, documented gap
+rather than treating projections as disclosed actuals.
+
+- Currency: **USD**, confirmed `[DISCLOSED]`.
+- Seed/only asset: TRIFIC North Tower, Two Rivers SEZ, Gigiri, Nairobi — 174,694 sq ft GLA
+  (16,213 sqm), green/EDGE-certified, fully let, anchor tenant Teleperformance, 87-year
+  residual lease `[DISCLOSED]` — suntra.co.ke guideline PDF.
+- Asset valuation: $37.3M platform value (asset itself cited elsewhere as $35.88M — the two
+  sources disagree, flagged not reconciled). Offer size $29.8M pre-listing placement target.
+- Annual rental income (asset-level, pre-listing estimate): $3.2M; avg rent $1.45/sq ft; 3.5%
+  escalation `[DISCLOSED]` (prospectus estimate, not an audited actual).
+- FY2027 *projections* (explicitly forward-looking, NOT actuals): gross operating income
+  $3.2M, net distributable income $3.0M, DPU $0.08, payout >95%, yield >8%.
+- Post-listing market data (22-Jul-2026): price $1.23/unit, market cap $45.9M, ~37.3M units
+  `[DISCLOSED-DERIVED]` — afx.kwayisi.org/nse/trfc.html.
+- **Not found anywhere**: NAV, NAV/unit, actual net profit, actual distributions, borrowings/
+  LTV, units-in-issue register, any CMA-filed interim/annual report.
+
+Recommendation: not sourceable as a real config instance yet — its first annual report
+(likely FY2026, a partial listed period) probably won't publish until Q1-Q2 2027. Revisit
+then, or check the CMA filing portal / NSE company-disclosures page directly.
+
+Sources: suntra.co.ke/wp-content/uploads/2026/06/TRIFIC-GREEN-USD-I-REIT-GUIDELINE.pdf;
+afx.kwayisi.org/nse/trfc.html; serrarigroup.com/trific-launches-kenyas-first-green-dollar-i-reit-at-sh4-8bn;
+econews.co.ke/2026/05/25/trific-launches-kenyas-first-usd-denominated-green-i-reit-targeting-sh4-8bn.
+(Note: ALP Industrial's own materials separately claim to be "Kenya's first" USD-denominated
+I-REIT, chronologically plausible since ALP listed Mar-2026 vs. TRIFIC's Jun-2026 — flagged as
+a marketing-claim discrepancy between the two REITs' own materials, not resolved here, and
+irrelevant to either REIT's own figures above.)
+
+### Sector cap rate for direct-capitalization valuation — no single authoritative figure exists
+No formal "REIT cap rate" is published for Kenya; sources report rental/total-return yields by
+segment instead. Real, dated findings:
+- **Residential (general, Nairobi)**: 5.4% average rental yield, upper-mid suburbs
+  (Westlands/Kilimani/Kileleshwa/Parklands) 7.1% total return `[DISCLOSED]` — Cytonn Nairobi
+  Metropolitan Area Residential Report 2025 (cytonn.com/topicals/nairobi-metropolitan-area-32).
+- 7.4% gross yield Nairobi suburbs (steady), 5.3% satellite towns `[DISCLOSED]` — Knight Frank
+  Kenya Market Update, H1 2025.
+- 7.4% overall Nairobi rental yield, Q4 2025, "highest since 2007" `[DISCLOSED]` — HassConsult
+  Q4 2025 data, via Cytonn/afriqahome.com.
+- Budget nodes (Pipeline, Kahawa West, Ruaka): 8-12% gross yields `[DISCLOSED]`.
+- **Office (prime)**: 8-9% yields, stable `[DISCLOSED]` — Knight Frank Kenya Market Update, H1
+  2025; occupancy 80.3% as of March 2026.
+- **Student housing** (Acorn's own segment) — stale: 7.4% average rental yield vs. 7.3%
+  mixed-use, 5.0% residential `[DISCLOSED]` but dated 2020-03-08 (Cytonn) — predates Acorn's
+  current portfolio scale and the 2025/2026 rate-easing cycle; **not usable as current**.
+- **ILAM Fahari's own independently-valued yields** (see Note 11 table above) are the single
+  best-sourced, most-current formal cap-rate-equivalent found: retail 13.0% term / 9.0%
+  reversionary / 13.0% discount; office & light industrial 12.5% / 9.0% / 12.5% (both FY2025).
+- **ALP Industrial's own disclosed entry yields** (industrial/logistics): 8.17%-9.26%
+  `[DISCLOSED]` (see table above).
+
+**Cross-check against Acorn's own `cap_rate` input** (5.47%, `[DISCLOSED-DERIVED]` in
+`config.py`, from H1 2025 NOI ÷ investment property fair value): sits comfortably within the
+general Nairobi residential range found above (5.4%-7.4%), a reasonable validation for a
+student-housing REIT even though no segment-identical published benchmark exists — no change
+made to the config value, this is documentation/cross-check only.
+
+Sources: cytonn.com/topicals/nairobi-metropolitan-area-32;
+knightfrank.com/research/report-library/kenya-market-update-12364.aspx;
+afriqahome.com/guides/kenya-real-estate-2026; cytonnreport.com/topicals/student-housing-market-1
+(2020, stale); cytonnreport.com/research/review-of-real-estate-investments-trusts-reits-in-kenya-and-cytonn-weekly-052026-1.

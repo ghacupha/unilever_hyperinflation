@@ -39,7 +39,7 @@ SWITCH_CELL_REF = "'Scenarios'!$D$5"
 
 
 def _units(config):
-    return f"({config.CURRENCY} {config.CURRENCY_UNIT_ABBR})"
+    return f"({config.CURRENCY_UNIT_ABBR})"
 
 
 def _scenario_banner_formula():
@@ -189,11 +189,15 @@ def _assum_row(ws, row, label, value, color, refs=None, key=None, fmt='#,##0.00'
 
 
 def _scenario_row(ws, row, label, base_value, mult_best_ref, mult_worst_ref, refs, key,
-                  fmt='0.0%', best_is_delta=False):
+                  fmt='0.0%', best_is_delta=False, base_color=ORANGE):
     """Compact scenario-metric block: title row, blank spacer, an outlined ACTIVE row
     (CHOOSE on the scenario switch), then plain Base/Best/Worst rows. `refs[key]` is set
     to the ACTIVE row. If `best_is_delta`, the Best/Worst rows ADD the multiplier ref
-    (a basis-point delta) instead of multiplying by it -- used for the cap-rate lever."""
+    (a basis-point delta) instead of multiplying by it -- used for the cap-rate lever.
+    `base_color` should reflect the Base value's true provenance (BLUE_INPUT for a
+    disclosed/disclosed-derived figure, ORANGE -- the default -- for a genuinely modeled/
+    placeholder/macro-forecast one); only the Base row's color is caller-controlled, since
+    the Best/Worst rows are always live formulas off it (DARK, internal formula)."""
     write(ws, row, LABEL_COL, label, bold=True, txt_color=NAVY)
     row += 1
     row += 1
@@ -209,7 +213,7 @@ def _scenario_row(ws, row, label, base_value, mult_best_ref, mult_worst_ref, ref
     row += 1
 
     write(ws, row, LABEL_COL, "    Base", txt_color=MID_GRAY, italic=True)
-    num(ws, row, ASSUM_COL, base_value, fmt=fmt, txt_color=ORANGE)
+    num(ws, row, ASSUM_COL, base_value, fmt=fmt, txt_color=base_color)
     row += 1
 
     op = "+" if best_is_delta else "*"
@@ -245,34 +249,34 @@ def build_assumptions(wb, config):
 
     m = config.SCENARIO_MULTIPLIERS
     best_occ_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario multiplier -- Best (occupancy)", m["best"]["occupancy_mult"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Scenario multiplier -- Best (occupancy) [MODELED]", m["best"]["occupancy_mult"], ORANGE, fmt='0.00')
     worst_occ_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario multiplier -- Worst (occupancy)", m["worst"]["occupancy_mult"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Scenario multiplier -- Worst (occupancy) [MODELED]", m["worst"]["occupancy_mult"], ORANGE, fmt='0.00')
     best_esc_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario multiplier -- Best (escalation)", m["best"]["escalation_mult"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Scenario multiplier -- Best (escalation) [MODELED]", m["best"]["escalation_mult"], ORANGE, fmt='0.00')
     worst_esc_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario multiplier -- Worst (escalation)", m["worst"]["escalation_mult"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Scenario multiplier -- Worst (escalation) [MODELED]", m["worst"]["escalation_mult"], ORANGE, fmt='0.00')
     best_rate_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario multiplier -- Best (cost of debt)", m["best"]["rate_mult"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Scenario multiplier -- Best (cost of debt) [MODELED]", m["best"]["rate_mult"], ORANGE, fmt='0.00')
     worst_rate_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario multiplier -- Worst (cost of debt)", m["worst"]["rate_mult"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Scenario multiplier -- Worst (cost of debt) [MODELED]", m["worst"]["rate_mult"], ORANGE, fmt='0.00')
     best_cap_delta_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario delta -- Best (cap rate, bps)", m["best"]["cap_rate_delta"], ORANGE, fmt='0.00%')
+    R = _assum_row(ws, R, "Scenario delta -- Best (cap rate, bps) [MODELED]", m["best"]["cap_rate_delta"], ORANGE, fmt='0.00%')
     worst_cap_delta_ref = _cell(R, ASSUM_COL)
-    R = _assum_row(ws, R, "Scenario delta -- Worst (cap rate, bps)", m["worst"]["cap_rate_delta"], ORANGE, fmt='0.00%')
+    R = _assum_row(ws, R, "Scenario delta -- Worst (cap rate, bps) [MODELED]", m["worst"]["cap_rate_delta"], ORANGE, fmt='0.00%')
     R += 1
 
     section_header(ws, R, "PROPERTY & RENTAL DRIVERS", bg=NAVY, txt_color=WHITE); R += 1
     ri = config.RENTAL_INCOME
-    R = _scenario_row(ws, R, "Rental escalation (p.a.)", ri["escalation"], best_esc_ref, worst_esc_ref,
-                      A, "escalation", fmt='0.0%')
-    R = _scenario_row(ws, R, "Stabilized occupancy target", ri["occupancy_stabilized"], best_occ_ref, worst_occ_ref,
-                      A, "occupancy_stabilized", fmt='0.0%')
+    R = _scenario_row(ws, R, "Rental escalation (p.a.) [DISCLOSED-DERIVED]", ri["escalation"], best_esc_ref, worst_esc_ref,
+                      A, "escalation", fmt='0.0%', base_color=BLUE_INPUT)
+    R = _scenario_row(ws, R, "Stabilized occupancy target [DISCLOSED]", ri["occupancy_stabilized"], best_occ_ref, worst_occ_ref,
+                      A, "occupancy_stabilized", fmt='0.0%', base_color=BLUE_INPUT)
     A["occupancy_h1_2025"] = R
     R = _assum_row(ws, R, "Portfolio occupancy, H1 2025 actual [DISCLOSED]", ri["occupancy_portfolio_h1_2025"],
                    BLUE_INPUT, fmt='0.0%')
     A["occupancy_recovery_years"] = R
-    R = _assum_row(ws, R, "Occupancy recovery period (years)", ri["occupancy_recovery_years"], ORANGE, fmt='0')
+    R = _assum_row(ws, R, "Occupancy recovery period (years) [MODELED]", ri["occupancy_recovery_years"], ORANGE, fmt='0')
     R += 1
 
     section_header(ws, R, "DEBT & GEARING", bg=NAVY, txt_color=WHITE); R += 1
@@ -280,10 +284,10 @@ def build_assumptions(wb, config):
     A["opening_borrowings"] = R
     R = _assum_row(ws, R, "Borrowings, Jun-2025 actual [DISCLOSED]", cap["opening_borrowings"],
                    BLUE_INPUT, fmt='#,##0.0')
-    R = _scenario_row(ws, R, "Weighted-average borrowing rate (projected)", cap["weighted_avg_rate_projected"],
+    R = _scenario_row(ws, R, "Weighted-average borrowing rate (projected) [MACRO]", cap["weighted_avg_rate_projected"],
                       best_rate_ref, worst_rate_ref, A, "weighted_avg_rate_projected", fmt='0.00%')
     A["issuance_rate"] = R
-    R = _assum_row(ws, R, "Unit issuance rate (p.a., projected)", config.UNITS["issuance_rate"], ORANGE, fmt='0.0%')
+    R = _assum_row(ws, R, "Unit issuance rate (p.a., projected) [MODELED]", config.UNITS["issuance_rate"], ORANGE, fmt='0.0%')
     R += 1
 
     section_header(ws, R, "REGULATORY LIMITS (CMA I-REIT)", bg=NAVY, txt_color=WHITE); R += 1
@@ -311,20 +315,20 @@ def build_assumptions(wb, config):
     A["cost_of_equity"] = R
     coe_formula = f"={_assum_ref(A, 'risk_free_rate')}+{_assum_ref(A, 'beta')}*{_assum_ref(A, 'erp')}"
     R = _assum_row(ws, R, "Cost of equity (CAPM)", coe_formula, DARK, fmt='0.00%')
-    R = _scenario_row(ws, R, "Direct-capitalization cap rate", v["cap_rate"], best_cap_delta_ref,
-                      worst_cap_delta_ref, A, "cap_rate", fmt='0.00%', best_is_delta=True)
+    R = _scenario_row(ws, R, "Direct-capitalization cap rate [DISCLOSED-DERIVED]", v["cap_rate"], best_cap_delta_ref,
+                      worst_cap_delta_ref, A, "cap_rate", fmt='0.00%', best_is_delta=True, base_color=BLUE_INPUT)
     A["nav_blend_weight"] = R
-    R = _assum_row(ws, R, "Blend weight -- NAV", v["blend_weights"]["nav"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Blend weight -- NAV [MODELED]", v["blend_weights"]["nav"], ORANGE, fmt='0.00')
     A["ddm_blend_weight"] = R
-    R = _assum_row(ws, R, "Blend weight -- DDM", v["blend_weights"]["ddm"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Blend weight -- DDM [MODELED]", v["blend_weights"]["ddm"], ORANGE, fmt='0.00')
     A["cap_rate_blend_weight"] = R
-    R = _assum_row(ws, R, "Blend weight -- Cap rate", v["blend_weights"]["cap_rate"], ORANGE, fmt='0.00')
+    R = _assum_row(ws, R, "Blend weight -- Cap rate [MODELED]", v["blend_weights"]["cap_rate"], ORANGE, fmt='0.00')
     R += 1
 
     section_header(ws, R, "PROPERTY PORTFOLIO (as at 30 Jun 2025) [DISCLOSED]", bg=NAVY, txt_color=WHITE); R += 1
     write(ws, R, LABEL_COL, "Property", bold=True, txt_color=NAVY)
     write(ws, R, 5, "Beds", bold=True, txt_color=NAVY)
-    write(ws, R, ASSUM_COL, "Fair value", bold=True, txt_color=NAVY)
+    write(ws, R, ASSUM_COL, f"Fair value ({config.CURRENCY_UNIT_ABBR})", bold=True, txt_color=NAVY)
     R += 1
     for p in config.PROPERTIES:
         write(ws, R, LABEL_COL, f"{p['name']} ({p['location']})")
@@ -1057,8 +1061,9 @@ def build_sources_sheet(wb, config):
           "valuation and Model-sheet Regulatory Compliance section. Acorn's own audited/interim "
           "financial-statement figures are cited separately via research_output.md and the "
           "Assumptions sheet's data-provenance color legend.",
-          italic=True, txt_color=MID_GRAY, size=9, wrap=True)
-    ws.row_dimensions[2].height = 28
+          italic=True, txt_color=MID_GRAY, size=9, wrap=True, valign="top")
+    ws.merge_cells(start_row=2, start_column=3, end_row=2, end_column=7)
+    ws.row_dimensions[2].height = 32
     R = 4
 
     section_header(ws, R, "REFERENCES", bg=NAVY, txt_color=WHITE); R += 1
@@ -1088,7 +1093,69 @@ def build_sources_sheet(wb, config):
           "available), Accessed (date the figure was pulled). See research_output.md for "
           "the full research log behind each entry, including two documented reconciliation "
           "gaps in Acorn's own interim filing.",
-          italic=True, txt_color=MID_GRAY, size=9, wrap=True)
+          italic=True, txt_color=MID_GRAY, size=9, wrap=True, valign="top")
+    ws.merge_cells(start_row=R, start_column=3, end_row=R, end_column=7)
+    ws.row_dimensions[R].height = 32
+    R += 2
+
+    section_header(ws, R, "MODELING METHODOLOGY (amber -- modeled / placeholder / macro-forecast assumptions)",
+                    bg=NAVY, txt_color=WHITE); R += 1
+    write(ws, R, 3,
+          "Every amber-colored cell on the Assumptions sheet (see Data Provenance Legend) is a "
+          "modeled proxy, analyst-judgment placeholder, or forward macro assumption -- not a "
+          "figure taken directly from a filing. The formula/approach behind each is below; full "
+          "rationale and citations (where any exist) are in research_output.md.",
+          italic=True, txt_color=MID_GRAY, size=9, wrap=True, valign="top")
+    ws.merge_cells(start_row=R, start_column=3, end_row=R, end_column=7)
+    ws.row_dimensions[R].height = 28
+    R += 1
+
+    v, ri, cap, units = config.VALUATION, config.RENTAL_INCOME, config.CAPITAL, config.UNITS
+    bw = v["blend_weights"]
+    methodology = [
+        ("Occupancy recovery period (years)",
+         f"Value: {ri['occupancy_recovery_years']:.0f} years. Projected-year occupancy glides "
+         "linearly from the disclosed actual rate toward the disclosed stabilized rate over "
+         "this many years -- occupancy(t) = actual + min(1, years_since_last_actual / "
+         "recovery_years) x (stabilized - actual). See "
+         "reit_calculations.build_rental_income_noi()."),
+        ("Unit issuance rate (p.a., projected)",
+         f"Value: {units['issuance_rate']:.1%} p.a. Projected-year unit count compounds flat at "
+         "this rate each year -- units[t] = units[t-1] x (1 + rate) -- modeling continued but "
+         "slower capital-raising than the most recently disclosed issuance pace. See "
+         "reit_calculations.build_units()."),
+        ("Beta [PLACEHOLDER]",
+         f"Value: {v['beta']:.2f}. Feeds CAPM cost of equity = risk-free rate + beta x equity "
+         "risk premium (the DDM leg's discount rate). No instrument-specific beta regression is "
+         "possible without liquid secondary-market trading; this is a defensive-moderate proxy "
+         "typical of regulated income-generating real estate, flagged for replacement once a "
+         "usable regression source exists."),
+        ("Weighted-average borrowing rate (projected) [MACRO]",
+         f"Value: {cap['weighted_avg_rate_projected']:.2%}. A forward assumption of where the "
+         "cost of debt lands beyond the latest disclosed actual rate, based on the prevailing "
+         "monetary easing/tightening cycle described in the source filings -- not itself a "
+         "specific disclosed forecast."),
+        ("Valuation blend weights (NAV / DDM / Cap rate)",
+         f"Values: {bw['nav']:.0%} / {bw['ddm']:.0%} / {bw['cap_rate']:.0%}. Analyst-judgment "
+         "weighting of the three valuation approaches -- blended_value = w_nav x NAV_per_unit + "
+         "w_ddm x DDM_value + w_cap_rate x Cap_rate_value. NAV is typically weighted heaviest "
+         "since it's the most reliable anchor for a property-holding entity (read directly off "
+         "the Balance Sheet, not projected); DDM lightest since its discount rate rests on the "
+         "weakest-sourced input (beta, above). See reit_calculations.build_valuation()."),
+        ("Best/Worst scenario multipliers",
+         "Illustrative +/- sensitivity bands applied to the Base case, not calibrated to a "
+         "specific external stress scenario. Occupancy and rental escalation multiply the Base "
+         "path; cost of debt multiplies the projected rate; the cap rate instead shifts by an "
+         "additive bps delta (a lower cap rate implies a higher implied property value, and "
+         "vice versa). See reit_calculations.build_scenario()."),
+    ]
+    for label, desc in methodology:
+        write(ws, R, 4, label, bold=True, txt_color=ORANGE, size=9.5)
+        R += 1
+        write(ws, R, 4, desc, wrap=True, size=9, txt_color=MID_GRAY, valign="top")
+        ws.merge_cells(start_row=R, start_column=4, end_row=R, end_column=7)
+        ws.row_dimensions[R].height = 14 * -(-len(desc) // 130) + 8
+        R += 2
 
     ws.page_setup.orientation = "landscape"
     ws.print_area = f"$A$1:$G${R}"
@@ -1112,8 +1179,9 @@ def build_cover(wb, config):
           size=13, txt_color=GOLD, italic=True)
 
     write(ws, 9, LABEL_COL, config.COVER_INFO.get("Business_Description", ""),
-          txt_color=DARK, wrap=True, size=10)
-    ws.row_dimensions[9].height = 44
+          txt_color=DARK, wrap=True, size=10, valign="top")
+    ws.merge_cells(start_row=9, start_column=LABEL_COL, end_row=9, end_column=10)
+    ws.row_dimensions[9].height = 48
 
     info = [
         (11, "Currency:", f"{config.CURRENCY} – {config.CURRENCY_UNIT_ABBR}"),

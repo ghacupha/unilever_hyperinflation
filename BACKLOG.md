@@ -137,12 +137,37 @@ the REIT domain.
       snapshot, 30 Jun 2025, is available).
 - [ ] A REIT-specific beta (currently a flagged 0.65 placeholder — no reliable
       regression source given Acorn I-REIT's thin/restricted-market trading).
+- [x] Sector-specific cap rate / direct-capitalization cross-check research (2026-08-25)
+      — no single authoritative "Kenya REIT cap rate" exists, but real disclosed
+      segment yields are now sourced and cross-checked against Acorn's own implied
+      5.47%: ILAM Fahari's independently-valued retail/office term & reversionary
+      yields (Note 11, FY2025 annual report), ALP Industrial's disclosed industrial
+      entry yields (8.17%-9.26%), and general Nairobi residential yield ranges
+      (Cytonn/Knight Frank 2025, 5.4%-7.4%). See `research_output.md`'s 2026-08-25
+      section. No `config.py` value changed — cross-check/citation only.
 - [ ] Extend to a second REIT instance (the user's stated intent: "use it to value other
-      REITs"). Candidates already researched at sector-summary level in
-      `data/KENYA REITS AND REOCS EQUITY ANALYSIS REPORT.pdf`: LAPTRUST Imara I-REIT (a
-      useful contrasting instance — three consecutive years of *losses* and NAV erosion
-      from fair-value markdowns, unlike Acorn's growth profile), ILAM Fahari I-REIT,
-      ALP Industrial REIT, TRIFIC Green USD I-REIT (the last two would also exercise
-      the config schema's currency-unit field against a USD-denominated REIT — neither
-      tested yet). Each needs its own full financial-statement sourcing pass before a
-      real `config.py` can be built, same as Acorn I-REIT's Phase 1 above.
+      REITs"). Sourcing status as of 2026-08-25 (`research_output.md`):
+      - **LAPTRUST Imara I-REIT** — fully sourced, 3 years of audited actuals (FY2023-25)
+        from its own NSE-hosted filings. Ready for a `config.py` build. Correction to the
+        note below: it's *two* consecutive loss/NAV-erosion years (FY2024-25), not three
+        — FY2023 was profitable. Fully ungeared all 3 years, clean 80.0% payout every
+        year (contrast to Acorn's below-minimum 34.1%). Missing: per-property portfolio
+        detail (only aggregate figures found).
+      - **ILAM Fahari I-REIT** — fully sourced, FY2025 audited (+FY2024 comparative) from
+        its own investor-relations site. Ready for a `config.py` build. Zero borrowings,
+        80.7% payout (2025). Missing: trading price / NAV discount-premium (delisted from
+        NSE Main Market Feb-2024, no market price disclosed — can't extend the
+        `PEER_REITS` table with it).
+      - **ALP Industrial REIT** — partially sourced: USD-denominated, maiden H1 2026
+        interim only (listed 11-Mar-2026, no full-year annual report exists yet).
+        Property-level detail with entry yields (8.17%-9.26%) is disclosed; no
+        distributions have been paid yet (CMA 4-month rule). Revisit once a full-year
+        report exists.
+      - **TRIFIC Green USD I-REIT** — not sourceable yet. Listed 23/29-Jun-2026 (~2
+        months before this research pass); no annual/interim report published. Only
+        prospectus/guideline forward *projections* found (FY2027 estimates), correctly
+        not treated as disclosed actuals. Revisit ~Q1-Q2 2027 once its first annual
+        report is likely filed.
+      Each still needs a real `config.py` built before it's a usable model instance —
+      LAPTRUST Imara and ILAM Fahari are now data-ready for that; ALP Industrial and
+      TRIFIC Green USD are not yet.

@@ -9,6 +9,35 @@ to a generic REIT valuation model (first instance Acorn I-REIT) on that date.
 
 ## [Unreleased]
 
+### Added — Comparative REIT actuals + sector cap-rate cross-check research (2026-08-25)
+- Closes `BACKLOG.md` Phase 3's cap-rate item; partially advances the "extend to a second
+  REIT instance" item (sourcing done for 2 of 4 candidates). Five parallel research passes
+  against `research_output.md`'s own "Not yet pulled" gaps:
+  - **LAPTRUST Imara I-REIT**: sourced 3 full years of audited actuals (FY2023-25) directly
+    from NSE-hosted filings — corrects the prior "three consecutive loss years" assumption
+    (actually two, FY2024-25; FY2023 was profitable) and finds it's fully ungeared with a
+    clean 80.0% payout every year, a sharp contrast to Acorn.
+  - **ILAM Fahari I-REIT**: sourced FY2025 audited (+FY2024 comparative) directly from its
+    investor-relations site, including its independent valuer's Note 11 unobservable-inputs
+    table (retail/office term & reversionary yields) — the best-sourced formal cap-rate
+    cross-check found anywhere in this research.
+  - **ALP Industrial REIT**: sourced its maiden H1 2026 interim (USD-denominated, listed
+    Mar-2026, no full-year report exists yet) — property-level detail with disclosed entry
+    yields (8.17%-9.26%).
+  - **TRIFIC Green USD I-REIT**: confirmed not yet sourceable — listed Jun-2026, no
+    annual/interim report published; only prospectus projections found, correctly not
+    treated as disclosed actuals.
+  - **Sector cap rate**: no single authoritative Kenya REIT cap rate is published; sourced
+    segment-level yields instead (Cytonn/Knight Frank Nairobi residential 5.4%-7.4%, ILAM
+    Fahari's own disclosed retail/office yields, ALP Industrial's disclosed industrial entry
+    yields) and cross-checked against Acorn's own implied 5.47% `cap_rate` — falls
+    comfortably within the general residential range. No `config.py` valuation figures
+    changed; this is citation/cross-check documentation only (`config.py` `SOURCES` list and
+    the `cap_rate` comment updated to point at it).
+- All findings tagged `[DISCLOSED]`/`[DISCLOSED-DERIVED]` with source URLs in
+  `research_output.md`'s new 2026-08-25 section; gaps (e.g. LAPTRUST/ALP per-property detail,
+  ILAM Fahari's/TRIFIC's trading price) reported honestly rather than filled with estimates.
+
 ### Changed — Adapted the equity-research-report pipeline (bizplan/report/*) to the REIT domain (2026-08-11)
 - Closes `BACKLOG.md` Phase 2. `bizplan/report/data.py`, `validation.py`,
   `recommendation.py`, `pdf.py`, `sourcing.py`, `pipeline.py` and `price_research.py`

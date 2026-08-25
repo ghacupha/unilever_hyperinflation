@@ -52,6 +52,14 @@ SOURCES = [
                 "Family Bank calibration)", accessed="2026-07-26", url=""),
     dict(item="Peer REIT NAV discount/premium (Acorn I-REIT, LAPTRUST Imara I-REIT)", value="-4.4% / +14.0%",
          source="Kenya REITs and REOCs sector equity analysis report", accessed="2026-08-09", url=""),
+    dict(item="Sector cap-rate cross-check (retail/office term & reversionary yields)",
+         value="Retail 13.0%/9.0%, Office & light industrial 12.5%/9.0% (FY2025)",
+         source="ILAM Fahari I-REIT FY2025 Annual Report, Note 11 (independent valuer: Tysons Limited)",
+         accessed="2026-08-25",
+         url="https://ilamfahariireit.com/assets/files/ILAM_Fahari_I-REIT_Annual_Report_FY2025.pdf"),
+    dict(item="Sector cap-rate cross-check (Nairobi residential rental yield range)", value="5.4%-7.4%",
+         source="Cytonn Nairobi Metropolitan Area Residential Report 2025 / Knight Frank Kenya Market Update H1 2025",
+         accessed="2026-08-25", url="https://cytonn.com/topicals/nairobi-metropolitan-area-32"),
 ]
 
 # 3 actual years immediately followed by 5 projected years, same convention as the
@@ -172,7 +180,12 @@ SCENARIO_MULTIPLIERS = dict(
 # NOI annualized (524.368-178.460-56.243+3.306)*2=586.94 / Jun-2025 investment property
 # 10,727.0 = 5.47% [DISCLOSED-DERIVED]. blend_weights: NAV-anchored, since NAV is the most
 # reliable value driver for a property-holding entity and the DDM leg rests on the
-# weakest-sourced input (beta) -- see research_output.md.
+# weakest-sourced input (beta) -- see research_output.md. cap_rate cross-check (2026-08-25):
+# 5.47% sits within the general Nairobi residential rental-yield range (5.4%-7.4%, Cytonn/
+# Knight Frank 2025) found once comparative-REIT/sector cap-rate research was done -- no
+# segment-identical published benchmark exists for student housing specifically, so the
+# [DISCLOSED-DERIVED] Acorn-own-NOI figure remains the model's direct input; this is
+# documentation only, value unchanged. See research_output.md's 2026-08-25 section.
 VALUATION = dict(
     risk_free_rate=0.1129,
     beta=0.65,
