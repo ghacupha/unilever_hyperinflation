@@ -376,3 +376,88 @@ Sources: cytonn.com/topicals/nairobi-metropolitan-area-32;
 knightfrank.com/research/report-library/kenya-market-update-12364.aspx;
 afriqahome.com/guides/kenya-real-estate-2026; cytonnreport.com/topicals/student-housing-market-1
 (2020, stale); cytonnreport.com/research/review-of-real-estate-investments-trusts-reits-in-kenya-and-cytonn-weekly-052026-1.
+
+## 2026-09-03 — Two-tier seed/stabilized occupancy model (per-property page-11 data)
+
+User proposed enhancing the rental-income schedule using per-property detail from the ASA
+I-REIT semi-annual report's own p.11 "Portfolio Update" (rooms/beds/operations-start/
+acquisition-date per property) and modeling occupancy "by regression." Pulled the actual PDF
+(`acornholdingsafrica.com/wp-content/uploads/2025/08/ASA-I-REIT-2025-Semi-Annual-Report.pdf`)
+directly and read every page mentioning occupancy or the 7 properties, including rendering
+p.12's occupancy-trend chart as an image to check for embedded data labels a text-only
+extraction might miss.
+
+**What's actually disclosed**: p.11 gives real per-property rooms/beds/location/operations-
+start/acquisition-date `[DISCLOSED]` — now in `config.py`'s `PROPERTIES` (`operations_start`
+field, previously missing). **No per-property or continuous occupancy series is disclosed
+anywhere** — p.12 ("Portfolio Occupancy Trend") gives only a portfolio-blended monthly chart
+(confirmed via direct image inspection: two lines, H1-2025 vs H1-2024, no per-property split,
+no data labels beyond the two H1-average callouts already known) plus a **qualitative
+two-group split**: "seed" assets Acorn itself names as underperforming — Jogoo Road (worst;
+"absence of an anchor institution" + "accessibility constraints due to an incomplete access
+road"), Ruaraka and Parklands (undisclosed dips) — versus "stabilized typical assets" (the
+other 4), disclosed at 93% H1-2025 / 92% H1-2024 occupancy `[DISCLOSED]`. A literal regression
+isn't fittable from this — there's no multi-point occupancy series per property to fit a curve
+through, only one clean tier-level number (the stabilized group) plus qualitative commentary
+for the other.
+
+**What is legitimately derivable**: since portfolio-blended occupancy = the bed-weighted
+average of both tiers, and both the portfolio-blended and stabilized-tier figures are
+disclosed for two periods, the seed tier's occupancy for those same two periods is solvable
+as the residual — `[DISCLOSED-DERIVED]`, not fabricated:
+- Seed beds 1,578 (Jogoo Road 502 + Ruaraka 543 + Parklands 533); stabilized beds 2,888
+  (Wilsonview 728 + Aberdare Heights I 697 + Hurlingham 834 + Aberdare Heights II 629);
+  total 4,466 (matches the disclosed portfolio bed count).
+- H1-2025: (4,466 × 81% − 2,888 × 93%) / 1,578 = **59.0%**.
+- H1-2024: (4,466 × 88% − 2,888 × 92%) / 1,578 = **80.7%** (using the H1-2024 comparatives
+  disclosed on the same p.12 chart, now in `config.py` as `occupancy_portfolio_h1_2024` /
+  `occupancy_stabilized_h1_2024`).
+
+This gives a real, second data point showing the seed tier's occupancy **declined** from
+80.7% to 59.0% year-on-year — consistent with Jogoo Road's disclosed anchor-tenant loss and
+access-road disruption emerging/worsening between the two periods, and importantly **not** a
+"new property still ramping up" story.
+
+**Important correction to my own initial framing**: I originally assumed the seed/stabilized
+split would track property age (newer properties still maturing toward stabilized occupancy).
+The actual operations-start dates disprove this cleanly: Jogoo Road (Aug-2017, the *oldest*
+property) and Ruaraka (Jan-2018, 2nd oldest) are both "seed", while Aberdare Heights II
+(Apr-2022, the *newest* property) is already "stabilized". The seed/stabilized split is
+Acorn's own qualitative *operational* categorization (anchor-tenant loss, access-road
+construction, sales execution gaps) — not a maturity curve. A regression of occupancy against
+property age would have been actively misleading here, which is why one wasn't built.
+
+**Implementation**: `config.py`'s `PROPERTIES` entries now carry a `tier` field ("seed" /
+"stabilized"); `reit_calculations.py` adds `compute_tier_beds()`, `compute_seed_occupancy()`
+(generic back-solve), and `compute_seed_occupancy_h1_2024/2025()`, and `build_rental_income_noi()`
+now models each tier separately (stabilized held flat at the scenario-flexed target, seed
+glides toward it over `occupancy_recovery_years`) before bed-weighting them back into one
+portfolio figure. The rendered Excel workbook mirrors this as three live-formula Model-sheet
+rows (Seed tier / Stabilized tier / blended), not just a Python-side change — cross-verified
+with the `formulas` package (a real Excel-formula evaluator) that the rendered workbook
+evaluates to the exact same numbers as the Python ground truth across Base/Best/Worst
+scenarios, and that the Master Check still reads OK for Balance Sheet/LTV/Income-Producing in
+all 24 year×scenario combinations. That verification pass also caught a real latent bug (in
+the *prior* single-tier design too, not introduced by this change): the scenario-flexed
+occupancy target was never actually capped at 100% in the rendered Excel formulas (only Python
+capped it), so an extreme Best-case could show occupancy above 100% of beds — fixed by capping
+the target reference in both tiers' formulas.
+
+Base-case blended occupancy numbers are numerically **unchanged** from the prior single-glide
+design (85%/89%/93% for 2026-2028) — this is a mathematical necessity, not a coincidence: a
+bed-weighted blend of "flat at target" and "linear glide to the same target" is itself a
+linear glide from the same starting point to the same target, regardless of the tier split
+or back-solved seed value chosen. The real gains are (1) correct, disclosure-traceable
+provenance instead of one unexplained blended number, (2) more realistic Best/Worst scenario
+behavior — the ceiling effect now applies per-tier instead of only once the whole portfolio
+has fully converged, and (3) the back-solved seed occupancy (59.0% H1-2025, declining from
+80.7% H1-2024) is now visible as its own figure rather than hidden inside a blend.
+
+**Also fixed while here**: the Model sheet's actual-year occupancy display for 2024 was a
+prior unsourced `0.85` — replaced with the disclosed `0.88` (portfolio-blended H1-2024). 2023's
+`0.78` has no disclosed source found in any research pass to date and is left as an
+unexplained pre-existing placeholder, flagged for future sourcing rather than silently
+"fixed" with an invented number.
+
+Source: `ASA I-REIT 2025 Semi-Annual Report`, pp.11-12 ("Portfolio Update" / "Portfolio
+Occupancy Trend"), same document already cited above.

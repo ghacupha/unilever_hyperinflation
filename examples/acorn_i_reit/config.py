@@ -75,30 +75,52 @@ TAX_RATE = 0.0
 # ── Property portfolio ──────────────────────────────────────────────────────────────
 # 7 properties, purpose-built student accommodation, fair values as at 30 June 2025
 # [DISCLOSED] -- sum to 10,727.0 exactly, matching the disclosed Investment Property
-# total at that date (a good internal-consistency check).
+# total at that date (a good internal-consistency check). operations_start [DISCLOSED] --
+# interim report p.11 "Portfolio Update". tier [DISCLOSED] -- Acorn's own named grouping
+# from the interim report's "Portfolio Occupancy Trend" section (p.12): "seed assets" are
+# the 3 properties it explicitly names as underperforming (Jogoo Road -- absence of an
+# anchor institution + an incomplete access road; Ruaraka and Parklands -- undisclosed
+# dips), "stabilized typical assets" are the other 4, at a disclosed 93% H1-2025
+# occupancy. NOTE: this is Acorn's own qualitative operational categorization, NOT a
+# property-age/maturity split -- Jogoo Road (operations start Aug-2017, the OLDEST
+# property) and Ruaraka (Jan-2018, 2nd oldest) are "seed", while Aberdare Heights II
+# (Apr-2022, the NEWEST) is already "stabilized". A regression of occupancy against
+# property age would be actively misleading here; see research_output.md.
 PROPERTIES = [
     dict(name="Qwetu Jogoo Road", location="Jogoo Lane", rooms=343, beds=502,
-         opening_fair_value=817.0, acquisition_date="Feb-2021"),
+         opening_fair_value=817.0, operations_start="Aug-2017", acquisition_date="Feb-2021",
+         tier="seed"),
     dict(name="Qwetu Ruaraka", location="Outer Ring Road", rooms=380, beds=543,
-         opening_fair_value=834.0, acquisition_date="Feb-2021"),
+         opening_fair_value=834.0, operations_start="Jan-2018", acquisition_date="Feb-2021",
+         tier="seed"),
     dict(name="Qwetu Wilsonview", location="Keri Road", rooms=512, beds=728,
-         opening_fair_value=2033.0, acquisition_date="Feb-2021"),
+         opening_fair_value=2033.0, operations_start="Feb-2020", acquisition_date="Feb-2021",
+         tier="stabilized"),
     dict(name="Qwetu Parklands", location="Kipkabus Road", rooms=335, beds=533,
-         opening_fair_value=1219.0, acquisition_date="Jun-2022"),
+         opening_fair_value=1219.0, operations_start="Mar-2019", acquisition_date="Jun-2022",
+         tier="seed"),
     dict(name="Qwetu Aberdare Heights I", location="USIU Road", rooms=518, beds=697,
-         opening_fair_value=1944.0, acquisition_date="Oct-2022"),
+         opening_fair_value=1944.0, operations_start="Jan-2021", acquisition_date="Oct-2022",
+         tier="stabilized"),
     dict(name="Qwetu Hurlingham", location="Argwings Kodhek Road", rooms=583, beds=834,
-         opening_fair_value=2391.0, acquisition_date="Sep-2023"),
+         opening_fair_value=2391.0, operations_start="Jan-2022", acquisition_date="Sep-2023",
+         tier="stabilized"),
     dict(name="Qwetu Aberdare Heights II", location="USIU Road", rooms=450, beds=629,
-         opening_fair_value=1489.0, acquisition_date="Jan-2024"),
+         opening_fair_value=1489.0, operations_start="Apr-2022", acquisition_date="Jan-2024",
+         tier="stabilized"),
 ]
 
 # ── Rental income ────────────────────────────────────────────────────────────────────
 # H1 2025 actuals [DISCLOSED]; escalation is the disclosed 2021-2025 average (6.0, 3.9,
-# 4.7, 7.1, 4.0 -> ~5.1% CAGR) [DISCLOSED-DERIVED]. Occupancy: portfolio-wide blended 81%
-# in H1 2025 (disrupted by two newer/seed assets) vs 93% for the stabilized typical
-# properties [DISCLOSED]; Base scenario assumes gradual recovery toward the stabilized
-# rate as the newer assets mature [MODELED].
+# 4.7, 7.1, 4.0 -> ~5.1% CAGR) [DISCLOSED-DERIVED] -- the most recent single year (Apr-2025
+# escalation) came in lower, at 4.0% [DISCLOSED], but the 5-year average is used as the
+# steadier through-cycle assumption. Occupancy: portfolio-wide blended 81% in H1 2025 vs
+# 93% for the "stabilized typical assets" (both [DISCLOSED]); the model further splits
+# occupancy by Acorn's own named "seed" vs "stabilized" property tiers (see PROPERTIES
+# above) -- reit_calculations.compute_seed_occupancy_h1_2025() back-solves the seed
+# tier's own H1-2025 occupancy [DISCLOSED-DERIVED] from these two disclosed aggregates.
+# Base scenario assumes the seed tier recovers toward the stabilized rate over
+# occupancy_recovery_years [MODELED]; the stabilized tier is held flat, already at target.
 RENTAL_INCOME = dict(
     streams=[
         dict(name="Residential", h1_2025_actual=516.440),
@@ -107,6 +129,13 @@ RENTAL_INCOME = dict(
     escalation=0.051,
     occupancy_portfolio_h1_2025=0.81,
     occupancy_stabilized=0.93,
+    # H1-2024 comparatives for the same two disclosed aggregates [DISCLOSED] -- interim
+    # report p.12 "Portfolio Occupancy Trend" -- used to also back-solve the seed tier's
+    # H1-2024 occupancy (~80.7%) as a second real data point alongside H1-2025's ~59.0%,
+    # showing the seed tier actually DECLINED year-on-year (Jogoo Road's anchor-tenant
+    # loss + access-road disruption), not a maturity/ramp-up trend. See research_output.md.
+    occupancy_portfolio_h1_2024=0.88,
+    occupancy_stabilized_h1_2024=0.92,
     occupancy_recovery_years=3,
 )
 

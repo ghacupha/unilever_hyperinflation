@@ -9,6 +9,50 @@ to a generic REIT valuation model (first instance Acorn I-REIT) on that date.
 
 ## [Unreleased]
 
+### Changed — Two-tier seed/stabilized occupancy model, replacing single-glide (2026-09-03)
+- Closes `BACKLOG.md` Phase 3's occupancy item. Prompted by a user idea to pull per-property
+  detail (rooms/beds/operations-start dates) from the interim report's p.11 "Portfolio
+  Update" and model occupancy by regression. Fetched and read the actual PDF directly
+  (including rendering p.12's occupancy-trend chart as an image to rule out embedded data
+  labels a text-only extraction might miss): confirmed no per-property or continuous
+  occupancy series is disclosed anywhere, only a qualitative "seed" (underperforming: Jogoo
+  Road/Ruaraka/Parklands) vs. "stabilized typical assets" (the other 4, 93% H1-2025) split —
+  so a literal regression wasn't fittable, but the seed tier's own occupancy is legitimately
+  back-solvable `[DISCLOSED-DERIVED]` from the two disclosed aggregates (portfolio-blended,
+  stabilized-tier), bed-weighted, for both H1-2024 (80.7%) and H1-2025 (59.0%) -- a real
+  decline, not a maturity story.
+- **Caught and corrected my own initial framing**: operations-start dates disprove an
+  age/maturity-driven split -- Jogoo Road (2017, oldest) is "seed", Aberdare Heights II
+  (2022, newest) is already "stabilized". Documented explicitly so a future regression
+  attempt against property age isn't tried again.
+- `config.py`: `PROPERTIES` entries gain `tier` (seed/stabilized) and `operations_start`
+  fields; `RENTAL_INCOME` gains H1-2024 comparative occupancy figures.
+  `bizplan/config_loader.py` validates `tier` is present and one of the two allowed values.
+  `reit_calculations.py` adds `compute_tier_beds()`, `compute_seed_occupancy()` (generic
+  back-solve), `compute_seed_occupancy_h1_2024/2025()`; `build_rental_income_noi()` now
+  models the two tiers separately (stabilized flat at the scenario-flexed target, seed
+  glides toward it) before bed-weighting back into one portfolio figure.
+- `reit_excel_renderer.py`: the Model sheet's occupancy row was previously an
+  *independently* hand-written Excel formula (not derived from the Python change at all) --
+  replaced with 3 live-formula rows (Seed tier / Stabilized tier / blended portfolio), plus
+  a new Assumptions-sheet row for the back-solved seed occupancy and a Tier/Operations-start
+  column on the Property Portfolio table. Cross-verified with the `formulas` package (a real
+  Excel-formula evaluator) that the rendered workbook matches the Python ground truth exactly
+  across Base/Best/Worst scenarios, and the Master Check still reads OK for Balance
+  Sheet/LTV/Income-Producing across all 24 year×scenario combinations (Payout ERROR for
+  2023-2025 actuals is unchanged, documented, correct-by-design behavior).
+- That verification pass caught a real latent bug predating this change: the old
+  single-tier Excel formula never capped occupancy at 100% (only Python did), so an extreme
+  Best-case scenario could show >100% occupancy in the rendered workbook. Fixed by capping
+  the scenario-flexed target reference in both new tier formulas.
+- Base-case blended occupancy numbers are numerically unchanged from the prior design (a
+  mathematical necessity: bed-weighting "flat at target" with "linear glide to the same
+  target" is itself a linear glide from the same start to the same target) -- the real gains
+  are correct provenance, more realistic Best/Worst ceiling behavior, and exposing the
+  back-solved seed occupancy as its own documented figure. Also fixed a prior unsourced 0.85
+  placeholder for 2024's displayed actual occupancy to the disclosed 0.88; 2023's unsourced
+  0.78 is left as a flagged, not-yet-sourced placeholder.
+
 ### Added — Comparative REIT actuals + sector cap-rate cross-check research (2026-08-25)
 - Closes `BACKLOG.md` Phase 3's cap-rate item; partially advances the "extend to a second
   REIT instance" item (sourcing done for 2 of 4 candidates). Five parallel research passes

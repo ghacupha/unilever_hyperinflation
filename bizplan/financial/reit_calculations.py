@@ -97,14 +97,69 @@ def build_debt_schedule(config, rate_mult=1.0):
 # SCHEDULE 3 — RENTAL INCOME / NOI
 # ─────────────────────────────────────────────
 
+def compute_tier_beds(config):
+    """Bed counts by property tier ('seed' vs 'stabilized'), per config.PROPERTIES'
+    disclosed per-property bed counts and tier assignment."""
+    seed = sum(p["beds"] for p in config.PROPERTIES if p["tier"] == "seed")
+    stabilized = sum(p["beds"] for p in config.PROPERTIES if p["tier"] == "stabilized")
+    return seed, stabilized
+
+
+def compute_seed_occupancy(seed_beds, stabilized_beds, portfolio_occ, stabilized_occ):
+    """Back-solves the 'seed' tier's occupancy for one period from two disclosed
+    aggregates for that same period -- Acorn's own interim report gives the
+    portfolio-blended occupancy and, separately, the 'stabilized typical assets'
+    subgroup's own occupancy, but never a per-property or seed-tier number directly
+    (only qualitative commentary on which properties underperformed). Since
+    portfolio_occ x total_beds = stabilized_occ x stabilized_beds + seed_occ x seed_beds,
+    seed_occ is solved as the residual -- [DISCLOSED-DERIVED], not fabricated. See
+    research_output.md."""
+    if seed_beds == 0:
+        return stabilized_occ  # no seed tier -- nothing to back-solve
+    total_beds = seed_beds + stabilized_beds
+    return (portfolio_occ * total_beds - stabilized_occ * stabilized_beds) / seed_beds
+
+
+def compute_seed_occupancy_h1_2025(config):
+    """H1-2025 instance of compute_seed_occupancy() -- see that function's docstring."""
+    seed_beds, stabilized_beds = compute_tier_beds(config)
+    ri = config.RENTAL_INCOME
+    return compute_seed_occupancy(seed_beds, stabilized_beds,
+                                   ri["occupancy_portfolio_h1_2025"], ri["occupancy_stabilized"])
+
+
+def compute_seed_occupancy_h1_2024(config):
+    """H1-2024 comparative instance of compute_seed_occupancy() -- a second real data
+    point showing the seed tier actually DECLINED year-on-year, not a maturity/ramp-up
+    trend. See config.py's RENTAL_INCOME comment and research_output.md."""
+    seed_beds, stabilized_beds = compute_tier_beds(config)
+    ri = config.RENTAL_INCOME
+    return compute_seed_occupancy(seed_beds, stabilized_beds,
+                                   ri["occupancy_portfolio_h1_2024"], ri["occupancy_stabilized_h1_2024"])
+
+
 def build_rental_income_noi(config, occupancy_mult=1.0, escalation_mult=1.0):
     """Rental revenue and occupancy path. Actual years pinned to the disclosed/modeled
-    total in config.ACTUALS; projected years grow on escalation x an occupancy-recovery
-    glide path from the disclosed H1-2025 portfolio-blended rate toward the stabilized
-    rate over config.RENTAL_INCOME['occupancy_recovery_years']."""
+    total in config.ACTUALS. Projected years grow on escalation x a two-tier occupancy
+    glide: 'seed' properties (the three Acorn's own report names as underperforming --
+    lacking an anchor institution / access constraints) recover from a
+    [DISCLOSED-DERIVED] back-solved H1-2025 rate toward the disclosed stabilized target
+    over occupancy_recovery_years; 'stabilized' properties are already at that target and
+    held flat. The two tiers are bed-count-weighted back into a single portfolio
+    occupancy figure -- rental income itself stays portfolio-aggregate (see
+    BLUEPRINT.md), only the occupancy driver behind it is tier-aware, a more accurate use
+    of what's actually disclosed than a single blended glide."""
     n = len(config.YEARS)
     ri = config.RENTAL_INCOME
     escalation = ri["escalation"] * escalation_mult
+
+    seed_beds, stabilized_beds = compute_tier_beds(config)
+    total_beds = seed_beds + stabilized_beds
+    seed_h1_2025 = compute_seed_occupancy_h1_2025(config)
+    # occupancy_mult scales the TARGET the seed tier glides toward (matching how the
+    # scenario switch scales the stabilized-tier target on the Assumptions sheet) -- it
+    # must never rescale seed_h1_2025 itself, a fixed historical H1-2025 actual.
+    stabilized_target = min(1.0, ri["occupancy_stabilized"] * occupancy_mult)
 
     rental_income = [None] * n
     occupancy = [None] * n
@@ -116,13 +171,14 @@ def build_rental_income_noi(config, occupancy_mult=1.0, escalation_mult=1.0):
         else:
             years_since_actual = year - max(config.ACTUAL_YEARS)
             progress = min(1.0, years_since_actual / ri["occupancy_recovery_years"])
-            recovered = (ri["occupancy_portfolio_h1_2025"]
-                        + progress * (ri["occupancy_stabilized"] - ri["occupancy_portfolio_h1_2025"]))
-            occupancy[i] = min(1.0, recovered * occupancy_mult)
+            seed_occ = seed_h1_2025 + progress * (stabilized_target - seed_h1_2025)
+            occupancy[i] = (seed_occ * seed_beds + stabilized_target * stabilized_beds) / total_beds
             occ_uplift = occupancy[i] / occupancy[max(0, i - 1)] if occupancy[i - 1] else 1.0
             rental_income[i] = rental_income[i - 1] * (1 + escalation) * occ_uplift
 
-    return dict(rental_income=rental_income, occupancy=occupancy)
+    return dict(rental_income=rental_income, occupancy=occupancy,
+                seed_occupancy_h1_2025=seed_h1_2025, seed_beds=seed_beds,
+                stabilized_beds=stabilized_beds)
 
 
 # ─────────────────────────────────────────────

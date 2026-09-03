@@ -128,6 +128,21 @@ the REIT domain.
 
 ## Phase 3 — Not yet done
 
+- [x] Two-tier seed/stabilized occupancy model (2026-09-03) — replaced the single
+      portfolio-blended occupancy glide with per-property-tier modeling using real p.11/
+      p.12 disclosures (rooms/beds/operations-start per property; a qualitative seed-vs-
+      stabilized operational split). Seed tier's own occupancy back-solved
+      `[DISCLOSED-DERIVED]` from two disclosed aggregates (portfolio-blended vs.
+      stabilized-tier, bed-weighted) for both H1-2024 and H1-2025. Corrected an initial
+      wrong assumption that the split would track property age — it doesn't (oldest
+      property is "seed", newest is already "stabilized"); a literal regression wasn't
+      fittable from what's disclosed (no per-property occupancy series), so this is a
+      disclosure-grounded two-point back-solve, not a regression. Implemented in both
+      `reit_calculations.py` (Python ground truth) and `reit_excel_renderer.py` (3 new
+      live-formula Model-sheet rows), cross-verified matching with the `formulas` package
+      across Base/Best/Worst scenarios; also caught and fixed a latent pre-existing gap
+      where the Excel formulas (unlike the Python side) never capped occupancy at 100%.
+      See `research_output.md`'s 2026-09-03 section.
 - [ ] Item-level opex detail for FY2023/FY2024 is currently a proportional allocation
       from the FY2025 base (see `BLUEPRINT.md` "Known simplifications") — would benefit
       from real per-year, per-item figures if Acorn's full FY2023/FY2024 annual reports

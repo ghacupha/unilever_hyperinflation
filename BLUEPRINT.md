@@ -71,9 +71,21 @@ formulas referencing Assumptions-sheet driver cells or the prior column.
    snapshot at one point in time (30 Jun 2025), not a multi-year per-property history, so
    a per-property 8-year roll-forward would be fabricated precision. The per-property
    snapshot itself is shown as a static reference table on the Assumptions sheet.
-2. **Rental Income & NOI** — occupancy glides from the disclosed portfolio-blended H1
-   2025 rate toward a stabilized target over a configurable recovery period; rental
-   income grows with escalation × the occupancy path.
+2. **Rental Income & NOI** — occupancy is modeled by two property tiers rather than one
+   portfolio-blended figure (added 2026-09-03, replacing an earlier single-glide design):
+   Acorn's own interim report names 3 of the 7 properties as underperforming "seed"
+   assets (Jogoo Road, Ruaraka, Parklands — anchor-tenant/access-road/sales issues, per
+   its own commentary) against the other 4 "stabilized typical assets" (disclosed at 93%
+   H1-2025 occupancy). The seed tier's own occupancy isn't disclosed directly, so it's
+   back-solved from two real disclosed aggregates (portfolio-blended vs. stabilized-tier
+   occupancy, weighted by each tier's disclosed bed count) — `[DISCLOSED-DERIVED]`, not
+   fabricated. The stabilized tier is held flat at target; the seed tier glides toward the
+   same target over a configurable recovery period; the two are bed-weighted back into one
+   portfolio occupancy figure that rental income grows with (× escalation). Important:
+   this is Acorn's own *operational* categorization, not a property-age/maturity split —
+   the oldest property (Jogoo Road, 2017) is "seed" and the newest (Aberdare Heights II,
+   2022) is already "stabilized", so a regression of occupancy against property age would
+   be actively misleading. See `research_output.md`'s 2026-09-03 section.
 3. **Operating Expenses** — admin (property-level) + fund-level (management/trustee/
    custodian/CMA fees) opex, itemized in config from Acorn's own note structure.
 4. **Debt / Gearing** — borrowings roll-forward, weighted-average interest rate, finance

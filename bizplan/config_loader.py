@@ -35,9 +35,12 @@ def validate_reit_config(config):
 
     if hasattr(config, "PROPERTIES"):
         for i, prop in enumerate(config.PROPERTIES):
-            for key in ("name", "location", "beds", "opening_fair_value"):
+            for key in ("name", "location", "beds", "opening_fair_value", "tier"):
                 if key not in prop:
                     errors.append(f"PROPERTIES[{i}] missing '{key}'")
+            if "tier" in prop and prop["tier"] not in ("seed", "stabilized"):
+                errors.append(f"PROPERTIES[{i}]['tier'] must be 'seed' or 'stabilized', "
+                               f"got {prop['tier']!r}")
 
     if hasattr(config, "REGULATORY"):
         for key in ("payout_min", "ltv_max", "income_producing_min"):

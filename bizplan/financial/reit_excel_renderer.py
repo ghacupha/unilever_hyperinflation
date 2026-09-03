@@ -20,6 +20,9 @@ later formulas can reference earlier rows by key instead of a hardcoded row numb
 
 from openpyxl.utils import get_column_letter
 
+from bizplan.financial.reit_calculations import (
+    compute_seed_occupancy_h1_2024, compute_seed_occupancy_h1_2025, compute_tier_beds,
+)
 from bizplan.financial.xl_helpers import (
     NAVY, MED_BLUE, WHITE, DARK, MID_GRAY, ALT_ROW, GOLD,
     GREEN_DRK, RED_DARK, ORANGE, TEAL, BLUE_INPUT,
@@ -233,6 +236,8 @@ def build_assumptions(wb, config):
     ws = wb.create_sheet("Assumptions", index=2)
     ws.sheet_view.showGridLines = False
     _col_widths(ws)
+    set_col_widths(ws, {'F': 12, 'G': 14})  # wider than the shared default: Property
+    # Portfolio table below uses F/G for Tier / Operations start, not spacer columns.
     A = {}
 
     R = 1
@@ -275,8 +280,12 @@ def build_assumptions(wb, config):
     A["occupancy_h1_2025"] = R
     R = _assum_row(ws, R, "Portfolio occupancy, H1 2025 actual [DISCLOSED]", ri["occupancy_portfolio_h1_2025"],
                    BLUE_INPUT, fmt='0.0%')
+    A["seed_occupancy_h1_2025"] = R
+    R = _assum_row(ws, R, "Seed-property occupancy, H1 2025 [DISCLOSED-DERIVED]",
+                   compute_seed_occupancy_h1_2025(config), BLUE_INPUT, fmt='0.0%',
+                   note="Back-solved from the two rows above + property bed counts -- see Sources sheet")
     A["occupancy_recovery_years"] = R
-    R = _assum_row(ws, R, "Occupancy recovery period (years) [MODELED]", ri["occupancy_recovery_years"], ORANGE, fmt='0')
+    R = _assum_row(ws, R, "Occupancy recovery period (years, seed tier) [MODELED]", ri["occupancy_recovery_years"], ORANGE, fmt='0')
     R += 1
 
     section_header(ws, R, "DEBT & GEARING", bg=NAVY, txt_color=WHITE); R += 1
@@ -328,11 +337,15 @@ def build_assumptions(wb, config):
     section_header(ws, R, "PROPERTY PORTFOLIO (as at 30 Jun 2025) [DISCLOSED]", bg=NAVY, txt_color=WHITE); R += 1
     write(ws, R, LABEL_COL, "Property", bold=True, txt_color=NAVY)
     write(ws, R, 5, "Beds", bold=True, txt_color=NAVY)
+    write(ws, R, 6, "Tier", bold=True, txt_color=NAVY)
+    write(ws, R, 7, "Operations start", bold=True, txt_color=NAVY)
     write(ws, R, ASSUM_COL, f"Fair value ({config.CURRENCY_UNIT_ABBR})", bold=True, txt_color=NAVY)
     R += 1
     for p in config.PROPERTIES:
         write(ws, R, LABEL_COL, f"{p['name']} ({p['location']})")
         write(ws, R, 5, p["beds"])
+        write(ws, R, 6, p["tier"].capitalize(), txt_color=BLUE_INPUT)
+        write(ws, R, 7, p.get("operations_start", ""), txt_color=BLUE_INPUT)
         num(ws, R, ASSUM_COL, p["opening_fair_value"], fmt='#,##0.0', txt_color=BLUE_INPUT)
         R += 1
     total_row(ws, R, "Total", [None, None, sum(p["opening_fair_value"] for p in config.PROPERTIES)],
@@ -410,15 +423,57 @@ def _build_rental_noi_section(ws, config, A, M, R):
     blank_row(ws, R); R += 1
 
     n_proj = len(DATA_COLS)
+    ri = config.RENTAL_INCOME
+    seed_beds, stabilized_beds = compute_tier_beds(config)
+    total_beds = seed_beds + stabilized_beds
+
+    # occupancy_stabilized's own Best-case scenario row is base x mult (93% x 1.08 =
+    # 100.44%) with no ceiling -- fine for a plain rate, but occupancy can't exceed 100%
+    # of beds, so every reference to it here goes through this capped form instead of the
+    # raw cell (matches the min(1.0, ...) cap already applied on the Python side).
+    target_capped = f"MIN(1,{_assum_ref(A,'occupancy_stabilized')})"
+
+    # Seed tier: recovers from its own [DISCLOSED-DERIVED] back-solved actual toward the
+    # (scenario-flexed, capped) stabilized target over occupancy_recovery_years -- a
+    # cumulative per-year step, same mechanic the old single-tier row used.
+    seed_occ_row = R
+    seed_occ_actual = ["", compute_seed_occupancy_h1_2024(config), compute_seed_occupancy_h1_2025(config)]
+    seed_occ_proj = []
+    for i in range(n_proj):
+        prev_ref = _prev(i, seed_occ_row)
+        seed_occ_proj.append(
+            f"=MIN({target_capped},{prev_ref}+"
+            f"({target_capped}-{_assum_ref(A,'seed_occupancy_h1_2025')})"
+            f"/{_assum_ref(A,'occupancy_recovery_years')})"
+        )
+    _write_row(ws, R, "Occupancy -- Seed tier [DISCLOSED-DERIVED]", seed_occ_actual, seed_occ_proj,
+              fmt='0.0%', indent=1)
+    R += 1
+
+    # Stabilized tier: already at target -- held flat at the (scenario-flexed, capped)
+    # target for every projected year, no glide needed.
+    stabilized_occ_row = R
+    stabilized_occ_actual = ["", ri["occupancy_stabilized_h1_2024"], ri["occupancy_stabilized"]]
+    stabilized_occ_proj = [f"={target_capped}" for _ in range(n_proj)]
+    _write_row(ws, R, "Occupancy -- Stabilized tier [DISCLOSED]", stabilized_occ_actual,
+              stabilized_occ_proj, fmt='0.0%', indent=1)
+    R += 1
+
+    # Portfolio blended: bed-count-weighted average of the two tiers above. seed_beds/
+    # stabilized_beds are Python constants summed from config.PROPERTIES' disclosed bed
+    # counts (Property Portfolio table, Assumptions sheet) -- not scenario- or
+    # period-dependent, so embedded as literals rather than a cross-sheet SUMIF.
     occ_row = R
-    occ_actual = [0.78, 0.85, config.RENTAL_INCOME["occupancy_portfolio_h1_2025"]]
+    # 2023's 0.78 has no disclosed source found in any research pass to date (pre-existing
+    # placeholder, not from this tier split) -- 2024 fixed from a prior unsourced 0.85 to
+    # the disclosed 0.88 (H1-2024 portfolio-blended, see RENTAL_INCOME); 2025 disclosed.
+    occ_actual = [0.78, 0.88, ri["occupancy_portfolio_h1_2025"]]
     occ_proj = []
     for i in range(n_proj):
-        prev_ref = _prev(i, occ_row)
+        col = DATA_COLS[i]
         occ_proj.append(
-            f"=MIN({_assum_ref(A,'occupancy_stabilized')},{prev_ref}+"
-            f"({_assum_ref(A,'occupancy_stabilized')}-{_assum_ref(A,'occupancy_h1_2025')})"
-            f"/{_assum_ref(A,'occupancy_recovery_years')})"
+            f"=({_cell(seed_occ_row, col)}*{seed_beds}+{_cell(stabilized_occ_row, col)}*{stabilized_beds})"
+            f"/{total_beds}"
         )
     _write_row(ws, R, "Occupancy (portfolio blended)", occ_actual, occ_proj, fmt='0.0%')
     R += 1
@@ -1113,12 +1168,18 @@ def build_sources_sheet(wb, config):
     v, ri, cap, units = config.VALUATION, config.RENTAL_INCOME, config.CAPITAL, config.UNITS
     bw = v["blend_weights"]
     methodology = [
-        ("Occupancy recovery period (years)",
-         f"Value: {ri['occupancy_recovery_years']:.0f} years. Projected-year occupancy glides "
-         "linearly from the disclosed actual rate toward the disclosed stabilized rate over "
-         "this many years -- occupancy(t) = actual + min(1, years_since_last_actual / "
-         "recovery_years) x (stabilized - actual). See "
-         "reit_calculations.build_rental_income_noi()."),
+        ("Occupancy recovery period (years, seed tier)",
+         f"Value: {ri['occupancy_recovery_years']:.0f} years. Properties are split into "
+         "Acorn's own named 'seed' (underperforming) vs 'stabilized' tiers (see the "
+         "Property Portfolio table's Tier column). The stabilized tier is already at "
+         "target and held flat; the seed tier glides linearly from its own "
+         "[DISCLOSED-DERIVED] back-solved actual toward the same stabilized target over "
+         "this many years -- seed_occ(t) = seed_actual + min(1, years_since_last_actual / "
+         "recovery_years) x (target - seed_actual). The two tiers are then bed-count-"
+         "weighted back into one portfolio occupancy figure. See "
+         "reit_calculations.build_rental_income_noi() and research_output.md (the seed/"
+         "stabilized split tracks Acorn's own disclosed operational commentary, NOT "
+         "property age -- the oldest property is 'seed', the newest is 'stabilized')."),
         ("Unit issuance rate (p.a., projected)",
          f"Value: {units['issuance_rate']:.1%} p.a. Projected-year unit count compounds flat at "
          "this rate each year -- units[t] = units[t-1] x (1 + rate) -- modeling continued but "
