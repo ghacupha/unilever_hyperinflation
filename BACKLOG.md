@@ -116,15 +116,27 @@ the REIT domain.
       debt examples, NAV/DDM/Cap-Rate spread). `section-bulls-bears.md`,
       `section-recommendation.md`, `coherence-apply-fixes.md` needed no changes — already
       domain-generic.
-- [ ] **Not yet exercised**: the actual `claude -p`-driven stages (Stage 0 sourcing,
-      Stage 2 price/consensus research, Stage 4 section drafting, Stage 5 review, Stage
-      5.5 coherence gate) — verifying these requires a real `claude -p` run (subscription
-      usage, several minutes), which wasn't done as part of this adaptation pass. The SOP
-      prompt text has been rewritten and the JSON field contracts it references have been
-      confirmed to match what `data.py` actually emits, but a live run is the only way to
-      confirm the LLM stages produce coherent REIT-domain prose end-to-end. Try
-      `REPORT=1 ./scripts/launch.sh acorn_i_reit` or `python
-      scripts/generate_equity_report.py acorn_i_reit --output-dir <dir>` next.
+- [x] **Exercised end-to-end (2026-09-03)**: `python scripts/generate_equity_report.py
+      acorn_i_reit --output-dir <dir> --ticker "ASA I-REIT" --exchange "NSE Unquoted
+      Securities Platform"` (Stage 0 sourcing wasn't re-run — Acorn was already onboarded;
+      Stages 2/4/5/5.5 all ran live for the first time). Completed successfully, producing
+      both `Acorn_I-REIT_Financial_Model.xlsx` and `Acorn_I-REIT_Equity_Research_Report.pdf`
+      (9 pages). Stage 3's mechanical signal came back Hold (High uncertainty, 63.5% method
+      spread); Stage 4 drafted all 8 sections with the analyst overriding to a Buy on a
+      specific, falsifiable catalyst (payout-ratio normalization toward the CMA 80%
+      minimum). The Stage 5.5 coherence gate did exactly the job it exists for: caught and
+      fixed 6 real cross-section inconsistencies over 3 iterations before converging (a
+      price quoted two different ways, a NAV/unit rounding mismatch, a peer
+      premium/discount contradiction, a thesis section that never previewed the eventual
+      Buy call, and two duplicate-metric/different-label collisions) — 0 unresolved
+      findings at convergence. One config gap found: `examples/acorn_i_reit/config.py` has
+      no `TICKER`/`EXCHANGE` fields (Acorn has no fixed ticker on NSE's restricted
+      platform), so `--ticker`/`--exchange` must be passed explicitly every run; not fixed
+      yet — see the new Phase 3 item below.
+- [ ] Add `TICKER`/`EXCHANGE` to `examples/acorn_i_reit/config.py` (e.g. `"ASA I-REIT"` /
+      `"NSE Unquoted Securities Platform"`, per the 2026-09-03 live run above) so
+      `REPORT=1 ./scripts/launch.sh acorn_i_reit` and `generate_equity_report.py` work
+      without needing `--ticker`/`--exchange` passed inline every time.
 
 ## Phase 3 — Not yet done
 

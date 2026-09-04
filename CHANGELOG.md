@@ -9,6 +9,25 @@ to a generic REIT valuation model (first instance Acorn I-REIT) on that date.
 
 ## [Unreleased]
 
+### Verified — First live run of the equity-report pipeline's claude-p stages (2026-09-04)
+- Closes `BACKLOG.md` Phase 2's last open item. `python scripts/generate_equity_report.py
+  acorn_i_reit --output-dir <dir> --ticker "ASA I-REIT" --exchange "NSE Unquoted
+  Securities Platform"` — Stages 2 (price/consensus research), 4 (section drafting), 5/5.5
+  (review + coherence gate) all ran live for the first time (Stage 0 sourcing wasn't
+  re-run; Acorn was already onboarded). Completed successfully end-to-end, producing both
+  `Acorn_I-REIT_Financial_Model.xlsx` and a 9-page `Acorn_I-REIT_Equity_Research_Report.pdf`.
+- Stage 3's mechanical signal: Hold (High uncertainty, 63.5% method spread). Stage 4 drafted
+  all 8 sections, with the analyst overriding to a Buy on a specific, falsifiable catalyst
+  (payout-ratio normalization toward the CMA 80% minimum).
+- The Stage 5.5 coherence gate did exactly the job it exists for: caught and fixed 6 real
+  cross-section inconsistencies over 3 iterations before converging on 0 unresolved
+  findings — a price quoted two different ways across sections, a NAV/unit rounding
+  mismatch, a peer premium/discount self-contradiction, a thesis section that never
+  previewed the eventual Buy call, and two duplicate-metric/different-label collisions.
+- Found (not yet fixed): `examples/acorn_i_reit/config.py` has no `TICKER`/`EXCHANGE`
+  fields, so those must be passed explicitly on every run. Tracked as a new `BACKLOG.md`
+  Phase 3 item.
+
 ### Changed — Two-tier seed/stabilized occupancy model, replacing single-glide (2026-09-03)
 - Closes `BACKLOG.md` Phase 3's occupancy item. Prompted by a user idea to pull per-property
   detail (rooms/beds/operations-start dates) from the interim report's p.11 "Portfolio
