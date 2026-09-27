@@ -18,7 +18,7 @@ local-currency inputs (see "Calibration" below for what that means).
   &nbsp;&nbsp;
   <img src="docs/screenshots/report_charts.png" alt="World A/B/C operating-profit comparison and per-subsidiary IAS 29 impact charts" width="420">
 </p>
-<p align="center"><em>The generated equity research report's cover page and chart page — see <a href="examples/2026-09-27_142024/">examples/2026-09-27_142024/</a> for the full workbook, PDF, and every intermediate research file from a real live run.</em></p>
+<p align="center"><em>The generated equity research report's cover page and chart page — see <a href="examples/2026-09-27_222102/">examples/2026-09-27_222102/</a> for the full workbook, PDF, and every intermediate research file from a real live run.</em></p>
 
 ## What this demonstrates
 
@@ -33,9 +33,11 @@ local-currency inputs (see "Calibration" below for what that means).
   `formulas` package (an actual Excel-formula evaluator) — not a value dump.
 - **An automated multi-agent research/drafting/QA pipeline**: a 7-stage pipeline where
   live web research, section drafting, and a review-and-fix coherence gate all ran for
-  real (`BACKLOG.md` Phase 4) — the gate caught and fixed 8 genuine cross-section
-  errors across its first run, including one subtle enough that it independently
-  rediscovered a nuance already documented in this repo's own research notes.
+  real, twice (`BACKLOG.md` Phases 4 and 7) — the gate caught and fixed 8 genuine
+  cross-section errors on its first run, including one subtle enough that it
+  independently rediscovered a nuance already documented in this repo's own research
+  notes; the second run used its full 10-iteration budget catching real issues as more
+  cited material (peer companies, a standard-setting note) entered the mix.
 - **Engineering rigor**: 51 automated tests (`pytest` unit tests + `pytest-bdd` Gherkin
   specs) covering the calculation engine, config validation, and report generation,
   running in CI (`.github/workflows/tests.yml`) on every push.
@@ -90,10 +92,9 @@ or once, persistently, via a repo-root `.env` file (copy `.env.example` to `.env
 separately metered API) and takes noticeably longer than the Excel-only path.
 
 The pipeline was adapted from its prior REIT-model domain on 2026-09-27 (see
-`BACKLOG.md` Phase 3) — its deterministic stages (JSON ground truth, calibration-fidelity
-validation, mechanical earnings-quality flag, PDF assembly) are verified end-to-end; the
-`claude -p`-driven stages (sourcing, price research, drafting, review) have had their
-prompts rewritten for this domain but not yet been exercised with a live run.
+`BACKLOG.md` Phase 3), then run live end-to-end twice the same day (Phases 4 and 7) —
+every stage, deterministic and `claude -p`-driven alike, has real output to show for it.
+See `examples/2026-09-27_222102/` for the latest full checked-in run.
 
 ## Expected output
 
@@ -188,7 +189,7 @@ unilever_hyperinflation/
 │   ├── unilever/
 │   │   ├── config.py               ← single source of truth for assumptions
 │   │   └── research_output.md     ← calibration derivation, sourced and dated
-│   └── 2026-09-27_142024/          ← a full checked-in sample of a live pipeline run
+│   └── 2026-09-27_222102/          ← a full checked-in sample of a live pipeline run
 ├── docs/
 │   ├── demo/index.html             ← interactive World A/B/C demo (generated, see below)
 │   └── screenshots/                ← images embedded in this README

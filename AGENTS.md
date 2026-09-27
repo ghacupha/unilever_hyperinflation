@@ -20,7 +20,7 @@ generated PDF and cross-checked Excel formulas via the `formulas` package). The
 `claude -p`-driven stages (2, 4, 5, 5.5) have now had a full live run too (see
 `BACKLOG.md` Phase 4, 2026-09-27) — real Stage 2 web research, all 8 Stage 4 sections
 drafted, and the Stage 5.5 coherence gate converged after 5 iterations to 0 unresolved
-findings, producing a real PDF in `output/2026-09-27_142024/`. Stage 0 (sourcing) hasn't
+findings, producing a real PDF checked in at `examples/2026-09-27_222102/`. Stage 0 (sourcing) hasn't
 been re-run since `unilever` was already onboarded going into that run.
 
 - **Run the whole thing**: [`scripts/generate_equity_report.py`](scripts/generate_equity_report.py)

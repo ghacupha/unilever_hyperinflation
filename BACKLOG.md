@@ -212,8 +212,10 @@ confirming scope first, same as any new phase.
       still marked `[PLACEHOLDER]` even though the live pipeline run (`BACKLOG.md` Phase
       4) had already confirmed the market-perception hypothesis and produced a real
       recommendation — updated both to state the confirmed finding, with a pointer to
-      the full citation trail in `examples/2026-09-27_142024/report_workdir/
-      price_consensus_research.json`. Also fixed `VALUATION`'s note, which still
+      the full citation trail in `examples/2026-09-27_222102/report_workdir/
+      price_consensus_research.json` (the checked-in sample was refreshed on
+      2026-09-27 — see the "Replaced the checked-in sample" entry near the end of this
+      phase). Also fixed `VALUATION`'s note, which still
       described the old (pre-rewrite) NAV/DDM/cap-rate mispricing-check design instead
       of the current materiality-flag one. Added 3 new tests
       (`tests/test_report_data.py`) covering the new fields, including the optional-field
@@ -234,6 +236,21 @@ confirming scope first, same as any new phase.
       granularity contrast, not a clean number-matching table, since neither peer
       discloses a figure directly comparable to Unilever's or BBVA's. Updated
       `section-valuation-scenarios.md`'s SOP and the existing peer-comparison test.
+- [x] **Replaced the checked-in sample with a fresh full live run (2026-09-27, later the
+      same day)**: `REPORT=1 ./scripts/launch.sh unilever` re-run end to end now that
+      `config.py` carries the peer-comparison and standard-setting content — Stage 4's
+      drafted sections correctly pulled in the new Colgate/Reckitt/BBVA/IFRS-IC material
+      (confirmed live, not assumed). The coherence gate used its full 10-iteration budget
+      this run (converging to 0 unresolved findings on the last one, not a QA-flags
+      ship) — genuinely more issues to catch with more cited material in play, including
+      good catches like a moat-rating headline contradicting its own per-market verdict
+      and Recommendation contradicting its own Hold call. Deleted the old
+      `examples/2026-09-27_142024/` sample and replaced it with
+      `examples/2026-09-27_222102/`; regenerated `docs/screenshots/*.png` from the new
+      PDF; updated every current-state doc pointer (`README.md`, `AGENTS.md`,
+      `research_output.md`, `config.py`) to the new path — `CHANGELOG.md`'s own
+      historical "First live run" entry describing the old path is left untouched, since
+      it's an accurate record of what actually happened then, not a live pointer.
 
 ## Phase 8 — Testing: unit tests + BDD — DONE (2026-09-27)
 
@@ -287,7 +304,7 @@ confirming scope first, same as any new phase.
       with an independent formula evaluator, the multi-agent pipeline's real coherence-
       gate catches, 51 automated tests in CI, and the git-history hygiene work).
 - [x] **Embedded screenshots/preview in README**: two PNGs rendered from the checked-in
-      sample PDF (`examples/2026-09-27_142024/...Equity_Research_Report.pdf`) via
+      sample PDF (`examples/2026-09-27_222102/...Equity_Research_Report.pdf`) via
       PyMuPDF, cropped to content (`docs/screenshots/report_cover.png`,
       `report_charts.png`) and embedded near the top of `README.md`.
 - [x] **CI that verifies calibration on every push**: `.github/workflows/tests.yml` —

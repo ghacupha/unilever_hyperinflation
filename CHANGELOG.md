@@ -11,6 +11,22 @@ than rewritten.
 
 ## [Unreleased]
 
+### Changed — Refreshed the checked-in sample with a second full live run (2026-09-27)
+- A second `REPORT=1 ./scripts/launch.sh unilever` run, now that `config.py` carries the
+  peer-comparison and standard-setting content added earlier the same day — confirmed
+  live (not assumed) that Stage 4's drafted sections correctly pull in the new
+  Colgate/Reckitt/BBVA/IFRS-IC material. The coherence gate used its full 10-iteration
+  budget this time (still converging to 0 unresolved findings on the last one, not a
+  QA-flags ship) — genuinely more to catch with more cited material in play, including a
+  moat-rating headline contradicting its own per-market verdict and a Recommendation
+  section briefly contradicting its own Hold call.
+- Deleted the old `examples/2026-09-27_142024/` sample, replaced it with
+  `examples/2026-09-27_222102/`, regenerated `docs/screenshots/*.png` from the new PDF,
+  and updated every current-state doc pointer (`README.md`, `AGENTS.md`,
+  `research_output.md`, `config.py`, `BACKLOG.md`) to the new path. This entry's own
+  sibling below ("First live run...") describing the old path is left untouched — it's
+  an accurate historical record of what happened then, not a live pointer.
+
 ### Added — Two more real peers: a US GAAP/IFRS natural experiment (2026-09-27)
 - Extends `BACKLOG.md` Phase 7. Added Colgate-Palmolive and Reckitt Benckiser to
   `PEER_COMPARISON` after checking whether a true household-goods peer existed (Coca-Cola

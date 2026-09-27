@@ -1,0 +1,13 @@
+## Recommendation
+
+**Recommendation: Hold. The hyperinflation effect gives no edge at group level.**
+
+This call is narrow. It is not an intrinsic-value target price, because this model does not build a DCF or multiples valuation. It answers one question only: does the market misprice Unilever's IAS 29 hyperinflation effect?
+
+**Step 1: the materiality flag decides the call.** In 2024 the group's net monetary loss was €195.0m, against group operating profit of €8,496.2m. That is about 2.3% of operating profit, well below the 10% materiality threshold, so the mechanical signal is **"Flag: immaterial"**. Under the decision rule, that settles it. However the market treats this line, it is too small to support a directional call either way.
+
+**Step 2: the consensus finding is real but doesn't matter here.** Our consensus research found that public consensus does *not* separate the net monetary gain/(loss) from ordinary FX. Analysts on the Q1 and Q2 2026 calls treat Argentina and Türkiye as volume and pricing stories plus a generic "currency headwind". The one analyst mention of hyperinflation on the Q2 call was about pricing, not the monetary line. So the market may well be blind to this effect. But being blind to a ~2% item is not a tradeable mispricing. The Hold here is the "immaterial" kind. It is not the "already priced in" kind. One caveat: paywalled broker notes weren't accessible, so the consensus conclusion rests on public transcripts and aggregators only.
+
+**Where the risk sits.** In 2024, the net monetary exposure sat entirely in **Argentina**. Its €206.0m net monetary loss in 2024 was more than the whole group loss of €195.0m. It had an exposure grade of C and an exposure ratio of -18.3%. Türkiye made a small gain of €11.0m (grade A). Unilever's 2025 disclosures show net monetary losses in both markets: Argentina -€46m and Türkiye -€10m (Türkiye having swung from its 2024 gain). On the net monetary line the drag is smaller than in 2024 (-€56m against -€195m). The wider picture got worse, though: the disclosed hyperinflation impact on operating profit swung from +€6m in 2024 to -€100m in 2025, and on turnover from +€417m to -€106m.
+
+**What would change the call.** The call would change if the net monetary loss rose toward 10% of operating profit while commentary kept folding it into generic FX. That would move us to **Sell-leaning / Caution** on earnings quality. Until then, this effect supports no directional view on the stock. For context only, and not as an endorsement, TipRanks shows a Moderate Buy from 10 analysts, with an average target of 5,080p against a 4,664.50p close.
