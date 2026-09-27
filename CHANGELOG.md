@@ -11,6 +11,23 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — Portfolio polish: README, CI, interactive demo (2026-09-27)
+- Closes `BACKLOG.md` Phase 9. Added a "What this demonstrates" section to `README.md`
+  (technical accounting depth, verified formula-linked Excel engineering, the real
+  coherence-gate catches, 51 tests in CI, git-history hygiene), plus two screenshots
+  (`docs/screenshots/`, rendered from the checked-in sample PDF via PyMuPDF and cropped
+  to content) embedded near the top.
+- Added `.github/workflows/tests.yml` — runs the full test suite (including the
+  calibration-fidelity regression test) plus an Excel-model build smoke test, on every
+  push/PR to `main`.
+- Added `scripts/build_interactive_demo.py`, generating a self-contained
+  `docs/demo/index.html` (no external scripts/server, works via `file://`) with the
+  real model's World A/B/C data embedded inline and toggle buttons that update the
+  displayed figures — a plain repo file rather than a Claude Artifact, so it travels
+  with the repo. Verified by hand (brace/script-tag balance checks, a full line-by-line
+  JS read, every `DATA` field access cross-checked against the generator's output) since
+  no browser tooling was available this session to render it directly.
+
 ### Added — Peer-comparison and standard-setting content (2026-09-27)
 - Closes `BACKLOG.md` Phase 7. Added `PEER_COMPARISON` (Coca-Cola FEMSA's Argentina
   net-monetary-position gain; BBVA's real disclosed Türkiye net-monetary-loss and

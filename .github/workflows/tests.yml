@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests (unit + BDD)
+        run: python -m pytest --verbose
+
+      - name: Build the Excel model (smoke test)
+        run: python scripts/build_unilever_model.py
+        env:
+          OUTPUT_DIR: /tmp/ci_output

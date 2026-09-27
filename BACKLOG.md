@@ -263,26 +263,29 @@ confirming scope first, same as any new phase.
       plain-pytest `unilever_config` fixture to avoid a fixture-name collision between
       pytest-bdd's dynamic step-fixture publishing and the statically-declared one.
 
-## Phase 9 — Portfolio polish — NOT STARTED
+## Phase 9 — Portfolio polish — DONE (2026-09-27)
 
-- [ ] **Recruiter-facing README summary**: a short section distinct from the existing
-      technical README — written for a hiring-manager skim, not a developer clone —
-      naming the specific skills demonstrated (IFRS/US GAAP technical depth, live
-      formula-linked Excel engineering, an automated multi-agent research/drafting/QA
-      pipeline with a real coherence gate that caught real errors).
-- [ ] **Embedded screenshots/preview in README**: a screenshot of the Excel workbook
-      (e.g. `Scenario_Comparison`) and a page of the generated PDF, embedded directly in
-      `README.md` so a viewer sees output quality without downloading anything.
-- [ ] **CI that verifies calibration on every push**: a GitHub Actions workflow running
-      the deterministic pipeline (build the model, run `validation.py`'s calibration-
-      fidelity check) on every push/PR — real engineering rigor (tests + CI), not just a
-      one-off local script.
-- [ ] **Interactive World A/B/C demo**: a lightweight static page (or a Claude Artifact)
-      letting a viewer toggle between the three accounting treatments and see the
-      consolidated numbers move, without opening Excel — the strongest "show don't tell"
-      item on this list for a non-technical reviewer.
-
-Suggested implementation order: Phase 6 already done; Phase 8's unit tests probably
-first among what's left (everything else benefits from a green test suite to build on),
-then Phase 7 (content, quick), then Phase 9 (polish, benefits from Phase 7/8 being done
-so the README/CI have real things to point at).
+- [x] **Recruiter-facing README summary**: added a "What this demonstrates" section
+      naming the specific skills (technical accounting depth including the documented
+      "finding worth flagging" nuance, live formula-linked Excel engineering verified
+      with an independent formula evaluator, the multi-agent pipeline's real coherence-
+      gate catches, 51 automated tests in CI, and the git-history hygiene work).
+- [x] **Embedded screenshots/preview in README**: two PNGs rendered from the checked-in
+      sample PDF (`examples/2026-09-27_142024/...Equity_Research_Report.pdf`) via
+      PyMuPDF, cropped to content (`docs/screenshots/report_cover.png`,
+      `report_charts.png`) and embedded near the top of `README.md`.
+- [x] **CI that verifies calibration on every push**: `.github/workflows/tests.yml` —
+      installs `requirements-dev.txt`, runs the full `pytest` suite (which includes the
+      calibration-fidelity regression test from Phase 8), then builds the Excel model as
+      an end-to-end smoke test, on every push/PR to `main`.
+- [x] **Interactive World A/B/C demo**: `scripts/build_interactive_demo.py` generates a
+      single self-contained `docs/demo/index.html` (no external scripts, no server,
+      works via `file://`) with the real model's data embedded inline — toggle buttons
+      for World A/B/C update cards (Revenue/Operating Profit/Total Assets/Net Monetary
+      Gain-or-Loss/ROA/Asset Turnover), a permanent bar-chart comparison across all
+      three worlds, and the per-subsidiary IAS 29 impact table. Chose a plain repo file
+      over a Claude Artifact so it's a durable, portable asset that travels with the
+      repo itself. Verified by hand (brace-balance and script-tag-count checks, careful
+      line-by-line JS read, cross-checked every `DATA.worlds[w].X` access against the
+      generator's actual output keys) — no browser tooling was available this session to
+      render it directly.

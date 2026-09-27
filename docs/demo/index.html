@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Unilever plc — Argentina & Türkiye Hyperinflation Model — Interactive Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666666; --card: #f6f7f9; --border: #e2e4e8;
+    --accent-a: #2a78d6; --accent-b: #eda100; --accent-c: #1baf7a; --neg: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14161a; --fg: #eaecef; --muted: #9aa0a8; --card: #1d2025; --border: #2c3036; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg); font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    max-width: 900px; margin: 0 auto; padding: 32px 20px 60px;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 28px; font-size: 0.95rem; }
+  .toggle-row { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .toggle-btn {
+    flex: 1; min-width: 180px; padding: 12px 14px; border-radius: 10px; border: 2px solid var(--border);
+    background: var(--card); color: var(--fg); font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    text-align: left; transition: border-color 0.15s;
+  }
+  .toggle-btn[data-world="A"].active { border-color: var(--accent-a); }
+  .toggle-btn[data-world="B"].active { border-color: var(--accent-b); }
+  .toggle-btn[data-world="C"].active { border-color: var(--accent-c); }
+  .toggle-btn .desc { font-weight: 400; color: var(--muted); font-size: 0.78rem; display: block; margin-top: 3px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 32px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .card .label { color: var(--muted); font-size: 0.78rem; margin-bottom: 6px; }
+  .card .value { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .card .value.neg { color: var(--neg); }
+  h2 { font-size: 1.05rem; margin-top: 36px; margin-bottom: 6px; }
+  .section-note { color: var(--muted); font-size: 0.85rem; margin-top: 0; margin-bottom: 16px; }
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 90px 1fr 70px; align-items: center; gap: 10px; }
+  .bar-row .name { font-size: 0.85rem; color: var(--muted); }
+  .bar-track { background: var(--border); border-radius: 6px; height: 20px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; }
+  .bar-row .num { font-size: 0.85rem; text-align: right; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 8px; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; }
+  footer { margin-top: 44px; color: var(--muted); font-size: 0.78rem; border-top: 1px solid var(--border); padding-top: 16px; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+  <h1>Unilever plc — Argentina & Türkiye Hyperinflation Model</h1>
+  <p class="subtitle">Interactive World A/B/C comparison — 2024 (calibrated to reproduce Unilever's real disclosed IAS&nbsp;29 impact figures). Figures in EURm.</p>
+
+  <div class="toggle-row" id="toggleRow"></div>
+  <div class="cards" id="cards"></div>
+
+  <h2>Revenue vs. Operating Profit vs. Total Assets, by world</h2>
+  <p class="section-note">All three worlds side by side — not a toggle here, so you can see the full comparison at once.</p>
+  <div class="bars" id="bars"></div>
+
+  <h2>IAS 29 impact by subsidiary (World C − World A)</h2>
+  <p class="section-note">The real disclosed figures this model is calibrated to reproduce.</p>
+  <table id="impactTable"></table>
+
+  <footer>
+    Generated from the real calculation engine
+    (<code>bizplan/financial/hyperinflation_calculations.py</code>) — not hand-typed
+    numbers. See the <a href="../../README.md">repo README</a> and
+    <a href="../../examples/unilever/research_output.md">research_output.md</a> for the
+    full calibration derivation and citations.
+  </footer>
+
+<script>
+const DATA = {"business_name": "Unilever plc \u2014 Argentina & T\u00fcrkiye Hyperinflation Model", "currency_unit": "EURm", "year": 2024, "worlds": {"A": {"label": "World A \u2014 Current Rate", "revenue": 60427.9, "operating_profit": 8490.2, "total_assets": 46005.7, "monetary_gain_loss": 0.0, "roa": 0.1845, "asset_turnover": 1.3135}, "B": {"label": "World B \u2014 US GAAP Temporal", "revenue": 60427.9, "operating_profit": 8490.2, "total_assets": 46107.9, "monetary_gain_loss": -271.8, "roa": 0.1841, "asset_turnover": 1.3106}, "C": {"label": "World C \u2014 IFRS Actual", "revenue": 60844.9, "operating_profit": 8496.2, "total_assets": 46544.7, "monetary_gain_loss": -195.0, "roa": 0.1825, "asset_turnover": 1.3072}}, "impact_by_subsidiary": {"argentina": {"total_assets": 474.0, "turnover": 230.0, "operating_profit": 10.0, "net_monetary_gain_loss": -206.0}, "turkiye": {"total_assets": 65.0, "turnover": 187.0, "operating_profit": -4.0, "net_monetary_gain_loss": 11.0}}};
+const WORLD_COLORS = {A: "var(--accent-a)", B: "var(--accent-b)", C: "var(--accent-c)"};
+const WORLD_DESC = {
+  A: "No inflation restatement — the \u2018disappearing plant\u2019 baseline",
+  B: "Remeasurement: non-monetary at historical FX, monetary at current FX",
+  C: "IAS 29 restatement + IAS 21 closing-rate translation (what Unilever reports)",
+};
+
+function fmt(n) {
+  const sign = n < 0 ? "\u2212" : "";
+  return sign + Math.abs(n).toLocaleString(undefined, {maximumFractionDigits: 1});
+}
+
+function renderToggles(selected) {
+  const row = document.getElementById("toggleRow");
+  row.innerHTML = "";
+  for (const w of ["A", "B", "C"]) {
+    const btn = document.createElement("button");
+    btn.className = "toggle-btn" + (w === selected ? " active" : "");
+    btn.dataset.world = w;
+    btn.innerHTML = DATA.worlds[w].label + '<span class="desc">' + WORLD_DESC[w] + "</span>";
+    btn.onclick = () => { selectWorld(w); };
+    row.appendChild(btn);
+  }
+}
+
+function renderCards(w) {
+  const cards = document.getElementById("cards");
+  cards.innerHTML = "";
+  const items = [
+    ["Revenue", DATA.worlds[w].revenue],
+    ["Operating Profit", DATA.worlds[w].operating_profit],
+    ["Total Assets", DATA.worlds[w].total_assets],
+    ["Net Monetary Gain/(Loss)", DATA.worlds[w].monetary_gain_loss],
+    ["Return on Assets", (DATA.worlds[w].roa * 100).toFixed(1) + "%"],
+    ["Asset Turnover", DATA.worlds[w].asset_turnover.toFixed(2) + "x"],
+  ];
+  for (const [label, value] of items) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const isNeg = typeof value === "number" && value < 0;
+    card.innerHTML = '<div class="label">' + label + '</div><div class="value' +
+      (isNeg ? " neg" : "") + '">' + (typeof value === "number" ? fmt(value) : value) + "</div>";
+    cards.appendChild(card);
+  }
+}
+
+function renderBars() {
+  const container = document.getElementById("bars");
+  container.innerHTML = "";
+  const metrics = [["revenue", "Revenue"], ["operating_profit", "Op. Profit"], ["total_assets", "Total Assets"]];
+  const maxVal = Math.max(...metrics.map(([k]) => Math.max(...["A","B","C"].map(w => Math.abs(DATA.worlds[w][k])))));
+  for (const [key, label] of metrics) {
+    for (const w of ["A", "B", "C"]) {
+      const val = DATA.worlds[w][key];
+      const pct = Math.max(2, (Math.abs(val) / maxVal) * 100);
+      const row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML = '<div class="name">' + label + " (" + w + ")</div>" +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + WORLD_COLORS[w] + ';"></div></div>' +
+        '<div class="num">' + fmt(val) + "</div>";
+      container.appendChild(row);
+    }
+  }
+}
+
+function renderImpactTable() {
+  const table = document.getElementById("impactTable");
+  const metrics = [["total_assets", "Total Assets"], ["turnover", "Turnover"],
+                    ["operating_profit", "Operating Profit"], ["net_monetary_gain_loss", "Net Monetary G/(L)"]];
+  let html = "<tr><th>Subsidiary</th>" + metrics.map(([,l]) => "<th>" + l + "</th>").join("") + "</tr>";
+  for (const name in DATA.impact_by_subsidiary) {
+    const row = DATA.impact_by_subsidiary[name];
+    html += "<tr><td>" + name.charAt(0).toUpperCase() + name.slice(1) + "</td>" +
+      metrics.map(([k]) => "<td>" + fmt(row[k]) + "</td>").join("") + "</tr>";
+  }
+  table.innerHTML = html;
+}
+
+function selectWorld(w) {
+  renderToggles(w);
+  renderCards(w);
+}
+
+selectWorld("C");
+renderBars();
+renderImpactTable();
+</script>
+</body>
+</html>

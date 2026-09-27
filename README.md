@@ -13,6 +13,35 @@ Every calculated cell in the generated workbook is a live Excel formula — noth
 pasted-in number except the real disclosed facts and this model's own solved
 local-currency inputs (see "Calibration" below for what that means).
 
+<p align="center">
+  <img src="docs/screenshots/report_cover.png" alt="Report cover page: group operating profit, net monetary gain/(loss), earnings-quality signal" width="420">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/report_charts.png" alt="World A/B/C operating-profit comparison and per-subsidiary IAS 29 impact charts" width="420">
+</p>
+<p align="center"><em>The generated equity research report's cover page and chart page — see <a href="examples/2026-09-27_142024/">examples/2026-09-27_142024/</a> for the full workbook, PDF, and every intermediate research file from a real live run.</em></p>
+
+## What this demonstrates
+
+- **Technical accounting depth**: a working, hand-traceable implementation of IAS 29
+  restatement + IAS 21 translation, contrasted against the US GAAP temporal method —
+  calibrated to reproduce a real multinational's own disclosed figures, not a textbook
+  toy example. Includes a documented, non-obvious finding (`research_output.md`'s "A
+  finding worth flagging") about where the standard CFA-curriculum heuristic for net
+  monetary gain/loss breaks down in a full consolidated model.
+- **Live formula-linked Excel engineering**: every cell in the generated workbook is a
+  real formula (openpyxl), independently verified against the Python engine with the
+  `formulas` package (an actual Excel-formula evaluator) — not a value dump.
+- **An automated multi-agent research/drafting/QA pipeline**: a 7-stage pipeline where
+  live web research, section drafting, and a review-and-fix coherence gate all ran for
+  real (`BACKLOG.md` Phase 4) — the gate caught and fixed 8 genuine cross-section
+  errors across its first run, including one subtle enough that it independently
+  rediscovered a nuance already documented in this repo's own research notes.
+- **Engineering rigor**: 51 automated tests (`pytest` unit tests + `pytest-bdd` Gherkin
+  specs) covering the calculation engine, config validation, and report generation,
+  running in CI (`.github/workflows/tests.yml`) on every push.
+- **Git hygiene**: a clean, force-pushed history with personal-data and third-party
+  content removed via `git-filter-repo` before this repo went public.
+
 ## Quick start
 
 Prerequisites: Python 3 (any recent 3.x). Nothing else needs to be installed manually.
@@ -96,6 +125,20 @@ Every subsidiary schedule cell is a live formula chaining back to Assumptions �
 click through any figure to see exactly how it was derived, the same "traceable by hand"
 principle the model was designed around.
 
+## Interactive demo (no Excel needed)
+
+```bash
+.venv/bin/python scripts/build_interactive_demo.py
+open docs/demo/index.html   # or just double-click it
+```
+
+A single self-contained HTML page — no server, no external scripts, works offline —
+letting you toggle between World A/B/C and watch the consolidated Revenue/Operating
+Profit/Total Assets/Net Monetary Gain-or-Loss move, plus the per-subsidiary IAS 29
+impact table. The data is generated fresh from the real calculation engine every time
+the script runs, not hand-typed — regenerate it any time `examples/unilever/config.py`
+changes.
+
 ## Calibration — what's real and what's illustrative
 
 Unilever discloses the *aggregate* IAS 29 impact (Total assets/Turnover/Operating
@@ -142,12 +185,19 @@ unilever_hyperinflation/
 │       ├── claude_cli.py           ← shared `claude -p` invocation helper
 │       └── sourcing.py, price_research.py, drafting.py, review.py, pipeline.py
 ├── examples/
-│   └── unilever/
-│       ├── config.py               ← single source of truth for assumptions
-│       └── research_output.md     ← calibration derivation, sourced and dated
+│   ├── unilever/
+│   │   ├── config.py               ← single source of truth for assumptions
+│   │   └── research_output.md     ← calibration derivation, sourced and dated
+│   └── 2026-09-27_142024/          ← a full checked-in sample of a live pipeline run
+├── docs/
+│   ├── demo/index.html             ← interactive World A/B/C demo (generated, see below)
+│   └── screenshots/                ← images embedded in this README
+├── tests/                           ← pytest unit tests + pytest-bdd feature specs
+├── .github/workflows/tests.yml     ← CI: runs the test suite + a model build on every push
 ├── output/                                              ← gitignored; timestamped run folders
 └── scripts/                         ← thin CLI wrappers only — logic lives in bizplan/
     ├── build_unilever_model.py     ← entry point: --instance/--config → calc → render → save
+    ├── build_interactive_demo.py   ← generates docs/demo/index.html from the real model
     ├── source_model.py, research_price_consensus.py, draft_report_sections.py,
     │   review_report.py, build_report_pdf.py, generate_equity_report.py, refresh_report.py
     ├── launch.sh                   ← Unix/macOS/Linux launcher
