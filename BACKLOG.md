@@ -209,7 +209,7 @@ confirming scope first, same as any new phase.
       setting project. Explains why Türkiye stays classified hyperinflationary even as
       headline inflation eases toward ~31% (2026) — well under the naive threshold.
 
-## Phase 8 — Testing: unit tests + BDD — unit tests DONE (2026-09-27), BDD NOT STARTED
+## Phase 8 — Testing: unit tests + BDD — DONE (2026-09-27)
 
 - [x] **Unit tests** (`pytest`, under `tests/`, `pytest.ini` + `requirements-dev.txt`) for
       `bizplan/financial/hyperinflation_calculations.py` (36 tests total; the World A/B/C
@@ -231,21 +231,27 @@ confirming scope first, same as any new phase.
       than loosening the assertion; a second test added alongside it using an
       algebraically-solved self-consistent fixture to prove the zero-plug property does
       hold when the premise is actually met.
-- [ ] **BDD** (`pytest-bdd` or `behave`, Gherkin `.feature` files) covering two kinds of
-      scenarios, both real and worth writing:
-      1. *Code behavior*: "Given Unilever's real disclosed 2024 IAS 29 impact figures,
-         When the model is built from `examples/unilever/config.py`, Then each
-         subsidiary's impact matches the disclosed figures within tolerance" — a
+- [x] **BDD** (`pytest-bdd`, chosen over `behave` for a single `pytest` runner shared
+      with the unit tests — same command, same fixtures, same CI hook) — 3 feature
+      files under `tests/features/`, 15 scenarios total:
+      1. `calibration.feature` — *code behavior*: a Scenario Outline (8 examples,
+         Argentina/Türkiye × all 4 impact metrics) asserting the model reproduces
+         Unilever's real disclosed 2024 figures, plus a scenario confirming a
+         deliberately-broken calibration is caught, not silently accepted. A
          Gherkin-readable version of the calibration-fidelity check `validation.py`
-         already does, but expressed as an executable spec a non-engineer reviewer
-         could read.
-      2. *Output-generation behavior*: "Given the calibrated config, When the report
-         pipeline drafts the Recommendation section, Then it should state a mechanical
-         signal consistent with `recommendation_decision.json`" — needs a documented,
-         narrow scope (which stages this covers without live `claude -p` calls in CI —
-         likely the deterministic stages only, stubbing/replaying a fixed drafted
-         section for the LLM-driven ones — decide the exact boundary before writing
-         feature files, don't discover it mid-implementation).
+         already does, executable by a non-engineer reviewer.
+      2. `recommendation.feature` — the materiality-threshold decision logic
+         (immaterial/material cases) plus the real calibrated Unilever case.
+      3. `report_data_generation.feature` — *output-generation behavior*, scoped (as
+         planned) to the deterministic stages only: the generated report JSON carries a
+         scenario comparison for every World and a monetary-exposure grade for every
+         subsidiary, and the mechanical recommendation reads figures consistent with
+         that same JSON. No live `claude -p` calls — the LLM-drafted sections stay out
+         of scope for this feature, exactly as planned before writing feature files.
+      Shared steps ("Given the calibrated Unilever configuration") live in
+      `tests/conftest.py`, published under a `config` fixture name distinct from the
+      plain-pytest `unilever_config` fixture to avoid a fixture-name collision between
+      pytest-bdd's dynamic step-fixture publishing and the statically-declared one.
 
 ## Phase 9 — Portfolio polish — NOT STARTED
 

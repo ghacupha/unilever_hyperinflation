@@ -11,6 +11,20 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — BDD feature specs (2026-09-27)
+- Closes `BACKLOG.md` Phase 8 fully. 3 `pytest-bdd` feature files under
+  `tests/features/` (15 scenarios): `calibration.feature` (a Scenario Outline covering
+  both subsidiaries × all 4 disclosed impact metrics, plus a deliberately-broken-
+  calibration scenario), `recommendation.feature` (the materiality-threshold decision
+  logic plus the real Unilever case), and `report_data_generation.feature` (the
+  deterministic-stages-only output-generation behavior — scenario comparison and
+  monetary-exposure grades in the generated report JSON, and consistency between that
+  JSON and the mechanical recommendation reading it). Chose `pytest-bdd` over `behave`
+  so both suites share one runner/one CI hook. Shared Given steps live in
+  `tests/conftest.py` under a `config` fixture name kept distinct from the unit tests'
+  `unilever_config` fixture to avoid a naming collision between pytest-bdd's dynamic
+  step-fixture publishing and the statically-declared fixture.
+
 ### Added — Unit test suite (2026-09-27)
 - Closes `BACKLOG.md` Phase 8's unit-test item (BDD still open). 36 `pytest` tests under
   `tests/` covering `hyperinflation_calculations.py` (World A/B/C math, the monetary-

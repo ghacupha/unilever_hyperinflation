@@ -116,10 +116,12 @@ line items (revenue, PPE, monetary position, etc.) are this model's own illustra
 .venv/bin/python -m pytest
 ```
 
-36 tests covering the calculation engine (World A/B/C math, the monetary-gain/loss
-balancing-plug identity, a regression test that the model still reproduces Unilever's
-real disclosed 2024 figures), the config schema validator, and the pure-Python report
-stages. Doesn't touch the `claude -p`-driven pipeline stages.
+51 tests: 36 unit tests covering the calculation engine (World A/B/C math, the
+monetary-gain/loss balancing-plug identity, a regression test that the model still
+reproduces Unilever's real disclosed 2024 figures), the config schema validator, and
+the pure-Python report stages, plus 15 `pytest-bdd` scenarios (`tests/features/*.feature`)
+expressing the calibration-fidelity and report-generation behavior in Gherkin. Neither
+suite touches the `claude -p`-driven pipeline stages.
 
 ## Project structure
 
