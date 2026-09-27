@@ -11,6 +11,17 @@ than rewritten.
 
 ## [Unreleased]
 
+### Changed — Rewrote git history to remove personal/third-party content (2026-09-27)
+- Closes `BACKLOG.md` Phase 6. Removed `.recall/` (a session-history capture directory
+  containing raw session transcripts with the repo owner's real machine paths/username)
+  and `colossal-visuals/` (an unrelated earlier project, plus a `references/` folder of
+  downloaded third-party Excel templates) from every commit via `git-filter-repo
+  --invert-paths --path .recall --path colossal-visuals`, then force-pushed. Verified with
+  a full tree scan across all 31 rewritten commits and an independent check of the pushed
+  remote tree — zero trace of either path anywhere in history. `.recall/` added to
+  `.gitignore`. `examples/Blu Containers Model - Vertical Complete.xlsx` (the repo owner's
+  own coursework, unrelated to the removed `references/` folder) is untouched.
+
 ### Verified — First live run of the equity-report pipeline's claude-p stages, hyperinflation domain (2026-09-27)
 - Closes `BACKLOG.md` Phase 4. `REPORT=1 ./scripts/launch.sh unilever` (with `TICKER`/
   `EXCHANGE` added to `examples/unilever/config.py`) — Stages 2 (price/consensus

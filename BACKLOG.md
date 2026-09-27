@@ -167,3 +167,91 @@ parent reconstruction rather than a calibrated fictional one. Explicitly out of 
 this pass per the user's own sequencing (`Unilever 2024` → learn the mechanics;
 `BBVA/Garanti` → prove they apply to real subsidiary statements) — do not start without
 confirming scope first, same as any new phase.
+
+## Phase 6 — Repo hygiene: remove personal/third-party content from git history (2026-09-27) — DONE
+
+- [x] Found `.recall/` (a 716KB session-history capture directory containing raw
+      Claude Code session transcripts, including the repo owner's real Windows machine
+      paths/username) tracked in git and already pushed to the public remote. Removed
+      from the working tree, added to `.gitignore`.
+- [x] Found an entire unrelated earlier project ("colossal-visuals", an LED-screen/
+      concert pitch-deck generator with stock photography) plus a `references/` folder
+      of **downloaded third-party Excel templates** (`CashFlVl.XLS`, `Due-Diligence-
+      Assessment.xls`, `Ethos_360_Break-Even_Forecaster.xls`, `Financial_model_1.xls`,
+      `Ratio_Tree.xls`, `sample_business_plan.pdf`) bundled into the very first commit —
+      already removed from the working tree in an old commit, but still fully
+      recoverable from git history on the public remote.
+- [x] Rewrote git history with `git-filter-repo --invert-paths --path .recall --path
+      colossal-visuals` (all 31 commits preserved, just stripped of those paths) and
+      force-pushed. Verified via a full tree scan across every rewritten commit
+      (`git rev-list --all | xargs git ls-tree -r --name-only`) and an independent check
+      of the pushed remote tree via `gh api` — zero trace of either path anywhere in
+      history. `Blu Containers Model - Vertical Complete.xlsx` (the repo owner's own FMI
+      coursework, confirmed, kept) is unaffected — it lives under `examples/`, not the
+      removed `colossal-visuals/references/` path.
+
+## Phase 7 — Showcase content additions — NOT STARTED
+
+- [ ] **Peer-comparison section**: add a short section (in `research_output.md` and a
+      report section) citing real disclosed IAS 29 impacts from other multinationals —
+      Coca-Cola FEMSA's Argentina hyperinflation gain/loss commentary (its own 20-F,
+      e.g. the higher net-monetary-position gain in H1 2025 vs. H1 2024, driven by
+      Argentine liabilities benefiting from inflation) and BBVA's real disclosed Türkiye
+      figures (2023: −€2,118m net monetary loss / +€1,202m inflation-linked-bond
+      revaluation gain; 2022: −€2,323m / +€1,490m) — without building the full BBVA
+      subsidiary reconstruction (still Phase 5, still deferred). Shows the Unilever
+      pattern isn't a one-off.
+- [ ] **Standard-setting watch note**: a short technical note (in `research_output.md`
+      and/or the Risks section) citing the IFRS Interpretations Committee's July 2025
+      agenda decision on "Assessing Indicators of Hyperinflationary Economies" —
+      companies should weigh all of IAS 29.3's qualitative indicators, not just the
+      >100%/3-year cumulative-inflation rule; the Committee did not add a standard-
+      setting project. Explains why Türkiye stays classified hyperinflationary even as
+      headline inflation eases toward ~31% (2026) — well under the naive threshold.
+
+## Phase 8 — Testing: unit tests + BDD — NOT STARTED
+
+- [ ] **Unit tests** (`pytest`, under a new `tests/` dir) for
+      `bizplan/financial/hyperinflation_calculations.py` (the World A/B/C math, the
+      monetary-gain/loss plug, `build_model()`), `bizplan/config_loader.py`
+      (`validate_config()`'s error paths), and `bizplan/report/{data,validation,
+      recommendation}.py` (pure-Python stages only, not the `claude -p` ones).
+- [ ] **BDD** (`pytest-bdd` or `behave`, Gherkin `.feature` files) covering two kinds of
+      scenarios, both real and worth writing:
+      1. *Code behavior*: "Given Unilever's real disclosed 2024 IAS 29 impact figures,
+         When the model is built from `examples/unilever/config.py`, Then each
+         subsidiary's impact matches the disclosed figures within tolerance" — a
+         Gherkin-readable version of the calibration-fidelity check `validation.py`
+         already does, but expressed as an executable spec a non-engineer reviewer
+         could read.
+      2. *Output-generation behavior*: "Given the calibrated config, When the report
+         pipeline drafts the Recommendation section, Then it should state a mechanical
+         signal consistent with `recommendation_decision.json`" — needs a documented,
+         narrow scope (which stages this covers without live `claude -p` calls in CI —
+         likely the deterministic stages only, stubbing/replaying a fixed drafted
+         section for the LLM-driven ones — decide the exact boundary before writing
+         feature files, don't discover it mid-implementation).
+
+## Phase 9 — Portfolio polish — NOT STARTED
+
+- [ ] **Recruiter-facing README summary**: a short section distinct from the existing
+      technical README — written for a hiring-manager skim, not a developer clone —
+      naming the specific skills demonstrated (IFRS/US GAAP technical depth, live
+      formula-linked Excel engineering, an automated multi-agent research/drafting/QA
+      pipeline with a real coherence gate that caught real errors).
+- [ ] **Embedded screenshots/preview in README**: a screenshot of the Excel workbook
+      (e.g. `Scenario_Comparison`) and a page of the generated PDF, embedded directly in
+      `README.md` so a viewer sees output quality without downloading anything.
+- [ ] **CI that verifies calibration on every push**: a GitHub Actions workflow running
+      the deterministic pipeline (build the model, run `validation.py`'s calibration-
+      fidelity check) on every push/PR — real engineering rigor (tests + CI), not just a
+      one-off local script.
+- [ ] **Interactive World A/B/C demo**: a lightweight static page (or a Claude Artifact)
+      letting a viewer toggle between the three accounting treatments and see the
+      consolidated numbers move, without opening Excel — the strongest "show don't tell"
+      item on this list for a non-technical reviewer.
+
+Suggested implementation order: Phase 6 already done; Phase 8's unit tests probably
+first among what's left (everything else benefits from a green test suite to build on),
+then Phase 7 (content, quick), then Phase 9 (polish, benefits from Phase 7/8 being done
+so the README/CI have real things to point at).
