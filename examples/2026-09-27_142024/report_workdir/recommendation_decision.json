@@ -1,0 +1,25 @@
+{
+  "net_monetary_gain_loss": -195.00112389328393,
+  "operating_profit": 8496.154631926443,
+  "ratio": 0.022951691952559108,
+  "materiality_threshold": 0.1,
+  "material": false,
+  "worst_exposure_subsidiary": "argentina",
+  "monetary_exposure": {
+    "argentina": {
+      "grade": "C",
+      "exposure_ratio": -0.18312474852177266,
+      "monetary_gain_loss": -206.0001112350562,
+      "total_assets": 1124.916827998067
+    },
+    "turkiye": {
+      "grade": "A",
+      "exposure_ratio": 0.0261991195802934,
+      "monetary_gain_loss": 10.99898734177229,
+      "total_assets": 419.82278481012656
+    },
+    "overall_grade": "C"
+  },
+  "mechanical_signal": "Flag: immaterial",
+  "rationale": "Net monetary gain/(loss) of \u20ac-195m is only 2% of group operating profit (\u20ac8,496m) \u2014 below the 10% materiality threshold this year; the turnover-line restatement effect is larger but nets out mostly in cost lines too (see scenario_comparison)."
+}

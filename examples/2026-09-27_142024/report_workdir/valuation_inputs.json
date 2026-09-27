@@ -1,0 +1,183 @@
+{
+  "business_name": "Unilever plc \u2014 Argentina & T\u00fcrkiye Hyperinflation Model",
+  "currency": "EUR",
+  "currency_unit": "EURm",
+  "years": [
+    2024,
+    2025
+  ],
+  "company_facts": {
+    "as_of_year": 2024,
+    "total_assets_eur": 46544.73961280819,
+    "revenue_eur": 60844.91984336293,
+    "operating_profit_eur": 8496.154631926443,
+    "net_monetary_gain_loss_eur": -195.00112389328393,
+    "subsidiaries": {
+      "argentina": {
+        "local_currency": "ARS",
+        "hyperinflationary_since": "2018-07-01"
+      },
+      "turkiye": {
+        "local_currency": "TRY",
+        "hyperinflationary_since": "2022-07-01"
+      }
+    }
+  },
+  "ias29_impact_primary_year": {
+    "year": 2024,
+    "by_subsidiary": {
+      "argentina": {
+        "total_assets": 473.9999963148987,
+        "turnover": 230.00000873894749,
+        "operating_profit": 10.000020341396105,
+        "net_monetary_gain_loss": -206.0001112350562
+      },
+      "turkiye": {
+        "total_assets": 65.0,
+        "turnover": 187.00011756136928,
+        "operating_profit": -3.999898988069873,
+        "net_monetary_gain_loss": 10.99898734177229
+      }
+    }
+  },
+  "scenario_comparison": {
+    "revenue": {
+      "A": 60427.919717062614,
+      "B": 60427.919717062614,
+      "C": 60844.91984336293
+    },
+    "cogs": {
+      "A": 29511.413337046735,
+      "B": 29511.413337046735,
+      "C": 29766.233227595658
+    },
+    "operating_profit": {
+      "A": 8490.154510573117,
+      "B": 8490.154510573117,
+      "C": 8496.154631926443
+    },
+    "non_monetary_assets": {
+      "A": 22555.68321844843,
+      "B": 22657.832270326995,
+      "C": 23094.68321476333
+    },
+    "total_assets": {
+      "A": 46005.739616493294,
+      "B": 46107.88866837186,
+      "C": 46544.73961280819
+    },
+    "equity": {
+      "A": 20246.236654969296,
+      "B": 20348.385706847865,
+      "C": 20785.236651284195
+    },
+    "monetary_gain_loss": {
+      "A": 0.0,
+      "B": -271.76880372525324,
+      "C": -195.00112389328393
+    },
+    "roa": {
+      "A": 0.18454554978025725,
+      "B": 0.18413670102394036,
+      "C": 0.18253737592268043
+    },
+    "asset_turnover": {
+      "A": 1.3134865393056063,
+      "B": 1.310576594640598,
+      "C": 1.3072351537362477
+    },
+    "debt_to_equity": {
+      "A": 1.2723106718799273,
+      "B": 1.2659236625760992,
+      "C": 1.2393172805147
+    }
+  },
+  "validation_gap": {
+    "year": 2025,
+    "by_subsidiary": {
+      "argentina": {
+        "total_assets": {
+          "model": 183.66041801629513,
+          "disclosed": -199.0,
+          "abs_gap": 382.6604180162951,
+          "pct_gap": -1.9229166734487193,
+          "same_sign": false
+        },
+        "turnover": {
+          "model": -31.33697093335445,
+          "disclosed": -90.0,
+          "abs_gap": 58.66302906664555,
+          "pct_gap": -0.6518114340738395,
+          "same_sign": true
+        },
+        "operating_profit": {
+          "model": -1.3624797168027882,
+          "disclosed": -54.0,
+          "abs_gap": 52.63752028319721,
+          "pct_gap": -0.9747688941332817,
+          "same_sign": true
+        },
+        "net_monetary_gain_loss": {
+          "model": -23.77343116789523,
+          "disclosed": -46.0,
+          "abs_gap": 22.22656883210477,
+          "pct_gap": -0.4831862789587994,
+          "same_sign": true
+        }
+      },
+      "turkiye": {
+        "total_assets": {
+          "model": 46.1099882670614,
+          "disclosed": -20.0,
+          "abs_gap": 66.1099882670614,
+          "pct_gap": -3.3054994133530697,
+          "same_sign": false
+        },
+        "turnover": {
+          "model": -47.41828204208241,
+          "disclosed": -16.0,
+          "abs_gap": -31.41828204208241,
+          "pct_gap": 1.9636426276301506,
+          "same_sign": true
+        },
+        "operating_profit": {
+          "model": -3.2992554858051903,
+          "disclosed": -46.0,
+          "abs_gap": 42.70074451419481,
+          "pct_gap": -0.9282770546564089,
+          "same_sign": true
+        },
+        "net_monetary_gain_loss": {
+          "model": -113.31072097738765,
+          "disclosed": -10.0,
+          "abs_gap": -103.31072097738765,
+          "pct_gap": 10.331072097738765,
+          "same_sign": true
+        }
+      }
+    }
+  },
+  "monetary_exposure": {
+    "argentina": {
+      "grade": "C",
+      "exposure_ratio": -0.18312474852177266,
+      "monetary_gain_loss": -206.0001112350562,
+      "total_assets": 1124.916827998067
+    },
+    "turkiye": {
+      "grade": "A",
+      "exposure_ratio": 0.0261991195802934,
+      "monetary_gain_loss": 10.99898734177229,
+      "total_assets": 419.82278481012656
+    },
+    "overall_grade": "C"
+  },
+  "consensus": {
+    "ticker": "ULVR",
+    "exchange": "LSE",
+    "note": "[PLACEHOLDER] Analyst consensus commentary on Unilever typically discusses Argentina/T\u00fcrkiye as an 'FX headwind' to reported (constant-currency-adjusted) turnover, but rarely singles out the net monetary gain/loss line or distinguishes IAS 29 restatement from ordinary FX translation. Stage 2 should research real sell-side notes and confirm or correct this."
+  },
+  "valuation": {
+    "note": "[PLACEHOLDER] \u2014 Stage 2/3 of the report pipeline populate this from real consensus + a mechanical Buy/Hold/Sell signal comparing IFRS-actual value to a 'if the market naively used plain current-rate' mispricing check."
+  }
+}
