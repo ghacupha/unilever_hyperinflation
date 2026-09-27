@@ -178,25 +178,103 @@ VALIDATION_ACTUALS = {
 # ---------------------------------------------------------------------------
 # Market-perception angle: does analyst consensus on Unilever price in the
 # Argentina/Türkiye hyperinflation treatment, or does it get overlooked as a "non-cash
-# accounting adjustment"? [PLACEHOLDER] — replace with real consensus commentary once
-# Stage 2 (price/consensus research) has run live.
+# accounting adjustment"? CONFIRMED by a live Stage 2 research pass (2026-09-27, see
+# examples/2026-09-27_142024/report_workdir/price_consensus_research.json for the full
+# finding with citations) — no longer a placeholder hypothesis.
 # ---------------------------------------------------------------------------
 
 CONSENSUS = dict(
     ticker="ULVR", exchange="LSE",
     note=(
-        "[PLACEHOLDER] Analyst consensus commentary on Unilever typically discusses "
-        "Argentina/Türkiye as an 'FX headwind' to reported (constant-currency-adjusted) "
-        "turnover, but rarely singles out the net monetary gain/loss line or "
-        "distinguishes IAS 29 restatement from ordinary FX translation. Stage 2 should "
-        "research real sell-side notes and confirm or correct this."
+        "CONFIRMED (live research, 2026-09-27): across two 2026 earnings-call "
+        "transcripts (Q1 and Q2) and public analyst/aggregator commentary (TipRanks, "
+        "MarketScreener, MarketBeat), Argentina and Türkiye come up only as volume/growth "
+        "stories plus a generic aggregate 'currency headwind' to reported turnover and "
+        "underlying EPS. No sell-side note, analyst question, or press summary found "
+        "separates the IAS 29 net monetary gain/(loss) from ordinary FX translation — "
+        "Unilever's own USG methodology instead caps hyperinflationary price growth out "
+        "of underlying sales growth, and the net monetary line sits in the income "
+        "statement without featuring in the call narrative. Limitation: paywalled broker "
+        "notes (Deutsche Bank, Barclays, Bernstein) weren't accessible, so this rests on "
+        "public transcripts/aggregators only — see the full research file for the caveat."
     ),
 )
 
 VALUATION = dict(
-    note="[PLACEHOLDER] — Stage 2/3 of the report pipeline populate this from real "
-         "consensus + a mechanical Buy/Hold/Sell signal comparing IFRS-actual value to "
-         "a 'if the market naively used plain current-rate' mispricing check.",
+    note="This model does not build a full Unilever equity valuation (no DCF/multiples "
+         "model — out of scope, see BLUEPRINT.md). Stage 3's mechanical signal is a "
+         "materiality flag (net monetary gain/loss as a % of group operating profit, "
+         "see bizplan/report/recommendation.py), not a price-vs-fair-value call.",
+)
+
+# ---------------------------------------------------------------------------
+# Peer comparison: real disclosed IAS 29 impacts from other multinationals, showing the
+# Unilever pattern isn't a one-off. Not built into this model's own calculation engine
+# (no subsidiary reconstruction for these companies) -- citation-only, for the report's
+# context.
+# ---------------------------------------------------------------------------
+
+PEER_COMPARISON = dict(
+    coca_cola_femsa=dict(
+        company="Coca-Cola FEMSA, S.A.B. de C.V.",
+        subsidiary="Argentina (hyperinflationary since 1 Jan 2018 per KOF's own restatement)",
+        reporting_currency="MXN",
+        note=(
+            "H1 2025 net monetary position gain of Ps.154m, up from Ps.42m in H1 2024 — "
+            "the increase driven mainly by Argentine liabilities benefiting from "
+            "inflation: a textbook 'net monetary liability -> gain' case. Contrast with "
+            "Unilever's Argentina, which also nets to a net monetary liability position "
+            "yet still books a loss overall — see research_output.md's 'A finding worth "
+            "flagging' for why the simple heuristic doesn't always survive a full "
+            "consolidated restatement."
+        ),
+        source="Coca-Cola FEMSA Form 20-F FY2025", accessed="2026-09-27",
+        url="https://www.sec.gov/Archives/edgar/data/910631/000162828026025313/kof-20251231.htm",
+    ),
+    bbva=dict(
+        company="Banco Bilbao Vizcaya Argentaria, S.A.",
+        subsidiary="Türkiye (Garanti BBVA, hyperinflationary since 1 Jan 2022)",
+        reporting_currency="EUR",
+        figures={
+            2023: dict(net_monetary_loss=-2118.0, inflation_linked_bond_gain=1202.0),
+            2022: dict(net_monetary_loss=-2323.0, inflation_linked_bond_gain=1490.0),
+        },
+        note=(
+            "BBVA separately discloses an inflation-linked-bond revaluation gain that "
+            "partially offsets its Türkiye net monetary loss each year — a real-world "
+            "'protective asset' hedge this model's World A/B/C engine doesn't represent "
+            "(the illustrative Argentina/Türkiye subsidiaries hold no inflation-linked "
+            "instruments) — a real, acknowledged simplification, not fixed here. Real "
+            "subsidiary-level reconstruction for BBVA/Garanti stays deferred as "
+            "BACKLOG.md Phase 5."
+        ),
+        source="BBVA Form 20-F FY2023", accessed="2026-09-27",
+        url="https://www.sec.gov/Archives/edgar/data/842180/000084218024000007/bbva-20231231.htm",
+    ),
+)
+
+# ---------------------------------------------------------------------------
+# Standard-setting watch: a live 2025 IFRS Interpretations Committee development
+# directly relevant to why Türkiye stays classified hyperinflationary despite easing
+# headline inflation.
+# ---------------------------------------------------------------------------
+
+STANDARD_SETTING_NOTE = dict(
+    title="IFRS Interpretations Committee — Assessing Indicators of Hyperinflationary "
+          "Economies (July 2025 agenda decision)",
+    summary=(
+        "The Committee concluded stakeholders should weigh ALL of IAS 29.3's "
+        "qualitative indicators (price-indexation prevalence, wage-linking, public "
+        "trust in the local currency, interest/inflation-rate relationships) — not "
+        "just the >100%/3-year cumulative-inflation rule — when assessing hyperinflation "
+        "status. It found little diversity in how stakeholders already apply this and "
+        "did not add a standard-setting project. Directly relevant here: Türkiye's "
+        "headline annual inflation has eased toward ~31% (2026) — well under the naive "
+        ">100%/3yr threshold many assume is the sole test — yet it remains classified "
+        "hyperinflationary on the qualitative indicators."
+    ),
+    source="IFRS Interpretations Committee, July 2025 Agenda Decision", accessed="2026-09-27",
+    url="https://www.ifrs.org/projects/completed-projects/2025/assessing-indicators-of-hyperinflationary-economies-IAS-29/",
 )
 
 SOURCES = [
@@ -217,4 +295,21 @@ SOURCES = [
     dict(item="IAS 21 The Effects of Changes in Foreign Exchange Rates — §42-43",
          value="Restated hyperinflationary FS translated at the closing rate (not average)",
          source="IFRS Foundation", accessed="2026-09-27", url=""),
+    dict(item="Coca-Cola FEMSA, S.A.B. de C.V. — 2025 Annual Report on Form 20-F",
+         value="Argentina net monetary position gain, H1 2025 vs H1 2024",
+         source="U.S. SEC EDGAR", accessed="2026-09-27",
+         url="https://www.sec.gov/Archives/edgar/data/910631/000162828026025313/kof-20251231.htm"),
+    dict(item="BBVA — 2023 Annual Report on Form 20-F",
+         value="Türkiye net monetary loss + inflation-linked-bond revaluation gain, FY2023/FY2022",
+         source="U.S. SEC EDGAR", accessed="2026-09-27",
+         url="https://www.sec.gov/Archives/edgar/data/842180/000084218024000007/bbva-20231231.htm"),
+    dict(item="IFRS Interpretations Committee — Assessing Indicators of Hyperinflationary "
+              "Economies, July 2025 agenda decision",
+         value="Qualitative-indicator weighting; no new standard-setting project",
+         source="IFRS Foundation", accessed="2026-09-27",
+         url="https://www.ifrs.org/projects/completed-projects/2025/assessing-indicators-of-hyperinflationary-economies-IAS-29/"),
+    dict(item="EY — Hyperinflationary economies (updated April 2026)",
+         value="Current list: Argentina, Türkiye, Haiti, Iran, Lebanon, Malawi, South Sudan, "
+               "Sudan, Venezuela, Zimbabwe", source="EY", accessed="2026-09-27",
+         url="https://www.ey.com/en_lt/technical/ifrs-technical-resources/hyperinflationary-economies-updated-april-2026"),
 ]

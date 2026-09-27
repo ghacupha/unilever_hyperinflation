@@ -23,5 +23,12 @@ with nothing behind them):
   distinguish the IAS 29 effect from ordinary FX noise, say so explicitly as its own risk
   — a market that doesn't price a real, quantified effect correctly is a source of
   potential mispricing in either direction, not just a data-quality footnote.
+- **Classification risk, if `standard_setting_note` in `valuation_inputs.json` is
+  non-empty**: cite it briefly — a subsidiary's hyperinflationary classification rests
+  on qualitative judgment across several IAS 29.3 indicators, not a single bright-line
+  inflation number (the IFRS Interpretations Committee confirmed this in a July 2025
+  agenda decision). A future reclassification either way (e.g. if Türkiye's easing
+  inflation eventually tips the qualitative assessment) would remove or add this entire
+  effect, not just shrink or grow it.
 
 Output plain markdown, no code fences, starting with a `## Risks & Uncertainty` heading.

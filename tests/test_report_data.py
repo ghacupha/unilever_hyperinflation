@@ -35,8 +35,38 @@ def test_to_report_json_has_expected_top_level_keys(unilever_config):
     report_json = report_data.to_report_json(unilever_config, computed)
     for key in ("business_name", "currency", "company_facts",
                 "ias29_impact_primary_year", "scenario_comparison",
-                "validation_gap", "monetary_exposure", "consensus", "valuation"):
+                "validation_gap", "monetary_exposure", "consensus", "valuation",
+                "peer_comparison", "standard_setting_note"):
         assert key in report_json
+
+
+def test_peer_comparison_cites_coca_cola_femsa_and_bbva(unilever_config):
+    computed = report_data.compute(unilever_config)
+    report_json = report_data.to_report_json(unilever_config, computed)
+    assert "coca_cola_femsa" in report_json["peer_comparison"]
+    assert "bbva" in report_json["peer_comparison"]
+    for entry in report_json["peer_comparison"].values():
+        assert entry["source"]
+        assert entry["url"].startswith("https://")
+
+
+def test_standard_setting_note_has_a_source_url(unilever_config):
+    computed = report_data.compute(unilever_config)
+    report_json = report_data.to_report_json(unilever_config, computed)
+    note = report_json["standard_setting_note"]
+    assert note["url"].startswith("https://")
+    assert "Hyperinflationary" in note["title"]
+
+
+def test_missing_peer_comparison_defaults_to_empty(unilever_config):
+    """PEER_COMPARISON/STANDARD_SETTING_NOTE are optional -- an institution's config.py
+    without them shouldn't break to_report_json()."""
+    del unilever_config.PEER_COMPARISON
+    del unilever_config.STANDARD_SETTING_NOTE
+    computed = report_data.compute(unilever_config)
+    report_json = report_data.to_report_json(unilever_config, computed)
+    assert report_json["peer_comparison"] == {}
+    assert report_json["standard_setting_note"] == {}
 
 
 def test_write_report_data_writes_valid_json(tmp_path, unilever_config):

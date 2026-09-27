@@ -190,24 +190,34 @@ confirming scope first, same as any new phase.
       coursework, confirmed, kept) is unaffected — it lives under `examples/`, not the
       removed `colossal-visuals/references/` path.
 
-## Phase 7 — Showcase content additions — NOT STARTED
+## Phase 7 — Showcase content additions — DONE (2026-09-27)
 
-- [ ] **Peer-comparison section**: add a short section (in `research_output.md` and a
-      report section) citing real disclosed IAS 29 impacts from other multinationals —
-      Coca-Cola FEMSA's Argentina hyperinflation gain/loss commentary (its own 20-F,
-      e.g. the higher net-monetary-position gain in H1 2025 vs. H1 2024, driven by
-      Argentine liabilities benefiting from inflation) and BBVA's real disclosed Türkiye
-      figures (2023: −€2,118m net monetary loss / +€1,202m inflation-linked-bond
-      revaluation gain; 2022: −€2,323m / +€1,490m) — without building the full BBVA
-      subsidiary reconstruction (still Phase 5, still deferred). Shows the Unilever
-      pattern isn't a one-off.
-- [ ] **Standard-setting watch note**: a short technical note (in `research_output.md`
-      and/or the Risks section) citing the IFRS Interpretations Committee's July 2025
-      agenda decision on "Assessing Indicators of Hyperinflationary Economies" —
-      companies should weigh all of IAS 29.3's qualitative indicators, not just the
-      >100%/3-year cumulative-inflation rule; the Committee did not add a standard-
-      setting project. Explains why Türkiye stays classified hyperinflationary even as
-      headline inflation eases toward ~31% (2026) — well under the naive threshold.
+- [x] **Peer-comparison section**: added `PEER_COMPARISON` to `examples/unilever/
+      config.py` (Coca-Cola FEMSA's Argentina net-monetary-position gain, H1 2025 vs H1
+      2024; BBVA's real disclosed Türkiye figures, FY2023 −€2,118m/+€1,202m, FY2022
+      −€2,323m/+€1,490m), surfaced through `data.to_report_json()` (optional field, read
+      defensively via `getattr` — an institution's config without it still works, see
+      test), written up in `research_output.md`'s new "Peer comparison" section with
+      citations, and referenced (briefly, only if non-empty) in `section-valuation-
+      scenarios.md`'s SOP. Contrasted directly with Unilever's own Argentina in the
+      writeup: FEMSA's Argentina is also a net monetary liability position but nets to a
+      *gain*, unlike Unilever's — a real, useful illustration of "A finding worth
+      flagging." BBVA/Garanti's full subsidiary reconstruction stays Phase 5, deferred.
+- [x] **Standard-setting watch note**: added `STANDARD_SETTING_NOTE` to `config.py`
+      (the IFRS Interpretations Committee's July 2025 agenda decision on qualitative
+      hyperinflation indicators), surfaced the same way, written up in
+      `research_output.md`, referenced in `section-risks-uncertainty.md`'s SOP as a
+      classification-risk bullet.
+- [x] **Bonus, found while in there**: `CONSENSUS` and `VALUATION` in `config.py` were
+      still marked `[PLACEHOLDER]` even though the live pipeline run (`BACKLOG.md` Phase
+      4) had already confirmed the market-perception hypothesis and produced a real
+      recommendation — updated both to state the confirmed finding, with a pointer to
+      the full citation trail in `examples/2026-09-27_142024/report_workdir/
+      price_consensus_research.json`. Also fixed `VALUATION`'s note, which still
+      described the old (pre-rewrite) NAV/DDM/cap-rate mispricing-check design instead
+      of the current materiality-flag one. Added 3 new tests
+      (`tests/test_report_data.py`) covering the new fields, including the optional-field
+      default-to-empty path.
 
 ## Phase 8 — Testing: unit tests + BDD — DONE (2026-09-27)
 

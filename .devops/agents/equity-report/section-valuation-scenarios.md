@@ -29,6 +29,11 @@ Write, in order:
    comparison plainly, including where it does and does not match in sign. This model's
    own documentation (`research_output.md`) explains why the total-assets line
    structurally can't flip sign here — say so rather than overclaiming a clean match.
+5. **Peer comparison** (~60 words, only if `peer_comparison` in the JSON is non-empty):
+   briefly note that Coca-Cola FEMSA and BBVA disclose the same kind of IAS 29 effect for
+   their own Argentina/Türkiye exposure — cite one concrete figure from `peer_comparison`
+   (e.g. BBVA's inflation-linked-bond offset) to show this isn't a one-off. Keep this
+   short; the point is context, not a full peer analysis.
 
 Output plain markdown, no code fences, starting with a `## Valuation, Sensitivity &
 Scenarios` heading. Numbers should read naturally in prose, not as a re-typed table (a

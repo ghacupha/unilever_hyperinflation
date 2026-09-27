@@ -96,6 +96,8 @@ def to_report_json(config, computed):
             {n: s["worlds"] for n, s in primary["subsidiaries"].items()}),
         consensus=dict(config.CONSENSUS),
         valuation=dict(config.VALUATION),
+        peer_comparison=dict(getattr(config, "PEER_COMPARISON", {})),
+        standard_setting_note=dict(getattr(config, "STANDARD_SETTING_NOTE", {})),
     )
 
 

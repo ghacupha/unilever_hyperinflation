@@ -11,6 +11,21 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — Peer-comparison and standard-setting content (2026-09-27)
+- Closes `BACKLOG.md` Phase 7. Added `PEER_COMPARISON` (Coca-Cola FEMSA's Argentina
+  net-monetary-position gain; BBVA's real disclosed Türkiye net-monetary-loss and
+  inflation-linked-bond-offset figures, FY2022/FY2023) and `STANDARD_SETTING_NOTE` (the
+  IFRS Interpretations Committee's July 2025 agenda decision on qualitative
+  hyperinflation indicators) to `examples/unilever/config.py`, surfaced through
+  `data.to_report_json()` as optional fields, written up with full citations in
+  `research_output.md`, and referenced in the `section-valuation-scenarios.md` and
+  `section-risks-uncertainty.md` SOPs. 4 new tests.
+- Also fixed two stale fields found while in there: `CONSENSUS` and `VALUATION` in
+  `config.py` were still marked `[PLACEHOLDER]` after the live pipeline run had already
+  confirmed the market-perception hypothesis (see the "First live run" entry below) —
+  updated both to state the confirmed finding; `VALUATION`'s note also still described
+  the old pre-rewrite NAV/DDM/cap-rate design instead of the current materiality-flag one.
+
 ### Added — BDD feature specs (2026-09-27)
 - Closes `BACKLOG.md` Phase 8 fully. 3 `pytest-bdd` feature files under
   `tests/features/` (15 scenarios): `calibration.feature` (a Scenario Outline covering

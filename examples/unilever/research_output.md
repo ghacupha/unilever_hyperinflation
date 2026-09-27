@@ -158,6 +158,69 @@ sheet, not fed into the calculation engine directly (which works off subsidiary-
 aggregates: total non-monetary assets, total monetary assets, total monetary
 liabilities).
 
+## Market perception — confirmed (live research, 2026-09-27)
+
+Stage 2 of the report pipeline (`bizplan/report/price_research.py`) ran live and
+confirmed the hypothesis this whole report is built around. Across Unilever's Q1 and Q2
+2026 earnings-call transcripts and public analyst/aggregator commentary (TipRanks,
+MarketScreener, MarketBeat), Argentina and Türkiye come up only as volume/growth stories
+plus a generic aggregate "currency headwind" to reported turnover and underlying EPS —
+e.g. CFO Srinivas Phatak, Q2 2026: *"Currency reduced our first half turnover by
+4.9%... Currency reduced the underlying EPS growth by around 6 percentage points in the
+first half."* No sell-side note, analyst question, or press summary found separates the
+IAS 29 net monetary gain/(loss) from ordinary FX translation. Unilever's own USG
+(underlying sales growth) methodology instead **caps hyperinflationary price growth out
+of the metric entirely** rather than presenting the net monetary line as a distinct
+purchasing-power effect. Limitation, stated plainly by the research itself: paywalled
+broker notes (Deutsche Bank, Barclays, Bernstein) weren't accessible, so this rests on
+public transcripts and aggregator summaries only. Full finding with every citation:
+`examples/2026-09-27_142024/report_workdir/price_consensus_research.json` (the first
+live pipeline run's own output — see `BACKLOG.md` Phase 4).
+
+## Peer comparison — this pattern isn't unique to Unilever
+
+Two other multinationals disclose the same kind of IAS 29 effect for their own
+Argentina/Türkiye exposure — cited in `config.py`'s `PEER_COMPARISON`, not built into
+this model's own engine (no subsidiary reconstruction attempted for either):
+
+- **Coca-Cola FEMSA** (Argentina, hyperinflationary since 1 Jan 2018): its H1 2025 net
+  monetary position *gain* rose to Ps.154m from Ps.42m in H1 2024, driven mainly by
+  Argentine liabilities benefiting from inflation — a textbook "net monetary liability →
+  gain" case. Worth contrasting directly with Unilever's own Argentina, which is *also*
+  a net monetary liability position (see "A finding worth flagging" above) yet still
+  books a net *loss* — the same starting condition, opposite outcome, because Unilever's
+  restated equity/profit growth outweighs the liability's real-value erosion while
+  FEMSA's apparently doesn't (or does so less). Source: Coca-Cola FEMSA Form 20-F FY2025
+  ([SEC EDGAR](https://www.sec.gov/Archives/edgar/data/910631/000162828026025313/kof-20251231.htm)).
+- **BBVA** (Türkiye, via Garanti BBVA, hyperinflationary since 1 Jan 2022) discloses a
+  net monetary loss *and* a separate, partially offsetting inflation-linked-bond
+  revaluation gain each year: FY2023 −€2,118m / +€1,202m; FY2022 −€2,323m / +€1,490m.
+  The inflation-linked bonds are treated under IAS 29 as "protective assets" — a real
+  hedge against the same purchasing-power erosion this model's illustrative subsidiaries
+  don't hold. This model's World A/B/C engine has no equivalent instrument — a real,
+  acknowledged simplification (see "Known simplifications" below), not fixed in this
+  pass. A full BBVA/Garanti subsidiary-level reconstruction (Garanti publishes its own
+  full IFRS statements, unlike Unilever) stays deferred as `BACKLOG.md` Phase 5. Source:
+  BBVA Form 20-F FY2023
+  ([SEC EDGAR](https://www.sec.gov/Archives/edgar/data/842180/000084218024000007/bbva-20231231.htm)).
+
+## Standard-setting watch — why Türkiye still counts as hyperinflationary
+
+The IFRS Interpretations Committee published a July 2025 agenda decision, *Assessing
+Indicators of Hyperinflationary Economies*, concluding that companies should weigh **all**
+of IAS 29.3's qualitative indicators — price-indexation prevalence, wage-linking, public
+trust in the local currency, interest/inflation-rate relationships — not just the
+>100%/3-year cumulative-inflation rule most people treat as the sole test. The Committee
+found little diversity in how stakeholders already apply this and did not add a
+standard-setting project (i.e., current practice stands). This is directly relevant here:
+Türkiye's headline annual inflation has eased toward ~31% (2026,
+[Trading Economics](https://tradingeconomics.com/turkey/inflation-cpi)) — well under the
+naive >100%/3yr threshold — yet it remains on
+[EY's current hyperinflationary-economies list](https://www.ey.com/en_lt/technical/ifrs-technical-resources/hyperinflationary-economies-updated-april-2026)
+(Argentina, Türkiye, Haiti, Iran, Lebanon, Malawi, South Sudan, Sudan, Venezuela,
+Zimbabwe, as of April 2026) on the qualitative indicators. Source:
+[IFRS Interpretations Committee, July 2025 agenda decision](https://www.ifrs.org/projects/completed-projects/2025/assessing-indicators-of-hyperinflationary-economies-IAS-29/).
+
 ## Known simplifications
 
 - **Single aggregate non-monetary bucket** (inventory + PPE combined) per subsidiary,
@@ -176,6 +239,14 @@ liabilities).
 - **Opening equity and the monetary-asset/liability split are free modeling choices**
   (see "Calibration method" above) — not derived from any Unilever disclosure.
 - **`OTHER_GROUP_OPERATIONS_EUR`** (the non-hyperinflationary rest of the group) is an
-  illustrative scale, not Unilever's real consolidated ex-Argentina/Türkiye figures.
-- **CONSENSUS and VALUATION are `[PLACEHOLDER]`** pending a live run of the report
-  pipeline's Stage 2 (price/consensus research) — see `AGENTS.md`.
+  illustrative scale, not Unilever's real consolidated ex-Argentina/Türkiye figures —
+  which is also why the 2.3% materiality ratio in `recommendation_decision.json` is
+  indicative only, not computed against Unilever's actual reported group operating
+  profit (a real finding the live pipeline's own coherence gate caught — see
+  `BACKLOG.md` Phase 4).
+- **No inflation-linked-bond (or other protective-asset) modeling** — unlike BBVA's real
+  disclosed Türkiye treatment (see "Peer comparison" above), this model's illustrative
+  subsidiaries hold no instrument that naturally hedges the net monetary loss.
+- **CONSENSUS and VALUATION were `[PLACEHOLDER]`** until Stage 2's live run confirmed the
+  market-perception hypothesis on 2026-09-27 — see "Market perception — confirmed" above;
+  both fields in `config.py` now reflect that finding, not a placeholder.
