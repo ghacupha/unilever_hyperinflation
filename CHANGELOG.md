@@ -11,6 +11,22 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — Two more real peers: a US GAAP/IFRS natural experiment (2026-09-27)
+- Extends `BACKLOG.md` Phase 7. Added Colgate-Palmolive and Reckitt Benckiser to
+  `PEER_COMPARISON` after checking whether a true household-goods peer existed (Coca-Cola
+  FEMSA is a bottler; BBVA a bank). Fetched and read the actual 10-K/annual-report PDFs
+  directly rather than relying on search snippets — search alone didn't surface either
+  finding. Colgate (US GAAP) names Argentina/Türkiye/Nigeria "highly inflationary" and
+  discloses no dollar impact, stating it's immaterial — a real-world instance of this
+  model's own "Flag: immaterial" conclusion for Unilever, reached independently under the
+  temporal method (this model's World B, in actual production use). Reckitt (IFRS, same
+  IAS 29 regime as Unilever) bundles hyperinflation into one undifferentiated "Exchange
+  and hyperinflation" reconciling item rather than a separate net-monetary line, and
+  fully divested its Argentina business on 31 Dec 2025 as part of a £2.2bn segment sale.
+  Framed honestly in `research_output.md` as a disclosure-granularity contrast, not a
+  clean number-matching table, since neither peer's figure is directly comparable to
+  Unilever's or BBVA's.
+
 ### Added — Portfolio polish: README, CI, interactive demo (2026-09-27)
 - Closes `BACKLOG.md` Phase 9. Added a "What this demonstrates" section to `README.md`
   (technical accounting depth, verified formula-linked Excel engineering, the real

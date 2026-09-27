@@ -218,6 +218,22 @@ confirming scope first, same as any new phase.
       of the current materiality-flag one. Added 3 new tests
       (`tests/test_report_data.py`) covering the new fields, including the optional-field
       default-to-empty path.
+- [x] **Extended (2026-09-27, same day, in response to a follow-up)**: added two more
+      real peers to `PEER_COMPARISON` after the user asked whether a true household-goods
+      peer existed — **Colgate-Palmolive** (US GAAP filer; names Argentina/Türkiye/Nigeria
+      "highly inflationary" and discloses no dollar impact because it judges the effect
+      immaterial — a real-world instance of this model's own "Flag: immaterial"
+      conclusion for Unilever, reached independently under ASC 830/the temporal method,
+      i.e. real-world **World B** in production) and **Reckitt Benckiser** (IFRS filer,
+      same IAS 29 regime as Unilever, but discloses hyperinflation bundled into one
+      "Exchange and hyperinflation" LFL reconciling item rather than a separate net-
+      monetary line — and fully divested its Argentina business on 31 Dec 2025 as part of
+      a £2.2bn "Essential Home" segment sale). Found by fetching and reading the actual
+      10-K/annual-report PDFs directly (not just search snippets) — search alone didn't
+      surface either figure. `research_output.md` frames these honestly as a disclosure-
+      granularity contrast, not a clean number-matching table, since neither peer
+      discloses a figure directly comparable to Unilever's or BBVA's. Updated
+      `section-valuation-scenarios.md`'s SOP and the existing peer-comparison test.
 
 ## Phase 8 — Testing: unit tests + BDD — DONE (2026-09-27)
 

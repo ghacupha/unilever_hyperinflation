@@ -179,9 +179,10 @@ live pipeline run's own output — see `BACKLOG.md` Phase 4).
 
 ## Peer comparison — this pattern isn't unique to Unilever
 
-Two other multinationals disclose the same kind of IAS 29 effect for their own
-Argentina/Türkiye exposure — cited in `config.py`'s `PEER_COMPARISON`, not built into
-this model's own engine (no subsidiary reconstruction attempted for either):
+Four other multinationals disclose (or explicitly decline to quantify) the same kind of
+hyperinflation effect for their own Argentina/Türkiye exposure — cited in `config.py`'s
+`PEER_COMPARISON`, not built into this model's own engine (no subsidiary reconstruction
+attempted for any of them):
 
 - **Coca-Cola FEMSA** (Argentina, hyperinflationary since 1 Jan 2018): its H1 2025 net
   monetary position *gain* rose to Ps.154m from Ps.42m in H1 2024, driven mainly by
@@ -203,6 +204,42 @@ this model's own engine (no subsidiary reconstruction attempted for either):
   full IFRS statements, unlike Unilever) stays deferred as `BACKLOG.md` Phase 5. Source:
   BBVA Form 20-F FY2023
   ([SEC EDGAR](https://www.sec.gov/Archives/edgar/data/842180/000084218024000007/bbva-20231231.htm)).
+
+### Two more peers — a real-world IFRS-vs-US-GAAP natural experiment, and a disclosure-granularity contrast
+
+The first two peers above are, like Unilever, IFRS filers applying IAS 29. Household/
+personal-care goods companies split along a real accounting-regime line worth citing
+directly, since it's exactly the World B/World C choice this model's engine simulates
+synthetically — here it's two real companies actually making that choice in production:
+
+- **Colgate-Palmolive** (US GAAP filer — real-world **World B**, not a synthetic
+  comparison): its 10-K names Argentina, Türkiye, *and Nigeria* as "highly inflationary"
+  under ASC 830 (the US GAAP equivalent of this model's temporal method), and states
+  plainly that the designation **"has not had and is not expected to have a material
+  impact on the Company's Consolidated Financial Statements."** No dollar figure is
+  disclosed — precisely because management judges the effect immaterial. This is a
+  real-world instance of the exact qualitative conclusion this model's own Stage 3
+  reaches for Unilever (`recommendation_decision.json`'s `"Flag: immaterial"`), reached
+  independently, under a different accounting regime, with no quantified model behind
+  it. Worth noting too: Colgate names *Nigeria* as hyperinflationary, which doesn't
+  appear on EY's April 2026 list (see "Standard-setting watch" below) — a live example
+  of different companies exercising different judgment on a borderline economy, exactly
+  the kind of variation the IFRS Interpretations Committee's July 2025 agenda decision
+  was asked to weigh in on. Source: Colgate-Palmolive Form 10-K FY2025
+  ([SEC EDGAR](https://www.sec.gov/Archives/edgar/data/21665/000002166526000006/cl-20251231.htm)).
+- **Reckitt Benckiser** (IFRS filer — same regime as Unilever, but a real illustration
+  that not every IFRS filer discloses IAS 29 impact with Unilever's granularity):
+  Reckitt's 2025 Annual Report and Accounts doesn't carry a separate net-monetary-
+  gain/(loss) line at all — FX translation and hyperinflation are bundled into one
+  "Exchange and hyperinflation" reconciling item for its like-for-like revenue measure
+  (£394m impact in 2025, up from £24m in 2024 — not separable into the two effects from
+  what's disclosed). More strikingly, Reckitt **fully divested its Argentina business on
+  31 December 2025**, bundled into a £2.2bn sale of its "Essential Home" segment
+  (factories in the UK, Argentina, Spain, Portugal, Hungary, and Mexico all sold
+  together) — so its only remaining hyperinflation exposure going forward is Türkiye.
+  Read directly from Reckitt's own Financial Statements PDF, not a secondary summary.
+  Source: Reckitt Benckiser Annual Report and Accounts 2025
+  ([reckitt.com](https://www.reckitt.com/investors/latest-annual-report/)).
 
 ## Standard-setting watch — why Türkiye still counts as hyperinflationary
 

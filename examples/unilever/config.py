@@ -251,6 +251,49 @@ PEER_COMPARISON = dict(
         source="BBVA Form 20-F FY2023", accessed="2026-09-27",
         url="https://www.sec.gov/Archives/edgar/data/842180/000084218024000007/bbva-20231231.htm",
     ),
+    colgate_palmolive=dict(
+        company="Colgate-Palmolive Company",
+        subsidiary="Argentina, Türkiye, Nigeria (all named 'highly inflationary' in its own "
+                   "10-K risk factors)",
+        reporting_currency="USD",
+        accounting_regime="US GAAP (ASC 830 temporal method / remeasurement — this model's "
+                           "World B, in production, not a synthetic comparison)",
+        note=(
+            "Colgate's own 10-K states the highly-inflationary designation 'has not had "
+            "and is not expected to have a material impact on the Company's Consolidated "
+            "Financial Statements' — no dollar figure is disclosed, precisely because "
+            "management judges it immaterial. A real-world instance of the same "
+            "qualitative conclusion this model's own Stage 3 reaches for Unilever "
+            "('Flag: immaterial') — reached independently, via a completely different "
+            "accounting regime and no quantified model behind it."
+        ),
+        source="Colgate-Palmolive Form 10-K FY2025", accessed="2026-09-27",
+        url="https://www.sec.gov/Archives/edgar/data/21665/000002166526000006/cl-20251231.htm",
+    ),
+    reckitt_benckiser=dict(
+        company="Reckitt Benckiser Group plc",
+        subsidiary="Türkiye (IFRS filer, applies IAS 29 — same regime as Unilever); "
+                   "Argentina fully divested 31 Dec 2025",
+        reporting_currency="GBP",
+        figures={
+            2025: dict(exchange_and_hyperinflation_revenue_impact=394.0),
+            2024: dict(exchange_and_hyperinflation_revenue_impact=24.0),
+        },
+        note=(
+            "Reckitt does not disclose a separate net-monetary-gain/(loss) line the way "
+            "Unilever does — it folds FX translation and hyperinflation together into "
+            "one 'Exchange and hyperinflation' reconciling item for its like-for-like "
+            "revenue measure (not separable into the two effects from what's disclosed: "
+            "£394m in 2025, up from £24m in 2024). Reckitt also fully divested its "
+            "Argentina business on 31 Dec 2025, bundled into a £2.2bn sale of its "
+            "'Essential Home' segment — its only remaining hyperinflation exposure is "
+            "Türkiye. A real illustration that IFRS filers don't all disclose IAS 29 "
+            "impact with the granularity Unilever does."
+        ),
+        source="Reckitt Benckiser Annual Report and Accounts 2025 (Financial Statements)",
+        accessed="2026-09-27",
+        url="https://www.reckitt.com/investors/latest-annual-report/",
+    ),
 )
 
 # ---------------------------------------------------------------------------
@@ -312,4 +355,13 @@ SOURCES = [
          value="Current list: Argentina, Türkiye, Haiti, Iran, Lebanon, Malawi, South Sudan, "
                "Sudan, Venezuela, Zimbabwe", source="EY", accessed="2026-09-27",
          url="https://www.ey.com/en_lt/technical/ifrs-technical-resources/hyperinflationary-economies-updated-april-2026"),
+    dict(item="Colgate-Palmolive Company — Form 10-K FY2025",
+         value="Argentina/Türkiye/Nigeria named 'highly inflationary'; no material impact "
+               "disclosed", source="U.S. SEC EDGAR", accessed="2026-09-27",
+         url="https://www.sec.gov/Archives/edgar/data/21665/000002166526000006/cl-20251231.htm"),
+    dict(item="Reckitt Benckiser Group plc — Annual Report and Accounts 2025 (Financial Statements)",
+         value="Exchange-and-hyperinflation LFL revenue reconciling item, FY2025/FY2024; "
+               "Argentina divestment (Essential Home sale, 31 Dec 2025)",
+         source="Reckitt Benckiser plc investor relations", accessed="2026-09-27",
+         url="https://www.reckitt.com/investors/latest-annual-report/"),
 ]

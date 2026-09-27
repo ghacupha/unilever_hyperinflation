@@ -40,11 +40,11 @@ def test_to_report_json_has_expected_top_level_keys(unilever_config):
         assert key in report_json
 
 
-def test_peer_comparison_cites_coca_cola_femsa_and_bbva(unilever_config):
+def test_peer_comparison_cites_all_four_peers(unilever_config):
     computed = report_data.compute(unilever_config)
     report_json = report_data.to_report_json(unilever_config, computed)
-    assert "coca_cola_femsa" in report_json["peer_comparison"]
-    assert "bbva" in report_json["peer_comparison"]
+    for peer in ("coca_cola_femsa", "bbva", "colgate_palmolive", "reckitt_benckiser"):
+        assert peer in report_json["peer_comparison"]
     for entry in report_json["peer_comparison"].values():
         assert entry["source"]
         assert entry["url"].startswith("https://")
