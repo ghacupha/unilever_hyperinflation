@@ -32,6 +32,7 @@ def main():
     results = hyperinflation_calculations.build_model(config)
 
     output_dir = os.environ.get("OUTPUT_DIR", os.path.dirname(config_path))
+    os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"{config.OUTPUT_PREFIX}_Financial_Model.xlsx")
     hyperinflation_excel_renderer.build_excel(config, results, output_path)
     print(f"Wrote {output_path}")
