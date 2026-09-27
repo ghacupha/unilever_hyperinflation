@@ -11,6 +11,21 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — Unit test suite (2026-09-27)
+- Closes `BACKLOG.md` Phase 8's unit-test item (BDD still open). 36 `pytest` tests under
+  `tests/` covering `hyperinflation_calculations.py` (World A/B/C math, the monetary-
+  gain/loss balancing-plug identity verified to float precision, and a regression test
+  that `build_model()` on the real `unilever` config still reproduces the disclosed 2024
+  figures within tolerance), `config_loader.py`'s validation error paths, and the
+  pure-Python report stages (`data.py`, `validation.py`, `recommendation.py` — not the
+  `claude -p`-driven ones). `requirements-dev.txt` + `pytest.ini` added; verified
+  clean-install-to-green in a fresh venv.
+- One test's premise was wrong on first run (assumed zero monetary gain/loss follows
+  from flat FX/inflation alone, for any input) — the failure was real, traced to why
+  (the plug also depends on the fixture being a cash-flow-consistent roll-forward), and
+  fixed by correcting the assertion plus adding a second test with an algebraically-
+  solved self-consistent fixture proving the zero-plug property when the premise holds.
+
 ### Changed — Rewrote git history to remove personal/third-party content (2026-09-27)
 - Closes `BACKLOG.md` Phase 6. Removed `.recall/` (a session-history capture directory
   containing raw session transcripts with the repo owner's real machine paths/username)

@@ -7,3 +7,4 @@ output/
 .env
 data/
 .recall/
+.pytest_cache/

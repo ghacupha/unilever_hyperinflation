@@ -209,13 +209,28 @@ confirming scope first, same as any new phase.
       setting project. Explains why Türkiye stays classified hyperinflationary even as
       headline inflation eases toward ~31% (2026) — well under the naive threshold.
 
-## Phase 8 — Testing: unit tests + BDD — NOT STARTED
+## Phase 8 — Testing: unit tests + BDD — unit tests DONE (2026-09-27), BDD NOT STARTED
 
-- [ ] **Unit tests** (`pytest`, under a new `tests/` dir) for
-      `bizplan/financial/hyperinflation_calculations.py` (the World A/B/C math, the
-      monetary-gain/loss plug, `build_model()`), `bizplan/config_loader.py`
-      (`validate_config()`'s error paths), and `bizplan/report/{data,validation,
-      recommendation}.py` (pure-Python stages only, not the `claude -p` ones).
+- [x] **Unit tests** (`pytest`, under `tests/`, `pytest.ini` + `requirements-dev.txt`) for
+      `bizplan/financial/hyperinflation_calculations.py` (36 tests total; the World A/B/C
+      math under flat and inflated macro conditions, the monetary-gain/loss plug's exact
+      balancing-identity property verified to float precision, a dedicated regression
+      test that `build_model()` on the real `examples/unilever/config.py` reproduces
+      Unilever's disclosed 2024 figures within ±0.01 EURm), `bizplan/config_loader.py`
+      (`validate_config()`'s error paths — missing fields, empty `YEARS`, malformed
+      `SUBSIDIARIES`/`ACCOUNTING_SCENARIOS`/`INFLATION_INDICES` — via real `tmp_path`
+      config files exercising the actual import machinery, not hand-built namespaces),
+      and `bizplan/report/{data,validation,recommendation}.py` (pure-Python stages only,
+      not the `claude -p` ones — includes a test that deliberately breaks calibration by
+      mutating `ACTUALS` and confirms `validate_model()` catches it, not just that the
+      happy path passes). Verified clean-install-to-green in a fresh venv from
+      `requirements-dev.txt` alone. One test's own premise was initially wrong (assumed
+      "flat FX/inflation implies zero monetary gain/loss" for an arbitrary fixture) —
+      caught by running it, fixed by understanding *why* (the plug depends on the
+      fixture being a cash-flow-consistent roll-forward, not on flatness alone) rather
+      than loosening the assertion; a second test added alongside it using an
+      algebraically-solved self-consistent fixture to prove the zero-plug property does
+      hold when the premise is actually met.
 - [ ] **BDD** (`pytest-bdd` or `behave`, Gherkin `.feature` files) covering two kinds of
       scenarios, both real and worth writing:
       1. *Code behavior*: "Given Unilever's real disclosed 2024 IAS 29 impact figures,

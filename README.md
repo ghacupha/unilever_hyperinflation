@@ -109,6 +109,18 @@ discussion of where the 2025 roll-forward does and doesn't match. Only the aggre
 impact figures per subsidiary per year are real Unilever disclosures; the subsidiary-level
 line items (revenue, PPE, monetary position, etc.) are this model's own illustration.
 
+## Running the tests
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest
+```
+
+36 tests covering the calculation engine (World A/B/C math, the monetary-gain/loss
+balancing-plug identity, a regression test that the model still reproduces Unilever's
+real disclosed 2024 figures), the config schema validator, and the pure-Python report
+stages. Doesn't touch the `claude -p`-driven pipeline stages.
+
 ## Project structure
 
 ```
