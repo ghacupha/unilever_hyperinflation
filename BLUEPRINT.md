@@ -1,161 +1,165 @@
-# Blueprint: REIT Valuation Model
+# Blueprint: Unilever Hyperinflation-Accounting Model
 
-**Status:** Pivoted 2026-08-09 from a Family Bank Kenya-specific banking model to a generic
-REIT (Real Estate Investment Trust) valuation model, first instance Acorn I-REIT (NSE-listed,
-Kenya). The prior banking-model design history lives in git history and in `CHANGELOG.md`'s
-earlier entries — this file starts fresh for the REIT domain rather than merging the two;
-they share no calculation logic (only the generic `bizplan/config_loader.py` load/validate
-pattern and `bizplan/financial/xl_helpers.py`'s formula/styling primitives carried over).
+**Status:** Pivoted 2026-09-27 from the generic REIT valuation model (Acorn I-REIT) to a
+CFA Level II Financial Statement Analysis teaching model — the *Multinational Operations*
+reading, specifically hyperinflation accounting (IAS 29) and its interaction with IAS 21
+translation — illustrated with Unilever plc's real disclosed treatment of its Argentina
+and Türkiye subsidiaries. The prior REIT-model design history lives in git history and in
+`CHANGELOG.md`'s earlier entries — this file starts fresh for the new domain rather than
+merging the two; they share no calculation logic (only `bizplan/financial/xl_helpers.py`'s
+formula/styling primitives and the `bizplan/config_loader.py` load/validate *pattern*
+carry over — the REQUIRED_FIELDS shape itself is entirely rewritten).
 
-## Why a REIT is a different domain, not a bank re-skin
+## Why this is a different domain, not a REIT re-skin
 
-A bank's economics center on a loan book (IFRS 9 staged provisioning), deposits (net
-interest income), and regulatory capital adequacy. None of that applies to a REIT. A REIT
-holds income-generating property, earns rental income, and is legally required to
-distribute most of its income to unit-holders rather than retain it as a growth-equity
-would. The schedules, the regulatory framework, and the valuation methodology are all
-different — this is a full rewrite of the calculation and rendering layers, reusing only:
+A REIT's economics center on income-generating property, rental income, and a regulatory
+distribution requirement. None of that applies here. This model isn't valuing a company
+at all — it's teaching a specific accounting mechanic (how a subsidiary's local-currency
+financial statements get restated for inflation, then translated to the parent's
+reporting currency, and how that differs under IFRS vs. US GAAP) using a real company's
+real disclosed numbers as the calibration target. This is a full rewrite of the
+calculation and rendering layers, reusing only:
 
 - `bizplan/config_loader.py` — the load/validate pattern (`REQUIRED_FIELDS`,
-  `validate_reit_config`, `load_and_validate`)
+  `validate_config`, `load_and_validate`), with an entirely new field list.
 - `bizplan/financial/xl_helpers.py` — formula-capable openpyxl primitives (colors,
-  `header_row`/`data_row`/`total_row`, `_cell`/`_sum_f`/etc. formula-string helpers), and
-  the FMI data-provenance color convention (blue = disclosed input, dark = internal
-  formula, teal = cross-sheet reference, orange = modeled/benchmark proxy)
-- The overall sheet architecture: Cover / Summary / Assumptions / Scenarios / Model /
-  Output / Sources, a Master Check block, and a single scenario-switch cell
-  (`Scenarios!$D$5`, 1=Base/2=Best/3=Worst) that every scenario-dependent Assumptions row
-  resolves to via `CHOOSE()`, so flipping it live-recalculates the whole Model sheet.
+  `header_row`/`data_row`/`total_row`, `_cell`/formula-string helpers), and the FMI
+  data-provenance color convention (blue = disclosed input, dark = internal formula, teal
+  = cross-sheet reference, orange = modeled/benchmark proxy).
+- The `bizplan/report/*` 7-stage `claude -p` pipeline *shape* (sourcing → ground truth/
+  validation → price/consensus research → mechanical pre-decision → drafting → review/
+  coherence → PDF), repurposed toward a different question (see "Report pipeline" below)
+  rather than discarded.
 
-## Regulatory framework (CMA I-REIT-specific)
+## The real-world case
 
-Source: `cma.or.ke/wp-content/uploads/2023/03/REITS.pdf` ("FAQs: Real Estate Investment
-Trusts"), cross-checked against Acorn's own reported compliance figures. Full citations in
-`examples/acorn_i_reit/research_output.md`.
+Unilever plc reports under IFRS and applies **IAS 29** to its Argentina (hyperinflationary
+since 1 Jul 2018) and Türkiye (since 1 Jul 2022) operations: it restates historical-cost
+non-monetary assets/liabilities and the income statement for inflation during the period,
+then translates the restated figures using **IAS 21's closing rate** (not an average
+rate — the correct treatment for a hyperinflationary economy's financial statements,
+which are already expressed in a single period-end purchasing-power unit). It discloses
+the aggregate impact of that treatment on consolidated Total assets, Turnover, Operating
+profit, and Net monetary gain/(loss) each year:
 
-- **Gearing/borrowing limit**: 35% of total asset value; up to 40% with unit-holder
-  ordinary-resolution approval, temporary ≤6 months, no extension.
-- **Income-producing real estate minimum**: 75% of NAV within 2 years of authorization;
-  ≥70% of income from eligible investments after year 2.
-- **Distribution minimum**: ≥80% of taxable/net income to unit-holders.
-- **Minimum initial assets**: KES 300 million (I-REIT).
-- Minimum 7 investors; promoter must retain 20% of NAV year 1, 10% year 2.
+| IAS 29 impact, €m | 2024 Argentina | 2024 Türkiye | 2025 Argentina | 2025 Türkiye |
+|---|---:|---:|---:|---:|
+| Total assets | +474 | +65 | −199 | −20 |
+| Turnover | +230 | +187 | −90 | −16 |
+| Operating profit | +10 | −4 | −54 | −46 |
+| Net monetary gain/(loss) | −206 | +11 | −46 | −10 |
 
-These map directly onto the Model sheet's Regulatory Compliance section and the Master
-Check's LTV / Income-Producing-% / Payout status rows (`_build_regulatory_section`,
-`_build_master_check` in `bizplan/financial/reit_excel_renderer.py`).
+Sources: Unilever plc Form 20-F, FY2024 and FY2025 (SEC EDGAR) — see
+`examples/unilever/config.py`'s `SOURCES` for URLs.
 
-## Config schema (`bizplan/config_loader.py`, `examples/<reit>/config.py`)
+## What this model builds — and its explicit limits
 
-`REQUIRED_FIELDS`: `BUSINESS_NAME`, `OUTPUT_PREFIX`, `CURRENCY`, `CURRENCY_UNIT_ABBR`,
-`YEARS`, `ACTUAL_YEARS`, `TAX_RATE` (0 — REITs are income-tax-exempt on qualifying property
-income), `PROPERTIES` (list of dicts: name/location/rooms/beds/opening_fair_value —
-generic enough for office/retail/industrial REITs, not just student housing),
-`RENTAL_INCOME`, `OPEX_ITEMS`, `CAPITAL` (debt terms), `UNITS` (issuance),
-`REGULATORY` (the CMA limits above, as config so a different jurisdiction/REIT type
-could override them), `MACRO_SCENARIOS`, `SCENARIO_MULTIPLIERS`, `VALUATION` (CAPM inputs
-+ cap rate + blend weights), `PEER_REITS`, `ACTUALS` (per-year dict, provenance-tagged).
-Optional: `COVER_INFO`, `SOURCES` (both read defensively via `getattr` in the renderer).
+Unilever doesn't disclose subsidiary-level financial statements at the granularity needed
+to reconstruct the restatement mechanically. So this model builds a small, fully
+hand-traceable **fictional** subsidiary for Argentina and for Türkiye, algebraically
+solved (not guessed) so that running it through the model's engine reproduces the real
+**2024** disclosed impact figures almost exactly, then rolls the same model forward into
+**2025** (not re-solved) as an out-of-sample validation against the real 2025 figures —
+with the resulting gap documented, not hidden. Full derivation, citations, and the "what
+this model is and isn't" caveat live in `examples/unilever/research_output.md` — read it
+before treating any subsidiary-level figure in this model as a real Unilever disclosure.
+It isn't; only the four aggregate impact numbers per subsidiary per year are real.
 
-## Schedule design (Model sheet)
+## Config schema (`bizplan/config_loader.py`, `examples/<institution>/config.py`)
 
-Same "3 actual years immediately followed by 5 projected years" convention as the prior
-banking model — actual-year INPUT rows are hardcoded facts (pinned to `config.ACTUALS`),
-DERIVED/subtotal rows are live same-column formulas over those facts (so an actual-year
-hand-edit still re-flows through every subtotal); projected-year rows are fully live
-formulas referencing Assumptions-sheet driver cells or the prior column.
+`REQUIRED_FIELDS`: `BUSINESS_NAME`, `OUTPUT_PREFIX`, `CURRENCY`, `YEARS`, `ACTUAL_YEARS`,
+`SUBSIDIARIES` (per-subsidiary local currency, hyperinflationary-since date, item
+classification), `INFLATION_INDICES` (opening/closing general price index per subsidiary
+per year), `FX_RATES` (opening/closing local-per-EUR per subsidiary per year),
+`ACCOUNTING_SCENARIOS` (the three World definitions), `ACTUALS` (per-subsidiary
+local-currency nominal inputs per year), `VALIDATION_ACTUALS` (real disclosed roll-forward
+year's impact figures), `CONSENSUS`, `VALUATION`. Also `DISCLOSED_IMPACT_2024` (the primary
+calibration target), `OTHER_GROUP_OPERATIONS_EUR`, `SOURCES` — read defensively, not in
+`REQUIRED_FIELDS`, but needed by the calculation engine and renderer respectively.
 
-1. **Property Portfolio** — portfolio-*aggregate* fair-value roll-forward (opening +
-   additions/acquisitions + fair value gain = closing). Deliberately aggregate, not
-   per-property, across all 8 years: the source filings only give a per-property
-   snapshot at one point in time (30 Jun 2025), not a multi-year per-property history, so
-   a per-property 8-year roll-forward would be fabricated precision. The per-property
-   snapshot itself is shown as a static reference table on the Assumptions sheet.
-2. **Rental Income & NOI** — occupancy is modeled by two property tiers rather than one
-   portfolio-blended figure (added 2026-09-03, replacing an earlier single-glide design):
-   Acorn's own interim report names 3 of the 7 properties as underperforming "seed"
-   assets (Jogoo Road, Ruaraka, Parklands — anchor-tenant/access-road/sales issues, per
-   its own commentary) against the other 4 "stabilized typical assets" (disclosed at 93%
-   H1-2025 occupancy). The seed tier's own occupancy isn't disclosed directly, so it's
-   back-solved from two real disclosed aggregates (portfolio-blended vs. stabilized-tier
-   occupancy, weighted by each tier's disclosed bed count) — `[DISCLOSED-DERIVED]`, not
-   fabricated. The stabilized tier is held flat at target; the seed tier glides toward the
-   same target over a configurable recovery period; the two are bed-weighted back into one
-   portfolio occupancy figure that rental income grows with (× escalation). Important:
-   this is Acorn's own *operational* categorization, not a property-age/maturity split —
-   the oldest property (Jogoo Road, 2017) is "seed" and the newest (Aberdare Heights II,
-   2022) is already "stabilized", so a regression of occupancy against property age would
-   be actively misleading. See `research_output.md`'s 2026-09-03 section.
-3. **Operating Expenses** — admin (property-level) + fund-level (management/trustee/
-   custodian/CMA fees) opex, itemized in config from Acorn's own note structure.
-4. **Debt / Gearing** — borrowings roll-forward, weighted-average interest rate, finance
-   costs.
-5. **Income Statement** — Operating Income → Operating Profit → (+finance income
-   −finance costs +fair value gain) → Net Profit, matching Acorn's own statement
-   structure exactly (see `reit_calculations.py`'s module docstring for how actual-year
-   opex/finance-income are back-solved as a reconciliation residual against the pinned,
-   disclosed Net Profit where the filings don't give item-level actual-year detail).
-6. **Distributable Income & Distributions** — Net Profit minus non-cash items (fair
-   value gain) = Distributable Income; × payout ratio (pinned to the real disclosed
-   ratio in actual years — including where, as in FY2025, it's genuinely below the 80%
-   CMA minimum, a real governance fact carried through rather than smoothed over) ÷
-   units = DPU.
-7. **Balance Sheet** — Total Assets = NAV + Total Liabilities is the *identity itself*
-   for projected years (not an independent sum): NAV rolls forward from retained
-   earnings + unit-issuance proceeds, Total Liabilities from the debt schedule, and
-   Other Assets/cash is the residual plug — exactly how a real cash flow statement's
-   closing cash balance is a residual, not an independently-forecast figure. (An earlier
-   draft grew "other assets" independently of NAV and broke the Master Check's balance
-   check for every projected year — fixed by making assets the identity, not a separate
-   forecast.)
-8. **Regulatory Compliance** — LTV, income-producing-%, both vs. the CMA minimums above.
+## Calculation engine (`bizplan/financial/hyperinflation_calculations.py`)
 
-## Valuation (Output sheet)
+For each subsidiary and year, `restate_and_translate()` computes three parallel "worlds"
+from the same local-currency nominal inputs:
 
-Blends three approaches (config-weighted, default NAV 40% / DDM 30% / cap rate 30% — NAV
-weighted heaviest since it's the most reliable anchor for a property-holding entity, and
-the DDM leg rests on the weakest-sourced input, beta):
+- **World A — plain current-rate method**: no inflation restatement; balance sheet at the
+  closing FX rate, income statement at the average FX rate. The "disappearing plant"
+  baseline the real IAS 29 impact is measured against.
+- **World B — US GAAP temporal method**: monetary items at the current (closing) rate,
+  non-monetary items at historical rates, most P&L at the average rate — producing an FX
+  *remeasurement* gain/loss, a genuinely different mechanism from IAS 29's purchasing-power
+  monetary gain/loss, not just a different number for the same thing.
+- **World C — actual IFRS treatment**: IAS 29 restatement (monetary items unchanged,
+  non-monetary items restated by the price-index change since acquisition, income
+  statement items restated from an in-year average), then IAS 21 translation of the
+  restated figures at the closing rate. This is what Unilever actually reports.
 
-- **NAV** — the latest projected-year NAV/unit, directly off the Balance Sheet.
-- **DDM** — PV of *projected-year-only* DPU (2023-2025 are actual, already-paid
-  distributions, not future cash flows to discount) + PV of **terminal NAV/unit**, not a
-  pure Gordon-growth-on-dividends model. With payout ratios well below 100%, most of a
-  REIT's total return accrues through NAV growth on retained earnings, not distributions
-  alone, so terminal NAV/unit is the more defensible "exit value" than an infinite-growth
-  dividend annuity — a real methodology choice made after an initial Gordon-growth version
-  produced a DDM value 5x below NAV, an implausible divergence for a property-holding
-  entity in equilibrium.
-- **Direct capitalization / cap rate** — latest NOI run-rate ÷ cap rate = implied
-  property value, less debt, ÷ units.
-- **Peer cross-check** — this REIT's own NAV × the average peer NAV discount/premium
-  (Acorn I-REIT vs. LAPTRUST Imara I-REIT, the only two Kenyan REITs with disclosed
-  NAV-vs-trading-price figures found in research).
+Both the IAS 29 net monetary gain/(loss) and World B's remeasurement gain/(loss) are
+computed as a **balancing plug** (restated/remeasured Assets − Liabilities − Equity − Net
+income) — this is how IAS 29 actually works, and it guarantees the restated balance sheet
+ties out by construction rather than by an approximate formula. `build_model(config)` is
+the single entry point: runs every subsidiary through all three worlds for every year,
+consolidates with the rest of the group (`consolidate()`), and validates the primary
+year's impact against `DISCLOSED_IMPACT_2024` / later years against `VALIDATION_ACTUALS`
+(`validate_against_disclosed()`).
 
-Cost of equity: CAPM (Kenya 10-year bond risk-free rate + beta × Kenya equity risk
-premium). Beta has no reliable REIT-specific source (thin/restricted-market trading
-precludes a regression) and is a flagged placeholder — see
-`examples/acorn_i_reit/research_output.md`.
+**A finding worth flagging** (see `research_output.md` for the full discussion): the
+common CFA heuristic "net monetary liability → gain, net monetary asset → loss" holds
+exactly only in a static, single-item setting. In this full model, Argentina's solved net
+monetary position is a *liability*, yet it still shows a net monetary *loss* — because the
+plug also nets against the growth of the other restated items (equity, operating profit).
+The simple heuristic is a starting intuition, not a formula that survives a full
+consolidated restatement.
+
+## Excel renderer (`bizplan/financial/hyperinflation_excel_renderer.py`)
+
+Every calculated cell is a live Excel formula (verified with the `formulas` Python
+package — a real formula evaluator, not just openpyxl string-writing — reproducing the
+Python engine's output to full precision). Sheets: Cover, Assumptions (raw local-currency
+inputs only — BLUE), one schedule sheet per subsidiary (`Argentina_Schedules`,
+`Turkiye_Schedules` — each walking 01 Local FS → 02 Inflation Index → 03 IAS 29
+Restatement → 04 FX Translation (World C) → World A → World B → IAS 29 Impact, so the
+whole restatement mechanic is traceable on one sheet, with cross-sheet TEAL references
+back to Assumptions and DARK internal formulas for everything derived), Consolidation
+(World C group totals + ratios), Scenario_Comparison (World A/B/C **side by side** — the
+user's own requested table shape, for both years), Validation_2025, Sources.
+
+**Deliberate deviation from the REIT model's `CHOOSE()` scenario-switch convention**:
+World A/B/C are shown permanently side by side, not switched via one scenario cell —
+comparing all three simultaneously is the actual pedagogical point here, not picking one.
+
+## Report pipeline (`bizplan/report/*`, `.devops/agents/equity-report/`)
+
+Same 7-stage shape as the REIT pipeline, repurposed toward a different question: how does
+each subsidiary's hyperinflation treatment affect Unilever's consolidated numbers, and
+does the market/analyst consensus price that correctly — or does it fold a real,
+quantified effect into generic "FX headwind" noise? Stage 3's mechanical pre-decision is a
+materiality flag (net monetary gain/loss as a % of group operating profit), not a
+NAV/DDM/cap-rate price-vs-fair-value call — this model doesn't build a full equity
+valuation. The Recommendation section (Stage 4) combines that flag with Stage 2's real
+consensus research to argue an actual Buy/Hold/Sell-style call specifically about
+earnings-quality mispricing. See `AGENTS.md` for the full stage-by-stage breakdown and
+current verification status.
 
 ## Known simplifications (see `research_output.md` for full detail and citations)
 
-- **Property Portfolio is portfolio-aggregate, not per-property**, across the projection
-  (data availability, not a design preference — see above).
-- **Opex item-level detail for the thin 2023/2024 actual years** is proportionally
-  allocated from the FY2025 (H1 actual × 2) item-level base, scaled to the reconciled
-  aggregate total — not independently disclosed at item level for those years.
-- **FY2025's closing (31 Dec 2025) balance sheet is modeled**, anchored to three
-  disclosed control totals (NAV/unit 24.30, net profit 670.16m, debt ~1,910.0m) — the
-  filings reviewed give full detail only through the 30 Jun 2025 interim.
-- **Units-in-issue vs. NAV/unit reconciliation gap**: cross-multiplying the disclosed
-  units-in-issue roll-forward against disclosed NAV doesn't exactly reproduce Acorn's own
-  reported NAV/unit headline (~1-2% gap, both period-ends) — most likely a
-  weighted-average-vs-point-in-time unit-count convention difference on Acorn's side, not
-  a data error. Documented, not silently forced to match.
+- **Single aggregate non-monetary bucket** per subsidiary (inventory + PPE combined),
+  rather than item-level restatement with separate acquisition-date vintages.
+- **Geometric-mean average index/FX** stands in for a full monthly series.
+- **Opening equity and the monetary-asset/liability split are free modeling choices** —
+  solved algebraically to hit the four real disclosed 2024 targets, but not themselves
+  derived from any Unilever disclosure.
+- **Total-assets impact structurally cannot flip sign** in this model (pure inflation
+  restatement can only raise non-monetary asset values) — the real 2025 disclosure shows
+  a negative one, which this model's 2025 roll-forward doesn't reproduce; documented as an
+  open limitation, not resolved.
+- **`OTHER_GROUP_OPERATIONS_EUR`** is an illustrative scale, not Unilever's real
+  consolidated ex-Argentina/Türkiye figures.
 
 ## Follow-up work (not in this pass — see `BACKLOG.md`)
 
-The equity-research-report PDF pipeline (`bizplan/report/*`, SOPs under
-`.devops/agents/equity-report/`) still imports the retired `bank_calculations`/
-`bank_excel_renderer` modules and will not currently run. Its 6-stage `claude -p`
-mechanics are domain-agnostic, but its SOP prose and JSON schemas speak bank language
-(IFRS 9, CAR) and need a REIT-language adaptation pass.
+**BBVA/Garanti** (the "advanced" case identified alongside Unilever — a Spanish bank
+applying IAS 29 to both its Türkiye (Garanti BBVA) and Argentina (BBVA Argentina)
+subsidiaries, with Garanti separately publishing its own full IFRS statements, enabling an
+actual subsidiary-to-parent reconstruction rather than a calibrated fictional one) is
+deliberately deferred, not built in this pass.

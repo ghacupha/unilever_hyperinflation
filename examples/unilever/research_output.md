@@ -1,0 +1,181 @@
+# Research Output — Unilever plc Hyperinflation Model (Argentina & Türkiye)
+
+Calibration and citation log for `config.py`. This is a working research log, not a
+substitute for the model itself — see `BLUEPRINT.md` for the full design.
+
+## What this model is and isn't
+
+Unilever plc reports under IFRS and applies **IAS 29** to its Argentina (hyperinflationary
+since 1 Jul 2018) and Türkiye (since 1 Jul 2022) operations, then translates the restated
+figures under **IAS 21** at the closing rate. It discloses, each year, the aggregate impact
+of that treatment on consolidated Total assets, Turnover, Operating profit, and Net
+monetary gain/(loss) — but not the underlying subsidiary financial statements at a level
+of detail that would let anyone reconstruct the restatement mechanically.
+
+So this model does **not** reproduce Unilever's actual Argentina/Türkiye subsidiary
+accounts. It builds a small, fully hand-traceable fictional subsidiary for each, sized so
+that running it through the model's IAS 29 + IAS 21 engine (`bizplan/financial/
+hyperinflation_calculations.py`) reproduces Unilever's own **real disclosed 2024** impact
+figures — the primary calibration target — almost exactly, then rolls the same model
+forward into **2025** with updated (not re-solved) macro assumptions as an out-of-sample
+validation against the real 2025 disclosure. `config.py`'s docstring and inline comments
+repeat this; it's worth saying once more here in full.
+
+## Real disclosed figures (calibration target and validation target)
+
+| IAS 29 impact, €m | 2024 Argentina | 2024 Türkiye | 2024 Total | 2025 Argentina | 2025 Türkiye | 2025 Total |
+|---|---:|---:|---:|---:|---:|---:|
+| Total assets | +474 | +65 | +539 | −199 | −20 | −219 |
+| Turnover | +230 | +187 | +417 | −90 | −16 | −106 |
+| Operating profit | +10 | −4 | +6 | −54 | −46 | −100 |
+| Net monetary gain/(loss) | −206 | +11 | −195 | −46 | −10 | −56 |
+
+Sources: Unilever plc Form 20-F for FY2024 and FY2025 (both filed with the SEC), the
+hyperinflation accounting policy note. See `config.py`'s `SOURCES` for URLs.
+
+## Calibration method (2024)
+
+The engine's restatement math is linear enough in the local-currency inputs to solve
+backward from the four EUR targets algebraically, rather than by trial and error:
+
+1. **Turnover and operating-profit impact** fix the subsidiary's revenue and operating
+   profit level under World A (plain current-rate, no restatement) — because, under the
+   model's simplifying assumption that revenue/COGS/opex/depreciation are all restated
+   by the same in-year "flow" factor, `Impact = Level_A × (r − 1)`, where `r` is the ratio
+   of the inflation-restatement factor to the FX-depreciation factor over the year. Given
+   `r` (fixed once the year's inflation index and FX path are chosen) and the target
+   impact, `Level_A` — and hence the required local-currency revenue/cost figures — falls
+   out directly.
+2. **Total-assets impact** is driven purely by the non-monetary-asset restatement (opening
+   non-monetary assets × the full-year inflation factor, plus in-year capex restated by
+   the flow factor, less restated depreciation) — it turns out to be **independent of the
+   net monetary position** in this model, so it's solved as a second, separate linear
+   equation for the opening non-monetary asset balance.
+3. **Net monetary gain/(loss)** is computed as the balancing plug that makes the restated
+   balance sheet tie out (`restated assets − restated liabilities − restated opening
+   equity − restated operating profit`). With the non-monetary-asset restatement already
+   fixed by step 2, and opening equity fixed as a modeling choice, the plug equation is
+   linear in the net monetary position (monetary assets minus monetary liabilities), which
+   is solved for directly, then split into a plausible cash/receivables-vs-payables/debt
+   pair.
+
+Both subsidiaries hit all four 2024 targets to within model precision (Argentina:
++474.0/+230.0/+10.0/−206.0 exactly; Türkiye: +65.0/+187.0/−4.0/+11.0 exactly). **Opening
+equity and the individual monetary-asset/liability split are the two genuinely free
+modeling choices** in this calibration — not derived from any disclosure — chosen to
+produce a plausible balance sheet shape, not to hit a target (no public target exists for
+them). Everything else was solved, not guessed.
+
+### A finding worth flagging: the naive CFA heuristic doesn't fully hold here
+
+The common CFA-curriculum intuition — "net monetary liability position → purchasing-power
+*gain*; net monetary asset position → *loss*" — holds exactly only in a single-item, static
+setting. In this full model, Argentina's solved net monetary position comes out as a
+**liability** position (~ARS 407bn), yet the subsidiary still shows a **net monetary
+loss** (−206). That's because the plug also nets against the *growth* of the other
+restated items (opening equity and operating profit, both scaled up by inflation) — a
+fast-growing restated equity/profit base can turn what looks like a "monetary liability =
+gain" setup into a net loss once the whole balance sheet is restated together, not just the
+monetary line in isolation. Worth surfacing explicitly when teaching this reading: the
+simple heuristic is a starting intuition, not a formula that survives a full consolidated
+restatement.
+
+## 2025 roll-forward validation — a documented, partial match
+
+2025 was **not** re-solved to fit the real 2025 table. Instead, `config.py`'s 2025
+`ACTUALS` roll the 2024 model forward mechanically:
+
+- Non-monetary assets and equity carry forward from the model's own **2024 IAS29-restated
+  closing local-currency balances** (via `restated_closing_local()`), consistent with how
+  an ongoing hyperinflationary entity's opening balance is always the prior year's already-
+  restated closing figure.
+- Revenue/costs grow with local inflation (zero assumed real growth), except Türkiye's
+  costs, where a modest margin-recovery assumption (costs growing slower than revenue) was
+  applied — see below for why.
+- The macro path itself changes deliberately: **2024's actual relationship — local
+  inflation (118% Argentina / 44% Türkiye) outpacing FX depreciation (~19% / ~18%, both
+  currencies under managed/crawling regimes) — is exactly what produced positive 2024
+  impacts.** For 2025, both currencies' real-world FX regimes changed materially
+  (Argentina floated the peso in April 2025, ending its crawling peg; Türkiye's lira
+  continued depreciating while disclosed inflation kept decelerating), plausibly
+  *reversing* that relationship. The model's 2025 macro assumptions (inflation
+  decelerating to ~30%/~28%, FX depreciation accelerating to ~44%/~35%) encode that
+  reversal.
+
+**Result — same-sign match on 3 of 4 lines for each subsidiary, total-assets sign not
+reproduced:**
+
+| | Argentina model | Argentina real | Türkiye model | Türkiye real |
+|---|---:|---:|---:|---:|
+| Total assets | +183.7 | −199 | +46.1 | −20 |
+| Turnover | −31.3 | −90 | −47.4 | −16 |
+| Operating profit | −1.4 | −54 | −3.3 | −46 |
+| Net monetary gain/(loss) | −23.8 | −46 | −113.3 | −10 |
+
+Turnover, operating profit, and net monetary gain/loss all correctly flip to the real
+disclosed sign (negative) for both subsidiaries once FX depreciation is assumed to
+outpace inflation in 2025 — the same mechanism that produced 2024's positive figures,
+run in reverse. Magnitudes are the right order of magnitude for Argentina, overshoot for
+Türkiye's net monetary line, and undershoot for both subsidiaries' operating-profit lines
+— a real, acknowledged gap, not smoothed over.
+
+**Total-assets impact never flips sign in this model, structurally.** The formula
+(`[nonmon_open×(inflation factor−1) + capex×(flow factor−1) − restated depreciation
+increase] ÷ closing FX`) has a positive numerator whenever the price index is rising —
+which, in a hyperinflationary economy, it always is — regardless of how much FX
+depreciates, because both World A and World C divide by the *same* closing FX rate for
+balance-sheet items. Pure inflation restatement of non-monetary assets can only ever raise
+their local-currency value; it cannot make the asset-restatement impact negative. Real
+Unilever's negative 2025 total-assets impact therefore almost certainly reflects something
+this simplified single-period model doesn't capture from the four-line summary table alone
+— e.g., disposals/impairments recognized alongside the restatement, or a comparative-basis
+convention in Unilever's own note that isn't evident without the full note text (which
+wasn't available to this research pass, only the headline table). **This is flagged as an
+open limitation, not resolved** — and is itself a good discussion point for the CFA
+reading: the definition of the comparative baseline matters as much as the restatement
+mechanics.
+
+## Why Türkiye 2025 assumes margin recovery
+
+Türkiye's 2024 World-A (un-restated) operating profit came out as a **loss** (~−€38m on
+~€1.78bn World-A revenue) from the 2024 calibration. Under the model's proportional
+restatement logic, `Impact = Level_A × (r − 1)`: with `r` now below 1 (2025's reversed
+macro path), a *negative* `Level_A` times a *negative* `(r−1)` gives a **positive**
+impact — the wrong sign. Assuming Türkiye's underlying business recovers to a modest
+operating profit in 2025 (a real, plausible outcome — Unilever and peers raised local
+prices and cut costs through 2024-2025 specifically to rebuild Turkish-lira margins) flips
+`Level_A` positive, which is what's needed for a negative `(r−1)` to produce the
+disclosed-matching negative operating-profit impact. This is a modeling choice made
+explicitly to test the mechanism, not a disclosed fact about Unilever Türkiye's real 2025
+margin.
+
+## Item classification (CFA teaching reference)
+
+See `config.py`'s `ITEM_CLASSIFICATION` for the monetary/non-monetary/IAS29-treatment/
+translation table (cash, receivables, inventory, PPE, payables, debt, share capital,
+revenue, COGS, depreciation) — this is a reference table for the model's Assumptions
+sheet, not fed into the calculation engine directly (which works off subsidiary-level
+aggregates: total non-monetary assets, total monetary assets, total monetary
+liabilities).
+
+## Known simplifications
+
+- **Single aggregate non-monetary bucket** (inventory + PPE combined) per subsidiary,
+  rather than item-level restatement with separate acquisition-date vintages for
+  inventory (recent) vs. PPE (older). A real IAS 29 restatement would restate PPE by a
+  much larger multiplier (older historical cost) than inventory (recent purchases) — this
+  model's single geometric-mean "flow" factor for in-year additions and a single "opening"
+  factor for the whole opening non-monetary balance is a simplification for
+  hand-traceability, at the cost of item-level precision.
+- **Geometric-mean average index/FX** (`√(open × close)`) stands in for a full monthly
+  series, per the same hand-traceability goal — a real subsidiary would restate each
+  month's transactions by that month's index, not a single blended annual average.
+- **Depreciation restated at the same "flow" factor as opex**, rather than at each
+  underlying asset's own historical acquisition-date index — a further simplification of
+  the same kind.
+- **Opening equity and the monetary-asset/liability split are free modeling choices**
+  (see "Calibration method" above) — not derived from any Unilever disclosure.
+- **`OTHER_GROUP_OPERATIONS_EUR`** (the non-hyperinflationary rest of the group) is an
+  illustrative scale, not Unilever's real consolidated ex-Argentina/Türkiye figures.
+- **CONSENSUS and VALUATION are `[PLACEHOLDER]`** pending a live run of the report
+  pipeline's Stage 2 (price/consensus research) — see `AGENTS.md`.

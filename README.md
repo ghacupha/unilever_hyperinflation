@@ -1,13 +1,17 @@
-# REIT Valuation Model
+# Unilever Hyperinflation-Accounting Model
 
-A financial model for Real Estate Investment Trusts, first instance **Acorn I-REIT** (a
-real NSE-listed student-accommodation REIT in Kenya), that produces an audit-ready, fully
-formula-linked Excel workbook — schedules, scenarios, and an equity valuation, not a
-one-off spreadsheet — built entirely from its own disclosed filings.
+A CFA Level II Financial Statement Analysis teaching model — the *Multinational
+Operations* reading, specifically hyperinflation accounting (IAS 29) and its interaction
+with IAS 21 currency translation — illustrated with **Unilever plc**'s real disclosed
+treatment of its Argentina and Türkiye subsidiaries. Produces an audit-ready, fully
+formula-linked Excel workbook showing the whole restatement chain — local financial
+statements → inflation-index restatement → FX translation → parent consolidation → ratio
+analysis — under three parallel accounting treatments (plain current-rate, US GAAP
+temporal, actual IFRS), calibrated to reproduce Unilever's own real disclosed figures.
 
-Every calculated cell in the generated workbook is a live Excel formula (`=SUM(...)`,
-cross-sheet references, a scenario `CHOOSE()` switch) — nothing is a pasted-in number
-except the real disclosed facts themselves.
+Every calculated cell in the generated workbook is a live Excel formula — nothing is a
+pasted-in number except the real disclosed facts and this model's own solved
+local-currency inputs (see "Calibration" below for what that means).
 
 ## Quick start
 
@@ -37,31 +41,30 @@ value.
 If you already have the venv active, you can run the entry point directly:
 
 ```bash
-.venv/bin/python scripts/build_reit_model.py
-.venv/bin/python scripts/build_reit_model.py --config path/to/config.py
+.venv/bin/python scripts/build_unilever_model.py
+.venv/bin/python scripts/build_unilever_model.py --config path/to/config.py
 ```
 
 ## Equity Research Report (optional — `REPORT=1`)
 
 **By default, the launchers only build the Excel model.** To also generate a
-Morningstar-style equity research PDF (valuation methodology, sensitivity analysis,
-Bulls/Bears, a mechanical Buy/Hold/Sell call, market-consensus comparison, risks — see
-`AGENTS.md` for the pipeline's 6 stages), set `REPORT=1`, either inline:
+Morningstar-style report focused on the market-perception angle (does analyst consensus
+correctly distinguish the IAS 29 effect from ordinary FX translation? — see `AGENTS.md`
+for the pipeline's 7 stages), set `REPORT=1`, either inline:
 
 ```bash
-REPORT=1 ./scripts/launch.sh acorn_i_reit
+REPORT=1 ./scripts/launch.sh unilever
 ```
 
 or once, persistently, via a repo-root `.env` file (copy `.env.example` to `.env` and set
 `REPORT=1` there). This makes several `claude -p` calls (subscription-billed, not a
 separately metered API) and takes noticeably longer than the Excel-only path.
 
-The pipeline was adapted from its prior banking-model domain to REIT terms on
-2026-08-11 (see `BACKLOG.md` Phase 2) — its deterministic stages (JSON ground truth,
-Master Check validation, mechanical recommendation, PDF assembly) are verified against
-real Acorn I-REIT data; the `claude -p`-driven stages (sourcing, price research,
-drafting, review) have had their prompts rewritten for the REIT domain but not yet been
-exercised with a live run.
+The pipeline was adapted from its prior REIT-model domain on 2026-09-27 (see
+`BACKLOG.md` Phase 3) — its deterministic stages (JSON ground truth, calibration-fidelity
+validation, mechanical earnings-quality flag, PDF assembly) are verified end-to-end; the
+`claude -p`-driven stages (sourcing, price research, drafting, review) have had their
+prompts rewritten for this domain but not yet been exercised with a live run.
 
 ## Expected output
 
@@ -70,77 +73,80 @@ Each run creates `output/<YYYY-MM-DD_HHMMSS>/` containing:
 - `config.py` — an exact copy of the config that produced it.
 
 Every run is a reproducible snapshot this way. **Never hand-edit files inside `output/`**
-— they're regenerated on every run; make changes in the relevant `examples/<reit>/config.py`
-instead. Running `build_reit_model.py` directly without a launcher (no `OUTPUT_DIR` set)
-falls back to writing straight into `examples/<reit>/`.
+— they're regenerated on every run; make changes in
+`examples/<institution>/config.py` instead. Running `build_unilever_model.py` directly
+without a launcher (no `OUTPUT_DIR` set) falls back to writing straight into
+`examples/<institution>/`.
 
 ## What's in the workbook
 
-Seven sheets, in tab order:
+Eight sheets, in tab order:
 
 | Sheet | Contents |
 |---|---|
-| **Cover** | Title, scope, business description |
-| **Summary** | 3-scenario (Base/Best/Worst) KPI snapshot, plus a net-profit sensitivity table |
-| **Assumptions** | Every input the model uses, color-coded by data provenance (disclosed / modeled / macro / placeholder), including the Base/Best/Worst scenario driver cells and a property-portfolio reference table |
-| **Scenarios** | The single scenario switch cell (drives the entire live Model sheet via `CHOOSE()`) plus a projected-year KPI comparison |
-| **Model** | The core: 3 actual years immediately followed by 5 projected years, across every schedule — Property Portfolio, Rental Income & NOI, Operating Expenses, Debt/Gearing, Income Statement, Distributable Income & Distributions, Balance Sheet, Regulatory Compliance (CMA I-REIT limits) — plus a top-of-sheet Master Check (Balance Sheet / LTV / Income-Producing-% / Payout, "OK"/"ERROR") |
-| **Output** | Cost of equity (CAPM), a blended valuation combining NAV, a Dividend Discount Model, direct capitalization (cap rate), and a peer NAV discount/premium cross-check |
-| **Sources** | External market-data and CMA regulatory citations, hyperlinked where available |
+| **Cover** | Title, scope, methodology summary (World A/B/C explained) |
+| **Assumptions** | Every local-currency input the model uses, per subsidiary per year, color-coded by data provenance |
+| **Argentina_Schedules**, **Turkiye_Schedules** | The core, one full restatement chain per subsidiary: 01 Local FS → 02 Inflation Index → 03 IAS 29 Restatement → 04 FX Translation (World C) → World A (plain current rate) → World B (US GAAP temporal) → IAS 29 Impact vs. Unilever's own disclosure |
+| **Consolidation** | World C (actual IFRS) group totals combining both subsidiaries + the rest of the group, plus ROA/asset turnover |
+| **Scenario_Comparison** | World A / B / C shown **side by side**, both years — the direct comparison the model is built around |
+| **Validation_2025** | Model output vs. Unilever's real 2025 disclosure, per subsidiary, with the gap stated plainly |
+| **Sources** | Citations (SEC EDGAR filings, IAS 29/IAS 21 references) |
 
-Actual-year columns are hardcoded real disclosed facts (blue); projected-year columns are
-fully live formulas driven by the Assumptions sheet and the active scenario.
+Every subsidiary schedule cell is a live formula chaining back to Assumptions —
+click through any figure to see exactly how it was derived, the same "traceable by hand"
+principle the model was designed around.
+
+## Calibration — what's real and what's illustrative
+
+Unilever discloses the *aggregate* IAS 29 impact (Total assets/Turnover/Operating
+profit/Net monetary gain-loss) each year but not subsidiary-level financial statements at
+the granularity needed to reconstruct the restatement. So this model builds a small,
+fully hand-traceable **fictional** subsidiary for Argentina and for Türkiye, algebraically
+solved so the model reproduces the **real 2024** disclosed figures almost exactly, then
+rolled forward (not re-solved) into **2025** as an honest out-of-sample check — see
+`examples/unilever/research_output.md` for the full derivation, citations, and a frank
+discussion of where the 2025 roll-forward does and doesn't match. Only the aggregate
+impact figures per subsidiary per year are real Unilever disclosures; the subsidiary-level
+line items (revenue, PPE, monetary position, etc.) are this model's own illustration.
 
 ## Project structure
 
 ```
-financial_model_template/
+unilever_hyperinflation/
 ├── BLUEPRINT.md, BACKLOG.md, CHANGELOG.md, CLAUDE.md, AGENTS.md  ← tracking docs (repo root)
-├── data/                                                ← source PDFs (gitignored)
 ├── .venv/                                               ← shared virtual environment
 ├── .devops/agents/
-│   └── equity-report/              ← SOPs for each equity-report pipeline stage (bank-language, needs REIT adaptation)
+│   └── equity-report/              ← SOPs for each equity-report pipeline stage
 ├── bizplan/
-│   ├── config_loader.py            ← load_and_validate() / validate_reit_config()
+│   ├── config_loader.py            ← load_and_validate() / validate_config()
 │   ├── financial/
-│   │   ├── xl_helpers.py           ← formula-capable openpyxl primitives
-│   │   ├── reit_calculations.py    ← all schedules, Python ground truth + scenarios
-│   │   └── reit_excel_renderer.py  ← builds the live-formula workbook
-│   └── report/                     ← the equity-research-report engine (not currently REIT-compatible, see BACKLOG.md)
+│   │   ├── xl_helpers.py                      ← formula-capable openpyxl primitives
+│   │   ├── hyperinflation_calculations.py     ← World A/B/C engine, Python ground truth
+│   │   └── hyperinflation_excel_renderer.py   ← builds the live-formula workbook
+│   └── report/                     ← the equity-research-report engine
 │       ├── data.py, validation.py, recommendation.py, pdf.py   ← pure Python, no LLM
 │       ├── claude_cli.py           ← shared `claude -p` invocation helper
 │       └── sourcing.py, price_research.py, drafting.py, review.py, pipeline.py
 ├── examples/
-│   └── acorn_i_reit/
+│   └── unilever/
 │       ├── config.py               ← single source of truth for assumptions
-│       └── research_output.md      ← calibration research, sourced and dated
+│       └── research_output.md     ← calibration derivation, sourced and dated
 ├── output/                                              ← gitignored; timestamped run folders
-│   └── 2026-08-09_214254/
-│       ├── Acorn_I-REIT_Financial_Model.xlsx            ← that run's generated workbook
-│       └── config.py                                    ← exact copy of the config that produced it
 └── scripts/                         ← thin CLI wrappers only — logic lives in bizplan/
-    ├── build_reit_model.py         ← entry point: --reit/--config → calc → render → save
+    ├── build_unilever_model.py     ← entry point: --instance/--config → calc → render → save
     ├── source_model.py, research_price_consensus.py, draft_report_sections.py,
-    │   review_report.py, build_report_pdf.py, generate_equity_report.py
+    │   review_report.py, build_report_pdf.py, generate_equity_report.py, refresh_report.py
     ├── launch.sh                   ← Unix/macOS/Linux launcher
-    ├── launch.bat                  ← Windows launcher
+    ├── launch.bat, launch.ps1      ← Windows launchers
     └── requirements.txt            ← runtime deps (openpyxl, reportlab, matplotlib)
 ```
 
-## Data sourcing
-
-`data/` holds the source filings (currently a Kenya REITs/REOCs sector equity analysis
-report, plus Acorn I-REIT's own H1 2025 semi-annual report fetched directly from its
-investor-relations site) — the calibration source for every real figure in
-`examples/acorn_i_reit/config.py`. Every assumption in the config is tagged inline by
-provenance: `[DISCLOSED]` (straight from the filings), `[DISCLOSED-DERIVED]` (computed
-from disclosed figures), `[MODELED]` (analyst-judgment proxy), `[MACRO]` (forward-looking
-macroeconomic assumption), or `[PLACEHOLDER]` (illustrative, flagged for replacement —
-tracked in `BACKLOG.md`).
-
 ## Where to go next
 
-- **`BLUEPRINT.md`** — the design source of truth: schedule design, CMA regulatory
-  framework, valuation approach, and known simplifications.
-- **`BACKLOG.md`** — phase-by-phase status and what's next.
+- **`BLUEPRINT.md`** — the design source of truth: the real-world case, the calculation
+  engine's mechanics, the Excel renderer's structure, and known simplifications.
+- **`BACKLOG.md`** — phase-by-phase status and what's next (including the deferred
+  BBVA/Garanti "advanced case").
 - **`CHANGELOG.md`** — what has actually landed, in order.
+- **`examples/unilever/research_output.md`** — the full calibration derivation and
+  citations; read this before treating any subsidiary-level figure as a real disclosure.

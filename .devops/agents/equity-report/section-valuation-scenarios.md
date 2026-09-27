@@ -5,26 +5,32 @@ not recompute or re-derive any of them.** Every figure must come directly from t
 
 Write, in order:
 
-1. **Valuation methodology** (~100 words): name the three methods (NAV, Dividend Discount
-   Model, Direct Capitalization/cap rate) and the blend weights (`blend_weights` — e.g.
-   "40% NAV / 30% DDM / 30% Cap Rate, reflecting NAV as the primary anchor for a
-   property-holding entity — the most reliable value driver when the underlying assets
-   are independently appraised — with DDM and direct capitalization as cross-checks").
-   Note the DDM here is a dividend-plus-terminal-NAV hybrid, not a pure Gordon-growth
-   annuity: with REIT payout ratios often well below 100%, most of the total return
-   accrues through NAV growth on retained earnings, not distributions alone.
-2. **The numbers** (~80 words): state each method's per-unit value
-   (`valuation_per_unit`) and the blended figure. **If the methods diverge
-   significantly** (e.g. more than ~50% spread between the highest and lowest), say so
-   explicitly and note what that implies about valuation uncertainty — don't paper over
-   a wide spread by only quoting the blended number.
-3. **Net Profit sensitivity** (~100 words): narrate the 3 factors in
-   `sensitivity_factors` (name, category, downside/upside % impact on average Net
-   Profit). State which single factor has the largest swing.
-4. **Scenario comparison** (~80 words): compare `valuation_by_scenario`'s Base/Best/Worst
-   blended-per-unit values, and note the spread between Best and Worst as a plain
-   statement of projection uncertainty.
+1. **The three accounting worlds** (~120 words): name and briefly explain World A (plain
+   current-rate method — no inflation restatement, the "disappearing plant" baseline),
+   World B (US GAAP temporal method — remeasurement: non-monetary items at historical FX,
+   monetary items at current FX, a *remeasurement* gain/loss), and World C (the actual
+   IFRS treatment — IAS 29 restatement then IAS 21 translation at the closing rate, what
+   the institution really reports). Say plainly that these are three different
+   *accounting treatments of the same underlying economics*, not three different
+   valuations of the business.
+2. **The numbers** (~100 words): state each world's revenue, operating profit, total
+   assets, and net monetary/remeasurement gain-or-loss from `scenario_comparison`. **If
+   World A and World C diverge sharply on revenue/total assets but only modestly on
+   operating profit** (a real pattern this model found — see
+   `ias29_impact_primary_year`), say so explicitly and explain why: restating both
+   revenue and costs by the same inflation factor largely nets out at the profit line,
+   even though the gross revenue/asset figures move a great deal.
+3. **IAS 29 impact by subsidiary** (~100 words): narrate `ias29_impact_primary_year`'s
+   per-subsidiary total-assets/turnover/operating-profit/net-monetary-gain-loss deltas.
+   Name which subsidiary's net monetary result was a gain vs. a loss and, briefly, why
+   (see `research_output.md`'s discussion of net monetary position vs. restated-equity
+   growth — don't oversimplify to "net monetary liability always means a gain").
+4. **2025 validation** (~80 words): state `validation_gap`'s model-vs-disclosed
+   comparison plainly, including where it does and does not match in sign. This model's
+   own documentation (`research_output.md`) explains why the total-assets line
+   structurally can't flip sign here — say so rather than overclaiming a clean match.
 
-Output plain markdown, no code fences, starting with a `## Valuation, Sensitivity & Scenarios`
-heading. Numbers should read naturally in prose, not as a re-typed table (a table of the
-same numbers is rendered separately by the PDF-assembly step from the same JSON).
+Output plain markdown, no code fences, starting with a `## Valuation, Sensitivity &
+Scenarios` heading. Numbers should read naturally in prose, not as a re-typed table (a
+table/chart of the same numbers is rendered separately by the PDF-assembly step from the
+same JSON).

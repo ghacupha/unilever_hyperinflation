@@ -79,28 +79,33 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Use `apply_patch` for manual edits.
 - Avoid destructive git or filesystem operations unless explicitly requested.
 
-## REIT Valuation Model — progress tracking
+## Unilever Hyperinflation-Accounting Model — progress tracking
 
-This repo's active initiative is a generic REIT (Real Estate Investment Trust) valuation
-model, first instance Acorn I-REIT (NSE-listed, Kenya). Three root-level files track it —
-**read them before starting work, update them before stopping**:
+This repo's active initiative is a CFA Level II Financial Statement Analysis teaching
+model — the *Multinational Operations* / hyperinflation-accounting (IAS 29) reading,
+illustrated with Unilever plc's real disclosed treatment of its Argentina and Türkiye
+subsidiaries. Three root-level files track it — **read them before starting work, update
+them before stopping**:
 
-- `BLUEPRINT.md` — the design source of truth (schedules, CMA regulatory framework,
-  valuation approach, known simplifications). Update it when a design decision changes.
+- `BLUEPRINT.md` — the design source of truth (the real-world case, the calculation
+  engine's World A/B/C mechanics, the Excel renderer's structure, known simplifications).
+  Update it when a design decision changes.
 - `BACKLOG.md` — phase-by-phase task checklist; read it first to know what's next.
 - `CHANGELOG.md` — append an entry for every meaningful chunk of work, naming which
   blueprint phase / backlog item(s) it closes.
 
-Primary data source for calibration is the `data/` folder (a Kenya REITs/REOCs sector
-equity analysis report, plus the target REIT's own annual/interim reports fetched from
-its investor-relations site) — extract targeted text/tables and search for key terms
-rather than reading these PDFs cover-to-cover.
+Primary data source for calibration is `examples/unilever/research_output.md` (Unilever's
+own SEC-filed Form 20-F hyperinflation accounting policy notes for 2024 and 2025) — the
+model's subsidiary-level local-currency inputs are a fictional-but-reconciling
+illustration solved algebraically to reproduce those real disclosed aggregate figures;
+see `research_output.md`'s "Calibration method" for the full derivation before treating
+any subsidiary-level figure as a real disclosure.
 
-The prior banking-model design lives in git history — `bizplan/financial/bank_calculations.py`
-and `bank_excel_renderer.py` were retired when the repo pivoted to the REIT domain
-(2026-08-09). `bizplan/report/*` (the equity-research-report pipeline) was adapted to
-REIT terms on 2026-08-11 (`BACKLOG.md` Phase 2) — its deterministic stages are verified
-against real data; the `claude -p`-driven stages haven't yet had a live run.
+The prior REIT-model design lives in git history — `bizplan/financial/reit_calculations.py`
+and `reit_excel_renderer.py` were retired when the repo pivoted to this domain
+(2026-09-27). `bizplan/report/*` (the equity-research-report pipeline) was adapted the
+same day (`BACKLOG.md` Phase 3) — its deterministic stages are verified end-to-end; the
+`claude -p`-driven stages haven't yet had a live run.
 
 See `AGENTS.md` for the equity-research-report pipeline (SOPs under
 `.devops/agents/equity-report/`).

@@ -2,12 +2,99 @@
 
 All meaningful changes to this repo. Each entry should name which `BLUEPRINT.md` phase /
 `BACKLOG.md` item(s) it closes. Prior to 2026-08-09, this repo was a Family Bank Kenya
-banking model — that history is preserved below rather than rewritten; the repo pivoted
-to a generic REIT valuation model (first instance Acorn I-REIT) on that date.
+banking model; it pivoted to a generic REIT valuation model (first instance Acorn I-REIT)
+on that date, then pivoted again on 2026-09-27 to a CFA Level II hyperinflation-accounting
+teaching model (Unilever plc) — both prior domains' history is preserved below rather
+than rewritten.
 
 ---
 
 ## [Unreleased]
+
+### Verified — First live run of the equity-report pipeline's claude-p stages, hyperinflation domain (2026-09-27)
+- Closes `BACKLOG.md` Phase 4. `REPORT=1 ./scripts/launch.sh unilever` (with `TICKER`/
+  `EXCHANGE` added to `examples/unilever/config.py`) — Stages 2 (price/consensus
+  research), 4 (section drafting), 5/5.5 (review + coherence gate) all ran live for the
+  first time on this domain. Completed successfully end-to-end, producing both
+  `Unilever_Hyperinflation_Financial_Model.xlsx` and an 8-section, ~3,900-word
+  `Unilever_Hyperinflation_Equity_Research_Report.pdf` in `output/2026-09-27_142024/`.
+- Stage 2 found real analyst consensus (TipRanks "Moderate Buy", 10 analysts, 5,080p
+  target vs. a 4,664.50p close) and confirmed — the report's central market-perception
+  question — that public commentary does not distinguish the IAS 29 net monetary effect
+  from ordinary FX-headwind language anywhere it could find. Stage 3's mechanical signal
+  ("Flag: immaterial" — net monetary loss is 2.3% of group operating profit, below the
+  10% threshold) drove Stage 4's Recommendation section to a correctly-reasoned **Hold**.
+- The Stage 5.5 coherence gate converged after 5 iterations (8 → 5 → 4 → 0 findings),
+  catching real issues: a drafted section attributing Argentina's monetary loss to
+  "holding too many exposed monetary assets" when the model has Argentina as a net
+  monetary *liability* that still books a loss (independently rediscovering the same
+  subtlety `research_output.md` had already flagged as non-obvious); a misattributed
+  share-price source; an unsupported moat rating with no basis in any source file;
+  internal pipeline jargon leaking into report prose; and a flag that the group totals
+  behind the 2.3% materiality ratio are ~95% illustrative scale, not Unilever's real
+  consolidated accounts — fixed by adding an explicit caveat rather than overstating
+  precision.
+- Stage 0 (sourcing) wasn't re-run — `unilever` was already onboarded from the prior
+  session's calibration work.
+
+### Changed — Pivoted repo to a Unilever hyperinflation-accounting teaching model (2026-09-27)
+- Closes `BACKLOG.md` Phases 1-3. Full pivot away from the REIT valuation model (Acorn
+  I-REIT) to a CFA Level II Financial Statement Analysis teaching model — the
+  *Multinational Operations*/IAS 29 hyperinflation-accounting reading — illustrated with
+  Unilever plc's real disclosed Argentina/Türkiye subsidiary treatment. Deleted REIT/bank
+  cruft: `examples/acorn_i_reit/`, `reit_calculations.py`/`reit_excel_renderer.py`,
+  `build_reit_model.py`, the stale root `research_output.md` (leftover Family Bank Kenya
+  data, pre-REIT), and `TODO.md`/`Modelling_Instructions.md`/`Using_modeleon.md` (stale
+  bank-era docs describing an unused `modeleon` DSL, confirmed via repo-wide grep).
+- New `bizplan/financial/hyperinflation_calculations.py`: a World A (plain current-rate)
+  / World B (US GAAP temporal/remeasurement) / World C (actual IFRS — IAS 29 restatement
+  + IAS 21 closing-rate translation) engine, net monetary gain/(loss) computed as a
+  balancing plug per subsidiary per year. Argentina + Türkiye 2024 local-currency inputs
+  solved **algebraically** (not trial-and-error — see `examples/unilever/
+  research_output.md`'s "Calibration method") to reproduce Unilever's real disclosed 2024
+  IAS 29 impact table (Total assets/Turnover/Operating profit/Net monetary gain-loss, both
+  subsidiaries) to within rounding. Rolled the calibrated model forward into 2025 (not
+  re-solved) as an out-of-sample validation: 3 of 4 impact lines correctly flip to the real
+  disclosed sign for both subsidiaries; total-assets impact structurally cannot (pure
+  inflation restatement can only raise local non-monetary values — documented as an open,
+  undocumented-by-source limitation, not forced to match).
+- New `bizplan/financial/hyperinflation_excel_renderer.py`: fully formula-linked workbook
+  (Cover, Assumptions, `Argentina_Schedules`/`Turkiye_Schedules` each walking Local FS →
+  Inflation Index → IAS 29 Restatement → FX Translation → World A/B/C → IAS 29 Impact,
+  Consolidation, `Scenario_Comparison` showing World A/B/C **side by side** per the user's
+  own requested shape — a deliberate deviation from the REIT model's single-scenario
+  `CHOOSE()` switch, since comparing all three simultaneously is the point here — plus
+  Validation_2025, Sources). Verified with the `formulas` Python package (an independent
+  Excel-formula evaluator): every schedule-sheet figure matches the Python engine exactly,
+  zero formula errors anywhere in the workbook.
+- `bizplan/config_loader.py` rewritten for the new schema (`SUBSIDIARIES`,
+  `INFLATION_INDICES`, `FX_RATES`, `ACCOUNTING_SCENARIOS`, `VALIDATION_ACTUALS`, ...).
+  `scripts/build_unilever_model.py` (replacing `build_reit_model.py`), launch
+  scripts updated; smoke-tested end-to-end via `./scripts/launch.sh unilever`.
+- `bizplan/report/*` (the equity-research-report pipeline) adapted to this domain:
+  `data.py`'s `company_facts()`/`monetary_exposure_grades()` replace REIT valuation-per-
+  unit/financial-health fields; `validation.py` now gates on **calibration fidelity**
+  (does the model still reproduce the real disclosed figures?) rather than a
+  tautological balance check (net monetary gain/loss is solved as the exact plug that
+  makes the restated balance sheet tie out, by construction — see the module docstring);
+  `recommendation.py`'s mechanical pre-decision is now a materiality flag (|net monetary
+  gain/loss| ÷ group operating profit vs. a 10% threshold) rather than a NAV/DDM/Cap-Rate
+  Buy/Hold/Sell call, since this model doesn't build a full equity valuation — verified
+  against the calibrated instance: comes back "Flag: immaterial" (~2% of Unilever's real
+  group operating profit), a genuine finding (dramatic at the subsidiary level, immaterial
+  at Unilever's actual size), not a bug. `pdf.py`'s charts/tables replaced accordingly
+  (World A/B/C comparison, per-subsidiary IAS 29 impact, 2025 validation gap,
+  monetary-exposure grades) — verified with a real generated test PDF. All 8 section SOPs
+  under `.devops/agents/equity-report/` rewritten from REIT language to this domain
+  (investment thesis, bulls/bears, economic moat, valuation/scenarios, financial health,
+  market consensus, recommendation, risks), plus `model-sourcing.md` and
+  `price-consensus-research.md`; `coherence-apply-fixes.md` needed no changes.
+- Full deterministic-stage smoke test (Stage 1/1b → Excel build → Stage 3 → Stage 6 PDF)
+  ran end-to-end without errors. `claude -p`-driven stages (0, 2, 4, 5, 5.5) not yet run
+  live — tracked as `BACKLOG.md` Phase 4. BBVA/Garanti "advanced case" explicitly deferred
+  as `BACKLOG.md` Phase 5, per the user's own sequencing.
+- `BLUEPRINT.md`, `BACKLOG.md`, `README.md`, `AGENTS.md`, `CLAUDE.md` rewritten for the
+  new domain.
 
 ### Verified — First live run of the equity-report pipeline's claude-p stages (2026-09-04)
 - Closes `BACKLOG.md` Phase 2's last open item. `python scripts/generate_equity_report.py

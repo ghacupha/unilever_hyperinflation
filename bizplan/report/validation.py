@@ -1,54 +1,49 @@
-"""Pure-Python re-implementation of the Model sheet's "Master Check" section
-(reit_excel_renderer.py::_build_master_check) — lets a pipeline gate on model integrity
-without a spreadsheet engine. Mirrors the same four checks and tolerances so a workbook
-and this validator never disagree about what "OK" means:
+"""Pure-Python gate the pipeline runs before anything downstream trusts the numbers.
 
-- Balance Sheet Check: Total Assets = NAV + Total Liabilities, within 0.01
-- LTV Check: Borrowings / Total Assets <= CMA gearing limit (35%)
-- Income-Producing Check: Investment Property / Total Assets >= CMA minimum (75%)
-- Payout Check: Distribution payout ratio >= CMA minimum (80%)
-
-The Payout Check is expected to read ERROR for the 3 actual years — Acorn I-REIT's own
-disclosed payout ratios (78%/40.5%/34.1%) are genuinely below the CMA's 80% minimum in
-those years (a real governance fact carried through from the filings, not a model
-defect; see BLUEPRINT.md's "Known simplifications" and research_output.md). Requiring
-it there would make `validate_model()` permanently report failure for a legitimately-
-correct model, so the overall `ok` verdict only requires the Payout Check for the
-*projected* years, where it's a live formula floored at the regulatory minimum in Base.
-Balance Sheet / LTV / Income-Producing must hold for every year, actual or projected.
+Unlike the REIT model's Master Check (an independent Balance Sheet / LTV / Income-
+Producing / Payout re-derivation that could genuinely disagree with the renderer if
+either had a bug), this model's net monetary gain/(loss) is solved as the exact
+balancing plug that makes World C's restated balance sheet tie out (see
+`hyperinflation_calculations.restate_and_translate`'s docstring) — so a "does the
+balance sheet balance" check would be tautologically true by construction, not a real
+bug-catcher. The check that *does* have teeth here is calibration fidelity: does the
+model's 2024 output still reproduce Unilever's real disclosed 2024 IAS 29 impact
+figures within a tight tolerance? If a future edit to config.py's local-currency inputs
+broke that (e.g. a typo in one of the solved figures), this catches it. 2025 is a
+documented out-of-sample validation, not a pass/fail gate (see
+examples/unilever/research_output.md for why total-assets impact structurally can't
+flip sign in this model, and why Turkiye's 2025 same-sign match required a margin-
+recovery assumption).
 """
 import json
 import os
 
-BALANCE_SHEET_TOLERANCE = 0.01
+CALIBRATION_TOLERANCE_EURM = 0.5
 
 
 def validate_model(config, results):
-    """`results` is a `reit_calculations.build_all(config)`-shaped dict. Returns
-    `dict(ok: bool, years: [per-year check dicts])`."""
-    bs_ok_series = results["bs"]["balance_check"]
-    reg = results["regulatory"]
-    payout_pct = results["distributable"]["payout_ratio"]
-    payout_min = config.REGULATORY["payout_min"]
-    n_actual = len(config.ACTUAL_YEARS)
+    """`results` is a `hyperinflation_calculations.build_model(config)`-shaped dict.
+    Returns `dict(ok: bool, primary_year: {...}, validation_year: {...})`."""
+    primary_year = min(config.YEARS)
+    validation_year = max(config.YEARS)
 
-    years = []
-    for i, year in enumerate(config.YEARS):
-        is_actual = year in config.ACTUAL_YEARS
-        years.append(dict(
-            year=year, is_actual=is_actual,
-            balance_sheet_ok=bs_ok_series[i],
-            ltv_ok=reg["ltv_ok"][i], ltv=reg["ltv"][i], ltv_max=config.REGULATORY["ltv_max"],
-            income_producing_ok=reg["income_producing_ok"][i],
-            income_producing_pct=reg["income_producing_pct"][i],
-            income_producing_min=config.REGULATORY["income_producing_min"],
-            payout_ok=reg["payout_ok"][i], payout_pct=payout_pct[i], payout_min=payout_min,
-            payout_ok_or_expected=(reg["payout_ok"][i] or is_actual),
-        ))
+    calibration = {}
+    ok = True
+    for name, sub in results[primary_year]["subsidiaries"].items():
+        gaps = {}
+        for k, v in sub["impact"].items():
+            disclosed = config.DISCLOSED_IMPACT_2024[name][k]
+            gap = v - disclosed
+            within_tolerance = abs(gap) <= CALIBRATION_TOLERANCE_EURM
+            gaps[k] = dict(model=v, disclosed=disclosed, gap=gap, within_tolerance=within_tolerance)
+            ok = ok and within_tolerance
+        calibration[name] = gaps
 
-    ok = all(y["balance_sheet_ok"] and y["ltv_ok"] and y["income_producing_ok"] for y in years) and \
-        all(y["payout_ok"] for y in years[n_actual:])
-    return dict(ok=ok, years=years)
+    return dict(
+        ok=ok,
+        primary_year=dict(year=primary_year, calibration=calibration),
+        validation_year=dict(year=validation_year, gap=results[validation_year]["validation"]),
+    )
 
 
 def write_validation_result(config, results, output_dir):

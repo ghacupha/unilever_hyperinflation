@@ -1,46 +1,44 @@
-# Section SOP: Price vs. Fair Value & Recommendation
+# Section SOP: Recommendation
 
-This is the section where the report actually commits to Buy/Hold/Sell. Read
-`recommendation_decision.json` — it already contains a **mechanical pre-decision**
-(pure arithmetic: price vs. blended fair value, scaled by a valuation-uncertainty tier
-using Morningstar's own published margin-of-safety convention). Your job is different
-depending on what that mechanical signal already is:
+This is the section where the report commits to a call — but this model doesn't build a
+full DCF/multiples equity valuation (out of scope; this project is about the
+hyperinflation *accounting* mechanics, not a from-scratch Unilever valuation). So the
+call this section makes is narrower and specific: **is the market's treatment of the
+hyperinflation effect itself a source of mispricing?** Read `recommendation_decision.json`
+(the mechanical materiality flag: is the net monetary gain/(loss) large enough relative
+to group operating profit to matter — see `bizplan/report/recommendation.py`'s module
+docstring) and `price_consensus_research.json` (does real analyst consensus separate this
+effect from ordinary FX, or fold it into generic noise).
 
-## If `mechanical_signal` is "Buy" or "Sell"
+## Decision logic
 
-State it and explain the arithmetic plainly (the `rationale` field already has the core
-logic — restate it in your own words, don't just copy it verbatim). Make clear this is a
-**"regardless of catalyst"** call: the mispricing is large enough, relative to how much
-this model's own valuation methods agree with each other, that industry practice (per
-Morningstar's published bands) calls for action even without a specific trigger event.
-You may still *mention* a plausible catalyst if one exists, but the recommendation does
-not depend on finding one.
+Combine the two mechanical/researched inputs like this — state your reasoning, don't just
+assert the conclusion:
 
-## If `mechanical_signal` is "Hold" — this is the hard case, read carefully
-
-The mispricing (if any) isn't large enough to act on by arithmetic alone. Your job now is
-to look for a **specific, plausible, named catalyst** — a concrete event or development
-that could cause the market to re-rate the stock toward (or away from) fair value: a
-regulatory change, an earnings report, a macro shift (e.g. interest rate move, election
-outcome), a competitive development, a capital raise or listing-related unlock, etc. Use
-`valuation_inputs.json`'s `sensitivity_factors` and the institution's `research_output.md`
-(macro/sector context) as your source material for plausible catalysts — do not invent
-one that isn't grounded in something already in the data.
-
-- **If you can identify a real, specific, named catalyst**: you may argue for overriding
-  Hold toward the direction the mispricing implies (`pct_diff`'s sign in
-  `recommendation_decision.json` — positive means overvalued/Sell-leaning, negative means
-  undervalued/Buy-leaning). Name the catalyst explicitly and explain the mechanism by
-  which it would cause a re-rating. Be honest about timing uncertainty — a catalyst
-  override should read as a real, falsifiable call, not hedging dressed up as conviction.
-- **If you genuinely cannot identify one**: say so directly (e.g. "No specific catalyst
-  is identifiable at this time") and confirm the recommendation stays **Hold**. This is
-  the expected, honest outcome most of the time — do not manufacture a catalyst just to
-  produce a more decisive-sounding recommendation. A fabricated catalyst is worse than an
-  honest Hold.
+- **`mechanical_signal` is "Flag: immaterial"**: the effect doesn't move group-level
+  numbers enough to justify a directional call either way, regardless of how consensus
+  treats it. **Recommendation: Hold** on this specific question — there's no
+  informational edge to act on here, whatever the market believes.
+- **`mechanical_signal` is "Flag: material" AND consensus/market commentary explicitly
+  and correctly separates the effect** (per Stage 2's research): the risk is real but
+  already priced in. **Recommendation: Hold** — no edge, but for a different reason than
+  above (state which reason applies).
+- **`mechanical_signal` is "Flag: material" AND consensus does NOT distinguish it from
+  ordinary FX** (folds it into generic "FX headwind" commentary, or ignores it): this is
+  the case where a real, quantified, structural effect isn't being priced correctly.
+  **Recommendation: Sell-leaning / Caution** if the effect has been a net drag (net
+  monetary loss, or a subsidiary trending toward a bigger loss per the 2025 validation
+  direction) that consensus underweights; **Buy-leaning** if it's been a net gain
+  consensus underweights. State which subsidiary is driving this (`worst_exposure_subsidiary`
+  in `recommendation_decision.json`) and be explicit that this is a call about
+  *earnings-quality mispricing*, not a full intrinsic-value target price.
+- **If Stage 2 found no real consensus commentary at all** (`consensus_found: false` in
+  `price_consensus_research.json`): say so directly and default to **Hold** — there's no
+  basis to claim the market is mispricing something you can't observe the market's view
+  of. Do not manufacture a market view to force a more decisive-sounding call.
 
 ## Format
 
-~200-350 words. State the final recommendation (Buy/Hold/Sell) boldly at the top (e.g.
-`**Recommendation: Hold**`), then the reasoning. Output plain markdown, no code fences,
-starting with a `## Price vs. Fair Value & Recommendation` heading.
+~200-350 words. State the final call boldly at the top (e.g. `**Recommendation: Hold**`),
+then the reasoning tracing through the decision logic above. Output plain markdown, no
+code fences, starting with a `## Recommendation` heading.

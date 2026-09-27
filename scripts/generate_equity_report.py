@@ -2,12 +2,12 @@
 See bizplan/report/pipeline.py for the actual logic.
 
 Given an already-onboarded institution (see scripts/source_model.py for Stage 0 —
-sourcing a new institution or re-anchoring an existing one to a different as-of period;
-run that first if needed), this runs numeric ground-truth extraction + validation,
-builds the Excel model, researches price/consensus, computes the mechanical
-Buy/Hold/Sell pre-decision, drafts all report sections, runs the plagiarism/references
-review, and assembles the final PDF — writing both the Financial Model workbook and the
-Equity Research Report PDF into --output-dir.
+sourcing a new institution or refreshing an existing one; run that first if needed), this
+runs numeric ground-truth extraction + validation, builds the Excel model, researches
+price/consensus, computes the mechanical earnings-quality/materiality flag, drafts all
+report sections, runs the plagiarism/references review, and assembles the final PDF —
+writing both the Financial Model workbook and the Equity Research Report PDF into
+--output-dir.
 
     python scripts/generate_equity_report.py <institution> --output-dir <output/timestamp> \\
         [--ticker <TICKER> --exchange <EXCHANGE>] [--reference-date YYYY-MM-DD]

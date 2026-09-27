@@ -14,15 +14,16 @@ number or named fact in the sections, confirm it traces back to one of those fil
 more serious problem than a stylistic one and should be called out explicitly, not
 quietly patched over.
 
-**`valuation_inputs.json`'s `company_facts` block is the single authoritative source**
-for total assets/NAV/investment property/borrowings/units in issue/NAV per unit — it's
-the model's own corrected figures. If any section states one of these facts with a value
-that doesn't match `company_facts` (e.g. it instead matches an older or note-vs-primary-
-statement figure that may still appear somewhere in `research_output.md`), that is a
-coherence finding — flag it explicitly, with both the expected (`company_facts`) value
-and the actual (stated) value, even if the stated value is individually "sourced"
-somewhere in `research_output.md`. Being traceable to *a* file is not sufficient if it
-contradicts the model's own authoritative figure for that same fact.
+**`valuation_inputs.json`'s `company_facts`, `ias29_impact_primary_year`, and
+`monetary_exposure` blocks are the single authoritative source** for consolidated totals,
+per-subsidiary IAS 29 impact figures, and exposure grades — they're the model's own
+corrected figures. If any section states one of these facts with a value that doesn't
+match those blocks (e.g. it instead matches an earlier or superseded figure that may
+still appear somewhere in `research_output.md`), that is a coherence finding — flag it
+explicitly, with both the expected (JSON) value and the actual (stated) value, even if
+the stated value is individually "sourced" somewhere in `research_output.md`. Being
+traceable to *a* file is not sufficient if it contradicts the model's own authoritative
+figure for that same fact.
 
 ## 2. Check for near-verbatim copying
 
@@ -42,10 +43,10 @@ section. Flag contradictions rather than silently picking one version.
 
 ## 4. Assemble the References section
 
-Collect every source cited across all 8 sections and the JSON files (share-price source,
-consensus/proxy source, any URLs or named reports like a sector equity analysis report, the
-peer-REIT data sources) into one deduplicated list, in the order first cited. Format as a
-simple markdown list: `- [n] Description — URL or citation, accessed date if known`.
+Collect every source cited across all 8 sections and the JSON files (the institution's
+annual report/Form 20-F filings, consensus/proxy source, any URLs or named research) into
+one deduplicated list, in the order first cited. Format as a simple markdown list:
+`- [n] Description — URL or citation, accessed date if known`.
 
 ## 5. Output — two separate files, never mixed
 

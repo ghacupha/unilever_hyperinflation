@@ -6,11 +6,8 @@ REM Reads a repo-root .env file automatically (see .env.example) -- set REPORT=1
 REM also run the full equity-research-report pipeline (Stages 1-6 -- see BLUEPRINT.md's
 REM "Equity Research Report pipeline" section) and produce a PDF alongside the Excel
 REM model, instead of passing it inline every run. Inline still works too:
-REM   set REPORT=1 & scripts\launch.bat acorn_i_reit
-REM NOTE: the REPORT=1 pipeline (bizplan/report/*) still imports the retired
-REM bank_calculations/bank_excel_renderer modules and will not currently run -- REIT
-REM adaptation is tracked as a follow-up in BACKLOG.md. The default (Excel-only) path works.
-REM Reads TICKER/EXCHANGE from that REIT's config.py; override via .env or
+REM   set REPORT=1 & scripts\launch.bat unilever
+REM Reads TICKER/EXCHANGE from that instance's config.py; override via .env or
 REM set TICKER=... & set EXCHANGE=... if the config doesn't have them.
 REM This makes several `claude -p` calls (subscription-billed, not separately metered)
 REM and takes noticeably longer than the Excel-only path.
@@ -19,9 +16,9 @@ setlocal
 set "SCRIPTS_DIR=%~dp0"
 for %%I in ("%SCRIPTS_DIR%\..") do set "ROOT_DIR=%%~fI"
 set "VENV_DIR=%ROOT_DIR%\.venv"
-set "REIT=%~1"
-if "%REIT%"=="" set "REIT=acorn_i_reit"
-set "CONFIG_SRC=%ROOT_DIR%\examples\%REIT%\config.py"
+set "INSTANCE=%~1"
+if "%INSTANCE%"=="" set "INSTANCE=unilever"
+set "CONFIG_SRC=%ROOT_DIR%\examples\%INSTANCE%\config.py"
 
 REM Load repo-root .env (git-ignored, see .env.example), if present -- lets
 REM REPORT=1/TICKER/EXCHANGE be set once instead of inline every run. A
@@ -62,9 +59,9 @@ if "%REPORT%"=="1" (
     set "EXCHANGE_ARG="
     if not "%TICKER%"=="" set "TICKER_ARG=--ticker %TICKER%"
     if not "%EXCHANGE%"=="" set "EXCHANGE_ARG=--exchange %EXCHANGE%"
-    python "%SCRIPTS_DIR%generate_equity_report.py" "%REIT%" --output-dir "%OUT_DIR%" %TICKER_ARG% %EXCHANGE_ARG%
+    python "%SCRIPTS_DIR%generate_equity_report.py" "%INSTANCE%" --output-dir "%OUT_DIR%" %TICKER_ARG% %EXCHANGE_ARG%
 ) else (
-    python "%SCRIPTS_DIR%build_reit_model.py" --reit "%REIT%"
+    python "%SCRIPTS_DIR%build_unilever_model.py" --instance "%INSTANCE%"
 )
 
 copy "%CONFIG_SRC%" "%OUT_DIR%\" >nul

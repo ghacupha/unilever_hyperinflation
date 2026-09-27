@@ -81,81 +81,91 @@ def _markdown_to_flowables(md_text, styles):
     return flowables
 
 
-def _chart_valuation_methods(report_json, price, path):
-    vps = report_json["valuation_per_unit"]
-    labels = ["NAV", "DDM", "Cap Rate", "Blended"]
-    values = [vps["nav"], vps["ddm"], vps["cap_rate"], vps["blended"]]
+def _chart_scenario_comparison(report_json, path):
+    comparison = report_json["scenario_comparison"]
+    labels = ["World A\n(current rate)", "World B\n(US GAAP temporal)", "World C\n(IFRS actual)"]
+    values = [comparison["operating_profit"]["A"], comparison["operating_profit"]["B"],
+              comparison["operating_profit"]["C"]]
     fig, ax = plt.subplots(figsize=(6, 3.2))
-    bars = ax.bar(labels, values, color=[_CHART_BLUE, _CHART_BLUE, _CHART_BLUE, _CHART_GOLD])
-    ax.axhline(price, color=_CHART_RED, linestyle="--", linewidth=1.5,
-               label=f"Current price ({price:.2f})")
-    ax.set_ylabel(f"{report_json['currency']} per unit")
-    ax.set_title("Valuation by method vs. current price")
-    ax.legend(loc="upper left", fontsize=8)
+    bars = ax.bar(labels, values, color=[_CHART_BLUE, _CHART_GOLD, _CHART_GREEN])
+    ax.set_ylabel(f"{report_json['currency_unit']}")
+    ax.set_title("Group operating profit by accounting treatment")
     for bar, v in zip(bars, values):
-        ax.annotate(f"{v:.2f}", (bar.get_x() + bar.get_width() / 2, v),
+        ax.annotate(f"{v:,.0f}", (bar.get_x() + bar.get_width() / 2, v),
                     ha="center", va="bottom", fontsize=8)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
 
 
-def _chart_sensitivity(report_json, path):
-    factors = report_json["sensitivity_factors"]
-    names = [f["name"] for f in factors]
-    downs = [f["downside"] * 100 for f in factors]
-    ups = [f["upside"] * 100 for f in factors]
+def _chart_ias29_impact(report_json, path):
+    impact = report_json["ias29_impact_primary_year"]["by_subsidiary"]
+    metrics = ["total_assets", "turnover", "operating_profit", "net_monetary_gain_loss"]
+    metric_labels = ["Total assets", "Turnover", "Op. profit", "Net monetary g/(l)"]
+    subs = list(impact.keys())
     fig, ax = plt.subplots(figsize=(6, 3.2))
-    y = list(range(len(names)))
-    ax.barh(y, ups, color=_CHART_GREEN, label="Upside")
-    ax.barh(y, downs, color=_CHART_RED, label="Downside")
-    ax.set_yticks(y)
-    ax.set_yticklabels(names, fontsize=8)
-    ax.axvline(0, color="black", linewidth=0.8)
-    ax.set_xlabel("% impact on average Net Profit")
-    ax.set_title("Net Profit sensitivity")
-    ax.legend(loc="lower right", fontsize=8)
+    x = range(len(metrics))
+    width = 0.35
+    colors_by_sub = [_CHART_BLUE, _CHART_GOLD]
+    for i, sub in enumerate(subs):
+        vals = [impact[sub][m] for m in metrics]
+        offsets = [xi + (i - 0.5) * width for xi in x]
+        ax.bar(offsets, vals, width=width, label=sub.capitalize(), color=colors_by_sub[i % 2])
+    ax.axhline(0, color="black", linewidth=0.8)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(metric_labels, fontsize=8)
+    ax.set_ylabel(f"{report_json['currency_unit']}")
+    ax.set_title(f"IAS 29 impact by subsidiary, {report_json['ias29_impact_primary_year']['year']}")
+    ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
 
 
-def _chart_scenarios(report_json, path):
-    vbs = report_json["valuation_by_scenario"]
-    labels = ["Worst", "Base", "Best"]
-    values = [vbs["worst"]["blended_per_unit"], vbs["base"]["blended_per_unit"],
-              vbs["best"]["blended_per_unit"]]
-    fig, ax = plt.subplots(figsize=(6, 3.2))
-    bars = ax.bar(labels, values, color=[_CHART_RED, _CHART_BLUE, _CHART_GREEN])
-    ax.set_ylabel(f"{report_json['currency']} per unit")
-    ax.set_title("Blended fair value by scenario")
-    for bar, v in zip(bars, values):
-        ax.annotate(f"{v:.2f}", (bar.get_x() + bar.get_width() / 2, v),
-                    ha="center", va="bottom", fontsize=8)
+def _chart_validation_gap(report_json, path):
+    gap = report_json["validation_gap"]["by_subsidiary"]
+    metrics = ["total_assets", "turnover", "operating_profit", "net_monetary_gain_loss"]
+    metric_labels = ["Total assets", "Turnover", "Op. profit", "Net monetary g/(l)"]
+    subs = list(gap.keys())
+    fig, axes = plt.subplots(1, len(subs), figsize=(6, 3.2), sharey=True)
+    for ax, sub in zip(axes, subs):
+        model_vals = [gap[sub][m]["model"] for m in metrics]
+        disclosed_vals = [gap[sub][m]["disclosed"] for m in metrics]
+        x = range(len(metrics))
+        width = 0.35
+        ax.bar([xi - width / 2 for xi in x], model_vals, width=width, label="Model", color=_CHART_BLUE)
+        ax.bar([xi + width / 2 for xi in x], disclosed_vals, width=width, label="Disclosed", color=_CHART_GOLD)
+        ax.axhline(0, color="black", linewidth=0.8)
+        ax.set_xticks(list(x))
+        ax.set_xticklabels(metric_labels, fontsize=7, rotation=30, ha="right")
+        ax.set_title(sub.capitalize(), fontsize=9)
+    axes[0].set_ylabel(f"{report_json['currency_unit']}")
+    axes[0].legend(fontsize=7)
+    fig.suptitle(f"Model vs. disclosed, {report_json['validation_gap']['year']} (roll-forward validation)",
+                 fontsize=10)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
 
 
-def _cover_flowables(report_json, price_json, decision_json, styles):
+def _cover_flowables(report_json, decision_json, styles):
     flowables = [
         Paragraph(_inline_markup(report_json["business_name"]), styles["Title"]),
         Spacer(1, 6),
-        Paragraph("Equity Research Report", styles["Heading3"]),
+        Paragraph("Hyperinflation Accounting Analysis — CFA LII Multinational Operations", styles["Heading3"]),
         Spacer(1, 12),
     ]
-    price = price_json["share_price"]["value"]
-    fair_value = report_json["valuation_per_unit"]["blended"]
+    facts = report_json["company_facts"]
     currency = report_json["currency"]
 
     data = [
-        ["Current Price", f"{currency} {price:,.2f}"],
-        ["Blended Fair Value", f"{currency} {fair_value:,.2f}"],
-        ["Mechanical Signal", decision_json["mechanical_signal"]],
-        ["Uncertainty Tier", decision_json["uncertainty_tier"]],
-        ["Reference Date", price_json["reference_date"]],
+        ["Group Operating Profit (IFRS actual)", f"{currency} {facts['operating_profit_eur']:,.1f}m"],
+        ["Net Monetary Gain/(Loss)", f"{currency} {facts['net_monetary_gain_loss_eur']:,.1f}m"],
+        ["Earnings-Quality Signal", decision_json["mechanical_signal"]],
+        ["Materiality Ratio", f"{decision_json['ratio'] * 100:.1f}%"],
+        ["As-of Year", str(facts["as_of_year"])],
     ]
-    table = Table(data, colWidths=[180, 220])
+    table = Table(data, colWidths=[220, 180])
     table.setStyle(TableStyle([
         ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
         ("TEXTCOLOR", (0, 0), (-1, -1), GRAY),
@@ -168,17 +178,16 @@ def _cover_flowables(report_json, price_json, decision_json, styles):
     return flowables
 
 
-def _peer_table_flowables(report_json, styles):
-    flowables = [Paragraph("Peer Comparables", styles["H2Report"])]
-    peers = report_json["peer_reits"]
-    currency = report_json["currency"]
-    header = ["REIT", "NAV/Unit", "Trading Price", "Discount/(Premium)"]
+def _monetary_exposure_table_flowables(report_json, styles):
+    flowables = [Paragraph("Monetary-Exposure Grades", styles["H2Report"])]
+    exposure = report_json["monetary_exposure"]
+    header = ["Subsidiary", "Grade", "Net Monetary G/(L)", "Total Assets", "Exposure Ratio"]
     data = [header] + [
-        [p["name"], f"{currency} {p['nav_per_unit']:.2f}", f"{currency} {p['price']:.2f}",
-         f"{p['discount_pct'] * 100:+.1f}%"]
-        for p in peers
+        [name.capitalize(), g["grade"], f"{g['monetary_gain_loss']:,.1f}", f"{g['total_assets']:,.1f}",
+         f"{g['exposure_ratio'] * 100:+.1f}%"]
+        for name, g in exposure.items() if name != "overall_grade"
     ]
-    table = Table(data, colWidths=[160, 90, 90, 100])
+    table = Table(data, colWidths=[110, 60, 110, 100, 90])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -248,8 +257,6 @@ def build_pdf(output_dir, pdf_path, unresolved_findings=None):
     output_dir = str(output_dir)
     with open(os.path.join(output_dir, "valuation_inputs.json")) as f:
         report_json = json.load(f)
-    with open(os.path.join(output_dir, "price_consensus_research.json")) as f:
-        price_json = json.load(f)
     with open(os.path.join(output_dir, "recommendation_decision.json")) as f:
         decision_json = json.load(f)
     with open(os.path.join(output_dir, "report_reviewed.md")) as f:
@@ -264,28 +271,27 @@ def build_pdf(output_dir, pdf_path, unresolved_findings=None):
             unresolved_findings = []
 
     styles = _styles()
-    price = price_json["share_price"]["value"]
 
     with tempfile.TemporaryDirectory() as tmp:
-        chart_valuation = os.path.join(tmp, "valuation.png")
-        chart_sensitivity = os.path.join(tmp, "sensitivity.png")
-        chart_scenarios = os.path.join(tmp, "scenarios.png")
-        _chart_valuation_methods(report_json, price, chart_valuation)
-        _chart_sensitivity(report_json, chart_sensitivity)
-        _chart_scenarios(report_json, chart_scenarios)
+        chart_scenario = os.path.join(tmp, "scenario_comparison.png")
+        chart_impact = os.path.join(tmp, "ias29_impact.png")
+        chart_validation = os.path.join(tmp, "validation_gap.png")
+        _chart_scenario_comparison(report_json, chart_scenario)
+        _chart_ias29_impact(report_json, chart_impact)
+        _chart_validation_gap(report_json, chart_validation)
 
         doc = SimpleDocTemplate(pdf_path, pagesize=letter,
                                  topMargin=0.75 * inch, bottomMargin=0.75 * inch,
                                  leftMargin=0.75 * inch, rightMargin=0.75 * inch)
         flowables = []
-        flowables += _cover_flowables(report_json, price_json, decision_json, styles)
+        flowables += _cover_flowables(report_json, decision_json, styles)
         flowables += _markdown_to_flowables(report_md, styles)
         flowables.append(Spacer(1, 12))
         flowables.append(Paragraph("Charts", styles["H2Report"]))
-        for chart_path in (chart_valuation, chart_sensitivity, chart_scenarios):
+        for chart_path in (chart_scenario, chart_impact, chart_validation):
             flowables.append(Image(chart_path, width=6 * inch, height=3.2 * inch))
             flowables.append(Spacer(1, 10))
-        flowables += _peer_table_flowables(report_json, styles)
+        flowables += _monetary_exposure_table_flowables(report_json, styles)
         if unresolved_findings:
             flowables += _qa_flags_flowables(unresolved_findings, styles)
 

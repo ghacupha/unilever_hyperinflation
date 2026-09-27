@@ -1,25 +1,26 @@
 # Section SOP: Financial Health
 
-Read `valuation_inputs.json`'s `financial_health` object. **The grade is already
-computed — narrate it, do not assign your own.** It's a simple, documented rule (buffer
-above/below the CMA regulatory minimum for LTV/income-producing-%/payout; overall grade
-= the worst of the three sub-grades) — say so plainly rather than implying a more
-sophisticated methodology than what was actually used.
+Read `valuation_inputs.json`'s `monetary_exposure` object. **The grades are already
+computed — narrate them, do not assign your own.** It's a simple, documented rule
+(|net monetary gain/loss| ÷ total assets, banded A-F; overall grade = the worst of the
+per-subsidiary sub-grades) — say so plainly rather than implying a more sophisticated
+methodology than what was actually used.
 
 Write ~150-250 words:
-- State the overall letter grade and the three sub-grades (LTV/gearing, income-producing
-  real estate %, distribution payout) with their underlying ratios and the CMA minimums/
-  maximums they're measured against.
-- If any sub-grade is notably weaker than the others, say which one is dragging the
-  overall grade down and why that matters for the investment case. **A weak payout grade
-  is a real governance signal, not a technicality** — the CMA requires I-REITs to
-  distribute at least 80% of taxable income; a REIT paying out materially less (even while
-  its gearing and asset-mix ratios look strong) is retaining cash rather than returning it
-  to unit-holders as required, and that's worth stating plainly rather than softening.
-- Note this reflects the **latest actual (disclosed) year**, not a projected year —
-  financial health here is a statement of current, real, filed fact
-  (`nav_per_unit_series`/`net_profit_series` in `valuation_inputs.json` give a longer
-  year-by-year view if useful).
+- State the overall letter grade and each subsidiary's own sub-grade, with the underlying
+  net monetary gain/(loss) and total-assets figures and exposure ratio each is measured
+  against.
+- If one subsidiary's grade is notably weaker than the other, say which one is dragging
+  the overall grade down and why that matters for the investment case. **A weak grade is
+  a real balance-sheet-discipline signal, not a technicality** — it means that
+  subsidiary's net monetary position (cash/receivables vs. payables/debt) is large enough
+  relative to its total assets that ordinary inflation materially erodes or inflates its
+  real value each period, and that's worth stating plainly rather than softening.
+- Note this reflects the **primary calibrated year** (`ias29_impact_primary_year`'s
+  `year` field in `valuation_inputs.json`, 2024 for Unilever) — the year the model's
+  local-currency inputs were solved to reproduce the institution's real disclosed figures
+  — not the rolled-forward validation year, which is a directional check, not a current-
+  state snapshot.
 
 Output plain markdown, no code fences, starting with a `## Financial Health` heading and
 the overall grade stated boldly up front (e.g. `**Overall Grade: C**`).

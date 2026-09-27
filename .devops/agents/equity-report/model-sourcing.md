@@ -1,105 +1,80 @@
-# Model sourcing SOP (period-parameterized, REIT domain)
+# Model sourcing SOP (hyperinflation-accounting domain)
 
-Given a REIT/REOC instance (name/ticker, new or already onboarded) and an **as-of anchor
-year**, produces `examples/<instance>/config.py` + `research_output.md` whose
-actuals/projection windows are derived mechanically from that anchor, not from
-"whatever's most recent":
+Given an institution (currently only `unilever`), verifies/refreshes
+`examples/<institution>/config.py` + `research_output.md` against the institution's real
+disclosed IAS 29 hyperinflation-accounting figures.
 
-```
-ACTUAL_YEARS     = [as_of - 2, as_of - 1, as_of]        # 3 actual years, ending at the anchor
-YEARS (projected) = [as_of + 1, ..., as_of + 5]          # 5 years forward from the anchor
-```
+Unlike the prior REIT/bank pipeline, this is **not** a rolling multi-year forecast with an
+as-of anchor year to re-source each quarter. It's a fixed calibration exercise: a small,
+fully hand-traceable fictional subsidiary per hyperinflationary operation, sized so the
+model's IAS 29 restatement + IAS 21 translation reproduces the institution's **real
+disclosed primary year** (2024 for Unilever) impact figures almost exactly, then a
+**validation year** (2025) the model is rolled forward into and compared against — not
+re-solved to fit. See `examples/unilever/research_output.md`'s "Calibration method" and
+"2025 roll-forward validation" sections for the full worked derivation.
 
-This is what makes the same instance re-runnable at a different historical vantage point
-(e.g. `as_of=2023` instead of `as_of=2025`) — including **backward** re-sourcing for
-backtesting, where the point is to research the REIT exactly as it stood at that past
-date, not with the benefit of hindsight. If `as_of` is in the past relative to today,
-**do not use any filing, price, or news dated after `as_of`'s fiscal year-end filing date**
-— that's the entire point of a backtest; leaking later information invalidates it.
+## 1. What this stage actually does
 
-## 1. Determine the actuals/projection window
-
-Given `instance` and `as_of`, compute the two year-lists above before doing anything else.
-Then:
-
-- **New instance** (no existing `examples/<instance>/config.py`): full onboarding per §2-§4
-  below, scoped specifically to filings covering `ACTUAL_YEARS` — not simply "the latest
-  available annual report." If the REIT's most recent filing is for a later year than
-  `as_of`, that's fine for context but its figures must not leak into `ACTUALS` or influence
-  assumption calibration (see backtest note above).
-- **Already-onboarded instance, `as_of` later than its current anchor** (rolling forward):
-  move the nearest projected year(s) into `ACTUALS` as real figures become available,
-  extend `YEARS` to keep the 5-year horizon. Preserve every other field; a roll-forward is
-  not a rewrite.
-- **Already-onboarded instance, `as_of` earlier than its current anchor** (rolling
-  backward, for backtesting): re-derive `ACTUALS`/`YEARS` for the earlier window from the
-  filings that existed as of that date. `VALUATION` inputs (risk-free rate, ERP, beta, cap
-  rate, peer NAV discount/premium) must also be re-sourced as of `as_of`, not carried
-  forward from today's values — a backtest that quietly uses today's cost-of-equity/cap-rate
-  inputs to value a three-year-old snapshot isn't testing anything real.
+- **Already-onboarded institution** (the normal case — `examples/<institution>/config.py`
+  already exists): read it and `research_output.md`'s "Calibration method" section, then
+  verify the config's local-currency subsidiary inputs still reproduce
+  `config.DISCLOSED_IMPACT_2024` when run through
+  `hyperinflation_calculations.build_model()`. Only change a figure if the institution has
+  since **restated or re-disclosed** it (e.g. a later annual report revises a prior-year
+  IAS 29 impact table) — this is a verification/refresh pass, not a re-derivation from
+  scratch. Do not touch `SUBSIDIARIES`, `INFLATION_INDICES`, or `FX_RATES` unless the
+  underlying disclosed macro figures (CPI, FX) have themselves been revised.
+- **New institution**: full onboarding — research the institution's real disclosed IAS 29
+  impact table for its hyperinflationary subsidiaries, its subsidiaries'
+  hyperinflationary-since dates, and its own disclosed general-price-index/FX assumptions
+  where available, then solve backward for local-currency subsidiary inputs the same way
+  `examples/unilever/research_output.md`'s "Calibration method" does (turnover/operating-
+  profit impact fixes revenue/cost levels via the inflation-vs-FX wedge; total-assets
+  impact fixes the non-monetary asset base; net monetary gain/loss is solved as the
+  balancing plug). Document every free modeling choice (opening equity, the monetary
+  asset/liability split) explicitly — they are not derived from any disclosure.
 
 ## 2. Data intake
 
-A REIT's own investor-relations site (REIT Manager's site, e.g. Acorn's
-`acornholdingsafrica.com`) is usually the best primary source — look for annual reports and
-semi-annual/interim reports, which contain the full primary financial statements (statement
-of profit or loss, statement of financial position, statement of changes in trust's equity,
-statement of cash flows) plus notes. Cross-check against the Nairobi Securities Exchange
-(NSE)/Capital Markets Authority (CMA) disclosure archives and any sector-wide equity
-analysis reports for headline full-year figures when only interim detail is directly
-available. Extract targeted text/tables and search for key terms rather than reading a
-200+ page filing cover-to-cover.
+The institution's own annual report / Form 20-F (or local-jurisdiction equivalent)
+hyperinflation accounting policy note is the primary source — search for "IAS 29",
+"hyperinflation", or the specific subsidiary/country name. Cross-check against the
+regulator's own filing archive (e.g. SEC EDGAR for a US-listed or SEC-filing foreign
+private issuer) for the exact figures rather than a secondary press summary. Extract the
+targeted note/table rather than reading the full filing cover-to-cover.
 
-## 3. Known pitfalls (REIT-specific)
+## 3. Known pitfalls (hyperinflation-accounting domain)
 
-- **Units-in-issue vs. reported NAV/unit reconciliation gap**: cross-multiplying a
-  disclosed units-in-issue roll-forward against disclosed NAV frequently does not exactly
-  reproduce the REIT's own reported "NAV per unit" headline (a small, consistent 1-2% gap
-  is common) — most likely a weighted-average-vs-point-in-time unit-count convention
-  difference on the REIT's side, not a data error. Use the most explicitly-labeled,
-  purpose-built roll-forward table for the `UNITS`/`ACTUALS[year]["units_in_issue"]`
-  schedule, and document the gap in `research_output.md` rather than silently forcing a
-  match — see `examples/acorn_i_reit/research_output.md` for a worked example.
-- **Internally inconsistent note tables**: a filing's own notes can disagree with its
-  primary statements (e.g. a "movement in units issued" mini-table showing a different
-  issuance figure than the Statement of Changes in Equity's own roll-forward for the same
-  period) — when this happens, the primary statements (P&L, Balance Sheet, Statement of
-  Changes in Equity, Cash Flow) are the more authoritative source; treat note-level
-  sub-tables as secondary.
-- **Full-year headline vs. interim detail**: sector-wide equity analysis reports often give
-  only full-year headline figures (net profit, NAV/unit, dividend) without the granular
-  income-statement/balance-sheet detail a live-formula model needs. Where only an interim
-  (e.g. H1) report gives full detail, back-solve the remainder (e.g. H2 = FY total − H1
-  actual) and tag it `[DISCLOSED-DERIVED]`, not `[DISCLOSED]`.
-- **Distributable Income ≠ Net Profit**: a REIT's regulatory distribution requirement is
-  computed on Distributable Income (Net Profit minus non-cash items — fair value gains/
-  losses on investment property, bargain-purchase gains, impairment reversals), not on Net
-  Profit itself. Don't apply the payout-ratio check to the wrong base figure.
-- **I-REIT vs. D-REIT regulatory limits differ**: the CMA's REIT regulations set different
-  gearing/asset limits for Income REITs vs. Development REITs (an I-REIT holds completed
-  income-generating property; a D-REIT develops it) — confirm which type the instance is
-  before populating `REGULATORY` (the 35%/40% gearing limit and 80% distribution minimum
-  in `examples/acorn_i_reit/config.py` are I-REIT-specific; re-verify against the CMA REITs
-  Regulations 2013 FAQ for a D-REIT or a REIT in a different jurisdiction).
+- **The disclosed "impact" table's comparative baseline may not be fully specified.**
+  Unilever's headline table gives four aggregate deltas (Total assets/Turnover/Operating
+  profit/Net monetary gain-or-loss) but not the full note text explaining every
+  contributing effect — e.g. this model's 2025 validation pass found the total-assets
+  impact can never flip negative under pure inflation-restatement mechanics alone (see
+  research_output.md), yet Unilever's real 2025 disclosure shows a negative one, implying
+  some other effect (disposals, impairments, a different comparative convention) not
+  visible from the summary table. **Document what you can't reconcile — do not force a
+  match by fabricating an assumption that isn't disclosed anywhere.**
+- **Two currencies, two different mechanisms can look similar but aren't.** A net
+  monetary *loss* doesn't simply mean "net monetary liability position" once the whole
+  balance sheet (including restated equity/profit growth) is solved together — see
+  research_output.md's "A finding worth flagging" section. Don't assume the simple CFA
+  heuristic (net monetary asset → loss, net monetary liability → gain) holds in a full
+  consolidated model without checking.
 - Same sourcing/citation discipline as any other model in this repo: never fabricate a
   figure; where something genuinely isn't disclosed, use a clearly-marked `[PLACEHOLDER]`
   and note it in `research_output.md`.
 
 ## 4. Populate `config.py`
 
-Schema contract is `bizplan/config_loader.py`'s `REQUIRED_FIELDS` + `validate_reit_config()`
+Schema contract is `bizplan/config_loader.py`'s `REQUIRED_FIELDS` + `validate_config()`
 shape checks — see `BLUEPRINT.md`'s "Config schema" section for the full field list
-(`PROPERTIES`, `RENTAL_INCOME`, `OPEX_ITEMS`, `CAPITAL`, `UNITS`, `REGULATORY`,
-`MACRO_SCENARIOS`, `SCENARIO_MULTIPLIERS`, `VALUATION`, `PEER_REITS`, `ACTUALS`, ...). Also
-add `TICKER`/`EXCHANGE` (e.g. `TICKER = "ACORNI"`, `EXCHANGE = "NSE"`) if the instance is
-exchange-listed — optional, not in `REQUIRED_FIELDS`, but Stage 2
-(`bizplan/report/price_research.py`) reads them as its default so `--ticker`/`--exchange`
-don't need to be passed by hand on every run.
+(`SUBSIDIARIES`, `INFLATION_INDICES`, `FX_RATES`, `ACCOUNTING_SCENARIOS`, `ACTUALS`,
+`DISCLOSED_IMPACT_2024`, `VALIDATION_ACTUALS`, `CONSENSUS`, `VALUATION`, `SOURCES`).
 
 ## 5. Run the renderer, unchanged
 
 ```
-python scripts/build_reit_model.py --reit <instance>
+python scripts/build_unilever_model.py --instance <institution>
 ```
 
 ## 6. Validate — a real pass/fail, not just "inspect the formula"
@@ -108,27 +83,21 @@ python scripts/build_reit_model.py --reit <instance>
 from bizplan.config_loader import load_and_validate
 from bizplan.report import data as report_data, validation as report_validation
 
-config = load_and_validate("examples/<instance>/config.py")
+config = load_and_validate("examples/<institution>/config.py")
 computed = report_data.compute(config)
-validation = report_validation.validate_model(config, computed["results"])
+validation = report_validation.validate_model(config, computed)
 assert validation["ok"], validation
 ```
 
-If `validation["ok"]` is `False`, do not proceed to any later pipeline stage — fix the
-`config.py` inputs until every year's Balance Sheet, LTV, and Income-Producing-% checks
-pass, and every *projected* year's Payout check passes (the Payout check is expected to
-read `False` for actual years whose real disclosed payout ratio is genuinely below the
-CMA's 80% minimum — a governance fact, not a modeling error; see
-`bizplan/report/validation.py`'s module docstring). This mirrors the Model sheet's Master
-Check exactly (same four checks, same tolerances, same actual-year payout exception).
+If `validation["ok"]` is `False`, the model's 2024 calibration no longer reproduces the
+real disclosed 2024 impact figures within tolerance (±0.5 EURm per line) — fix `config.py`
+before proceeding to any later pipeline stage. The 2025 validation year is diagnostic, not
+gating (see `bizplan/report/validation.py`'s module docstring for why).
 
 ## 7. Write `research_output.md`
 
 Source + accessed date per datapoint, provenance-tagged (`[DISCLOSED]`,
-`[DISCLOSED-DERIVED]`, `[MODELED]`, `[MACRO]`, `[PLACEHOLDER]` — see
-`examples/acorn_i_reit/research_output.md` for the convention), plus: record the `as_of`
-anchor year explicitly at the top of the file, so a reader immediately knows which vantage
-point this particular sourcing run represents — this matters once the same instance has
-more than one `research_output.md`-worthy run at different anchors. Explicitly document any
+`[DISCLOSED-DERIVED]`, `[MODELED]`, `[PLACEHOLDER]` — see
+`examples/unilever/research_output.md` for the convention). Explicitly document any
 reconciliation gaps found in the source filings (§3 above) rather than silently resolving
 them one way and moving on.

@@ -1,117 +1,74 @@
-"""Stage 3 of the equity-report pipeline: mechanical Buy/Hold/Sell pre-decision.
+"""Stage 3 of the equity-report pipeline: mechanical earnings-quality / mispricing
+pre-decision.
 
-Pure Python arithmetic — no LLM here. Computes price vs. blended intrinsic value,
-assigns an "uncertainty tier" from how much the three valuation methods (NAV, DDM,
-Direct Capitalization/cap rate) disagree with each other, and applies Morningstar's own
-published margin-of-safety convention (a star-rating band that widens with uncertainty)
-to produce a mechanical signal: Buy/Sell "regardless of catalyst" if the mispricing
-clears the tier's band, otherwise Hold pending a specific catalyst (left to the
-report-writing stage — see .devops/agents/equity-report/section-recommendation.md — to
-argue for or confirm).
+Pure Python arithmetic — no LLM here. This model doesn't build a full Unilever equity
+valuation (no DCF/multiples model here — that's out of scope; this project is about the
+hyperinflation *accounting* mechanics, not a from-scratch Unilever valuation), so unlike
+the REIT pipeline's NAV/DDM/cap-rate blend, this stage computes a materiality flag: how
+large is the IAS 29 net monetary gain/(loss) relative to the group's own operating
+profit? A large one, if consensus/market commentary treats it as ordinary FX noise
+rather than a distinct purchasing-power effect (see config.CONSENSUS's placeholder
+note, and Stage 2's job to confirm or correct that against real sell-side commentary),
+is exactly the kind of thing that produces a market mispricing this report's job is to
+surface. The report-writing stage (section-recommendation.md) combines this flag with
+Stage 2's real consensus/price research to argue an actual Buy/Hold/Sell call — this
+stage only supplies the mechanical, model-derived half of that argument.
 
-The Morningstar bands themselves are real, published figures (see BLUEPRINT.md's
-"Equity Research Report pipeline" section for citations). The **mapping from this
-model's own method-spread to an Uncertainty Rating tier is this repo's own heuristic,
-not a literal Morningstar practice** — their real Uncertainty Rating also weighs
-balance-sheet leverage, cash-flow predictability, and competitive position, none of
-which this generic REIT-model pipeline has per-institution judgment on. Flagged as an
-open design choice, not a solved one; revisit if it proves too coarse once tested
-against more institutions.
+Materiality threshold (10% of group operating profit) is this repo's own documented
+judgment call, not a published standard — flagged as such, revisit if it proves too
+coarse once tested against real consensus commentary.
 """
 import json
 import os
 
-# Morningstar's own published margin-of-safety bands: (buy_discount, sell_premium) by
-# Uncertainty Rating tier — a 5-star (strong buy) signal at `buy_discount` below fair
-# value, a 1-star (strong sell) signal at `sell_premium` above it.
-MORNINGSTAR_BANDS = {
-    "Low": (0.20, 0.25),
-    "Medium": (0.30, 0.35),
-    "High": (0.40, 0.55),
-    "Very High": (0.50, 0.75),
-    "Extreme": (0.75, 3.00),
-}
-
-# This repo's own heuristic: coefficient-of-range across the 3 valuation methods
-# ((max - min) / median) mapped to a tier — NOT a Morningstar practice, see module
-# docstring. Ordered thresholds; first match wins, falls through to "Extreme".
-_SPREAD_TIER_CUTOFFS = [
-    (0.30, "Low"),
-    (0.60, "Medium"),
-    (1.00, "High"),
-    (1.50, "Very High"),
-]
+MATERIALITY_THRESHOLD = 0.10  # |net monetary gain/loss| / |group operating profit|
 
 
-def uncertainty_tier(method_values):
-    """`method_values` is a list of per-share values from the different valuation
-    methods. Returns (tier_name, spread)."""
-    lo, hi = min(method_values), max(method_values)
-    median = sorted(method_values)[len(method_values) // 2]
-    spread = (hi - lo) / median if median else float("inf")
-    for cutoff, tier in _SPREAD_TIER_CUTOFFS:
-        if spread < cutoff:
-            return tier, spread
-    return "Extreme", spread
+def mechanical_recommendation(report_json):
+    """`report_json` is `data.to_report_json()`'s output. Returns a dict — see
+    `write_recommendation` for the JSON shape written to disk."""
+    facts = report_json["company_facts"]
+    monetary = facts["net_monetary_gain_loss_eur"]
+    op_profit = facts["operating_profit_eur"]
+    ratio = abs(monetary) / abs(op_profit) if op_profit else float("inf")
+    material = ratio >= MATERIALITY_THRESHOLD
 
+    exposure = report_json["monetary_exposure"]
+    worst_subsidiary = min(exposure, key=lambda k: {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}.get(
+        exposure[k]["grade"], -1) if k != "overall_grade" else 99)
 
-def mechanical_recommendation(report_json, price):
-    """`report_json` is `data.to_report_json()`'s output. `price` is the current
-    share price (e.g. from Stage 2's `price_consensus_research.json`). Returns a dict —
-    see `write_recommendation` for the JSON shape written to disk."""
-    vps = report_json["valuation_per_unit"]
-    method_values = [vps["nav"], vps["ddm"], vps["cap_rate"]]
-    blended = vps["blended"]
-
-    tier, spread = uncertainty_tier(method_values)
-    buy_discount, sell_premium = MORNINGSTAR_BANDS[tier]
-
-    pct_diff = (price - blended) / blended  # positive = price above fair value (overvalued)
-
-    if pct_diff <= -buy_discount:
-        signal = "Buy"
+    if material:
+        signal = "Flag: material"
         rationale = (
-            f"Price is {abs(pct_diff) * 100:.1f}% below blended fair value, beyond the "
-            f"{tier}-uncertainty Buy threshold ({buy_discount * 100:.0f}%) — Morningstar-"
-            f"style industry practice calls this Buy regardless of a specific catalyst."
-        )
-    elif pct_diff >= sell_premium:
-        signal = "Sell"
-        rationale = (
-            f"Price is {pct_diff * 100:.1f}% above blended fair value, beyond the "
-            f"{tier}-uncertainty Sell threshold ({sell_premium * 100:.0f}%) — Morningstar-"
-            f"style industry practice calls this Sell regardless of a specific catalyst."
+            f"Net monetary gain/(loss) of €{monetary:,.0f}m is {ratio * 100:.0f}% of group "
+            f"operating profit (€{op_profit:,.0f}m) — above the {MATERIALITY_THRESHOLD * 100:.0f}% "
+            f"materiality threshold. {worst_subsidiary.capitalize()} carries the largest "
+            f"monetary-exposure grade ({exposure[worst_subsidiary]['grade']}). Unless "
+            f"consensus explicitly separates this from ordinary FX translation (see "
+            f"config.CONSENSUS / Stage 2 research), reported EPS carries a real, "
+            f"non-obvious purchasing-power component that a naive read would miss."
         )
     else:
-        direction = "overvalued" if pct_diff > 0 else "undervalued"
-        override_signal = "Sell" if direction == "overvalued" else "Buy"
-        signal = "Hold"
+        signal = "Flag: immaterial"
         rationale = (
-            f"Price is {pct_diff * 100:+.1f}% vs. blended fair value — within the "
-            f"{tier}-uncertainty band (Buy below -{buy_discount * 100:.0f}%, Sell above "
-            f"+{sell_premium * 100:.0f}%). Mechanically Hold: the report-writing stage "
-            f"must identify a specific, plausible catalyst to argue {override_signal} "
-            f"instead; absent one, the recommendation stays Hold."
+            f"Net monetary gain/(loss) of €{monetary:,.0f}m is only {ratio * 100:.0f}% of group "
+            f"operating profit (€{op_profit:,.0f}m) — below the {MATERIALITY_THRESHOLD * 100:.0f}% "
+            f"materiality threshold this year; the turnover-line restatement effect is larger "
+            f"but nets out mostly in cost lines too (see scenario_comparison)."
         )
 
     return dict(
-        price=price,
-        blended_fair_value=blended,
-        pct_diff=pct_diff,
-        method_values=dict(nav=vps["nav"], ddm=vps["ddm"], cap_rate=vps["cap_rate"]),
-        uncertainty_tier=tier,
-        method_spread=spread,
-        buy_threshold=buy_discount,
-        sell_threshold=sell_premium,
-        mechanical_signal=signal,
-        rationale=rationale,
+        net_monetary_gain_loss=monetary, operating_profit=op_profit, ratio=ratio,
+        materiality_threshold=MATERIALITY_THRESHOLD, material=material,
+        worst_exposure_subsidiary=worst_subsidiary,
+        monetary_exposure=exposure, mechanical_signal=signal, rationale=rationale,
     )
 
 
-def write_recommendation(report_json, price, output_dir):
+def write_recommendation(report_json, output_dir):
     """Writes `recommendation_decision.json` into `output_dir` (the pipeline's
     report_workdir/)."""
-    decision = mechanical_recommendation(report_json, price)
+    decision = mechanical_recommendation(report_json)
     path = os.path.join(output_dir, "recommendation_decision.json")
     with open(path, "w") as f:
         json.dump(decision, f, indent=2, default=str)

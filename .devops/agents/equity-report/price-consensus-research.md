@@ -23,26 +23,30 @@ Find the closing share price on (or the nearest trading day before) the referenc
 from a named, citable source (exchange site, a financial data aggregator, etc.) — not a
 vague "around X". Record the source and the exact date the price is for.
 
-## 3. Analyst consensus (expect this to often come up empty)
+## 3. Analyst consensus — and specifically, does it price in the hyperinflation effect?
 
 Search for sell-side analyst coverage: consensus target price, consensus rating
-(Buy/Hold/Sell or equivalent), number of analysts covering the stock. **Be honest when
-coverage is thin or absent** — this is the realistic case for a recently-listed or
-thinly-traded stock (e.g. a REIT trading on the NSE's restricted Unquoted Securities
-Platform only months after its supplemental offer). Do not fabricate a consensus or pad
-it with unrelated sources. If no analyst consensus is findable:
+(Buy/Hold/Sell or equivalent), number of analysts covering the stock. For this
+institution's report, the specific question that matters most is: **does real analyst
+commentary distinguish the IAS 29 net monetary gain/(loss) from ordinary FX translation,
+or does it get folded into a generic "FX headwind" and effectively ignored as a one-off
+non-cash item?** Search sell-side notes, earnings-call transcripts, and analyst
+commentary specifically for how they discuss the hyperinflationary subsidiaries — quote
+what you find. Do not fabricate a consensus or pad it with unrelated sources. If no
+analyst consensus is findable:
 - Say so explicitly (`consensus_found: false`).
-- Propose one documented, clearly-labeled proxy for "what the market currently implies"
-  instead — e.g. the peer REIT set's average NAV discount/premium applied to this
-  institution's own NAV, its own distribution yield vs. the peer average, or the stock's
-  own price trend since listing. Label it as a proxy, not a real consensus, and say why
-  you chose it.
-  **If the proxy needs this institution's own NAV per unit (or any other figure the
-  model itself computes), read it from `valuation_inputs.json`'s `company_facts`
-  block — you'll be given its path. Do not independently research or derive that figure
-  from a filing or web source.** That JSON is the model's own corrected ground truth; a
-  live web search can turn up a different (e.g. superseded or note-vs-primary-statement)
-  figure that looks equally plausible but is inconsistent with the rest of this report.
+- Propose one documented, clearly-labeled proxy instead — e.g. how the institution's own
+  investor-relations materials or earnings-call Q&A frame the hyperinflationary
+  subsidiaries' contribution. Label it as a proxy, not a real consensus, and say why you
+  chose it.
+  **If the proxy needs any figure the model itself computes (net monetary gain/loss,
+  the IAS 29 impact table, monetary-exposure grades), read it from
+  `valuation_inputs.json`'s `company_facts` / `ias29_impact_primary_year` /
+  `monetary_exposure` blocks — you'll be given its path. Do not independently research or
+  derive that figure from a filing or web source.** That JSON is the model's own
+  corrected ground truth; a live web search can turn up a different (e.g. superseded or
+  note-vs-primary-statement) figure that looks equally plausible but is inconsistent with
+  the rest of this report.
 
 ## 4. Output format
 

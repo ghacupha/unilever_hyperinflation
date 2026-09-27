@@ -21,7 +21,7 @@ processes — each of those stages still shells out to `claude -p` itself where 
 from pathlib import Path
 
 from bizplan.config_loader import load_and_validate
-from bizplan.financial import reit_calculations, reit_excel_renderer
+from bizplan.financial import hyperinflation_excel_renderer as renderer
 from bizplan.report import coherence, data as report_data
 from bizplan.report import drafting, pdf as report_pdf, price_research, recommendation
 from bizplan.report import validation as report_validation
@@ -46,27 +46,25 @@ def generate(institution, output_dir, ticker=None, exchange=None, reference_date
 
     print("=== Stage 1/1b: ground truth + validation ===")
     computed = report_data.compute(config)
-    validation = report_validation.validate_model(config, computed["results"])
+    validation = report_validation.validate_model(config, computed)
     if not validation["ok"]:
-        raise RuntimeError(f"Model validation failed for {institution}: {validation}")
+        raise RuntimeError(f"2024 calibration validation failed for {institution}: "
+                            f"{validation['primary_year']}")
     _, report_json = report_data.write_report_data(config, computed, str(report_workdir))
-    report_validation.write_validation_result(config, computed["results"], str(report_workdir))
+    report_validation.write_validation_result(config, computed, str(report_workdir))
 
     print("=== Building Excel model ===")
-    results = reit_calculations.build_all(config)
     xlsx_path = output_dir / f"{config.OUTPUT_PREFIX}_Financial_Model.xlsx"
-    reit_excel_renderer.build_excel(config, results, str(xlsx_path))
+    renderer.build_excel(config, computed, str(xlsx_path))
 
     print("=== Stage 2: price/consensus research ===")
-    price_json = price_research.research_price_consensus(
+    price_research.research_price_consensus(
         institution, str(report_workdir), ticker=ticker, exchange=exchange,
         reference_date=reference_date)
 
-    print("=== Stage 3: mechanical recommendation ===")
-    _, decision = recommendation.write_recommendation(
-        report_json, price_json["share_price"]["value"], str(report_workdir))
-    print(f"Mechanical signal: {decision['mechanical_signal']} "
-          f"({decision['uncertainty_tier']} uncertainty tier)")
+    print("=== Stage 3: mechanical earnings-quality flag ===")
+    _, decision = recommendation.write_recommendation(report_json, str(report_workdir))
+    print(f"Mechanical signal: {decision['mechanical_signal']}")
 
     print("=== Stage 4: drafting report sections ===")
     drafting.draft_all_sections(institution, str(report_workdir))
