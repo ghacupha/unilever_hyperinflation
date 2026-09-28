@@ -215,3 +215,7 @@ unilever_hyperinflation/
 - **`CHANGELOG.md`** — what has actually landed, in order.
 - **`examples/unilever/research_output.md`** — the full calibration derivation and
   citations; read this before treating any subsidiary-level figure as a real disclosure.
+
+## License
+
+[MIT](LICENSE).
