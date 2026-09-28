@@ -11,6 +11,18 @@ than rewritten.
 
 ## [Unreleased]
 
+### Changed — Simplified README structure; renamed internal phase labels for clarity (2026-09-28)
+- Removed `README.md`'s standalone summary section (see the 2026-09-27 entry below) —
+  the facts it listed were already covered, in more detail, by the sections that
+  actually document them (Calibration, Running the tests, `AGENTS.md`'s verification
+  status), so the standalone list was redundant. Also trimmed a sentence in the
+  "Equity Research Report" section that repeated the same point.
+- Renamed `BACKLOG.md` Phase 7 ("Showcase content additions" → "Peer-comparison and
+  standard-setting content") and Phase 9 ("Portfolio polish" → "Documentation and
+  tooling improvements") to describe what each phase actually contains, and updated the
+  corresponding `CHANGELOG.md` heading and the one BACKLOG bullet that named the removed
+  README section. No functional changes.
+
 ### Added — MIT license headers, LICENSE, and a proper commit identity across all history (2026-09-28)
 - Closes `BACKLOG.md` Phase 10. Added `scripts/add_license_headers.py` (idempotent) and
   applied a one-line MIT header to all 37 first-party `.py` files under `bizplan/`,
@@ -55,12 +67,12 @@ than rewritten.
   clean number-matching table, since neither peer's figure is directly comparable to
   Unilever's or BBVA's.
 
-### Added — Portfolio polish: README, CI, interactive demo (2026-09-27)
-- Closes `BACKLOG.md` Phase 9. Added a "What this demonstrates" section to `README.md`
-  (technical accounting depth, verified formula-linked Excel engineering, the real
-  coherence-gate catches, 51 tests in CI, git-history hygiene), plus two screenshots
-  (`docs/screenshots/`, rendered from the checked-in sample PDF via PyMuPDF and cropped
-  to content) embedded near the top.
+### Added — Documentation and tooling improvements: README, CI, interactive demo (2026-09-27)
+- Closes `BACKLOG.md` Phase 9. Added a summary section to `README.md` (technical scope,
+  verified formula-linked Excel engineering, the coherence-gate's findings, 51 tests in
+  CI, git-history hygiene — later folded into existing sections, see the 2026-09-28
+  entry), plus two screenshots (`docs/screenshots/`, rendered from the checked-in sample
+  PDF via PyMuPDF and cropped to content) embedded near the top.
 - Added `.github/workflows/tests.yml` — runs the full test suite (including the
   calibration-fidelity regression test) plus an Excel-model build smoke test, on every
   push/PR to `main`.

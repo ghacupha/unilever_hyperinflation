@@ -20,30 +20,6 @@ local-currency inputs (see "Calibration" below for what that means).
 </p>
 <p align="center"><em>The generated equity research report's cover page and chart page — see <a href="examples/2026-09-27_222102/">examples/2026-09-27_222102/</a> for the full workbook, PDF, and every intermediate research file from a real live run.</em></p>
 
-## What this demonstrates
-
-- **Technical accounting depth**: a working, hand-traceable implementation of IAS 29
-  restatement + IAS 21 translation, contrasted against the US GAAP temporal method —
-  calibrated to reproduce a real multinational's own disclosed figures, not a textbook
-  toy example. Includes a documented, non-obvious finding (`research_output.md`'s "A
-  finding worth flagging") about where the standard CFA-curriculum heuristic for net
-  monetary gain/loss breaks down in a full consolidated model.
-- **Live formula-linked Excel engineering**: every cell in the generated workbook is a
-  real formula (openpyxl), independently verified against the Python engine with the
-  `formulas` package (an actual Excel-formula evaluator) — not a value dump.
-- **An automated multi-agent research/drafting/QA pipeline**: a 7-stage pipeline where
-  live web research, section drafting, and a review-and-fix coherence gate all ran for
-  real, twice (`BACKLOG.md` Phases 4 and 7) — the gate caught and fixed 8 genuine
-  cross-section errors on its first run, including one subtle enough that it
-  independently rediscovered a nuance already documented in this repo's own research
-  notes; the second run used its full 10-iteration budget catching real issues as more
-  cited material (peer companies, a standard-setting note) entered the mix.
-- **Engineering rigor**: 51 automated tests (`pytest` unit tests + `pytest-bdd` Gherkin
-  specs) covering the calculation engine, config validation, and report generation,
-  running in CI (`.github/workflows/tests.yml`) on every push.
-- **Git hygiene**: a clean, force-pushed history with personal-data and third-party
-  content removed via `git-filter-repo` before this repo went public.
-
 ## Quick start
 
 Prerequisites: Python 3 (any recent 3.x). Nothing else needs to be installed manually.
@@ -92,8 +68,7 @@ or once, persistently, via a repo-root `.env` file (copy `.env.example` to `.env
 separately metered API) and takes noticeably longer than the Excel-only path.
 
 The pipeline was adapted from its prior REIT-model domain on 2026-09-27 (see
-`BACKLOG.md` Phase 3), then run live end-to-end twice the same day (Phases 4 and 7) —
-every stage, deterministic and `claude -p`-driven alike, has real output to show for it.
+`BACKLOG.md` Phase 3), then run live end-to-end twice the same day (Phases 4 and 7).
 See `examples/2026-09-27_222102/` for the latest full checked-in run.
 
 ## Expected output

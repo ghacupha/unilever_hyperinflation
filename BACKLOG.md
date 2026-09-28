@@ -190,7 +190,7 @@ confirming scope first, same as any new phase.
       coursework, confirmed, kept) is unaffected — it lives under `examples/`, not the
       removed `colossal-visuals/references/` path.
 
-## Phase 7 — Showcase content additions — DONE (2026-09-27)
+## Phase 7 — Peer-comparison and standard-setting content — DONE (2026-09-27)
 
 - [x] **Peer-comparison section**: added `PEER_COMPARISON` to `examples/unilever/
       config.py` (Coca-Cola FEMSA's Argentina net-monetary-position gain, H1 2025 vs H1
@@ -296,13 +296,13 @@ confirming scope first, same as any new phase.
       plain-pytest `unilever_config` fixture to avoid a fixture-name collision between
       pytest-bdd's dynamic step-fixture publishing and the statically-declared one.
 
-## Phase 9 — Portfolio polish — DONE (2026-09-27)
+## Phase 9 — Documentation and tooling improvements — DONE (2026-09-27)
 
-- [x] **Recruiter-facing README summary**: added a "What this demonstrates" section
-      naming the specific skills (technical accounting depth including the documented
-      "finding worth flagging" nuance, live formula-linked Excel engineering verified
-      with an independent formula evaluator, the multi-agent pipeline's real coherence-
-      gate catches, 51 automated tests in CI, and the git-history hygiene work).
+- [x] **README summary section**: added a short section to `README.md` naming the
+      repo's technical scope and verification status — later folded into the sections
+      that already covered the same facts (Calibration, Running the tests, `AGENTS.md`'s
+      verification status) rather than duplicating them in a standalone list
+      (2026-09-28).
 - [x] **Embedded screenshots/preview in README**: two PNGs rendered from the checked-in
       sample PDF (`examples/2026-09-27_222102/...Equity_Research_Report.pdf`) via
       PyMuPDF, cropped to content (`docs/screenshots/report_cover.png`,
