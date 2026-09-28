@@ -11,6 +11,15 @@ than rewritten.
 
 ## [Unreleased]
 
+### Removed — Blu Containers Model reference file (2026-09-28)
+- Closes `BACKLOG.md` Phase 11. `examples/Blu Containers Model - Vertical Complete.xlsx`
+  (kept through Phase 6 as the repo owner's own FMI coursework) reconsidered: fine for
+  private/employer viewing, but its copyright status isn't clear enough for public
+  redistribution. Removed from the working tree and purged from every commit via
+  `git-filter-repo --invert-paths --path-glob '*Blu Containers*'`, then force-pushed.
+  Verified via a full tree scan across every rewritten commit and an independent check
+  of the pushed remote tree — zero trace anywhere in history.
+
 ### Changed — Simplified README structure; renamed internal phase labels for clarity (2026-09-28)
 - Removed `README.md`'s standalone summary section (see the 2026-09-27 entry below) —
   the facts it listed were already covered, in more detail, by the sections that

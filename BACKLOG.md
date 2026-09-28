@@ -350,3 +350,13 @@ confirming scope first, same as any new phase.
       answer it with — killed the hung process, confirmed via `git fsck` and `git status`
       that nothing was corrupted, then reran it correctly. Verified the final state via
       the GitHub API, not just local git.
+
+## Phase 11 — Remove Blu Containers Model reference file (2026-09-28) — DONE
+
+- [x] `examples/Blu Containers Model - Vertical Complete.xlsx` (kept through Phase 6 as
+      the repo owner's own FMI coursework, safe to keep at the time) reconsidered: fine
+      for private/employer viewing, but its copyright status isn't clear enough for
+      public redistribution. Removed from the working tree and purged from every commit
+      via `git-filter-repo --invert-paths --path-glob '*Blu Containers*'`, then
+      force-pushed. Verified via a full tree scan across every rewritten commit and an
+      independent check of the pushed remote tree — zero trace anywhere in history.
