@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Builds a self-contained, dependency-free HTML page (docs/demo/index.html) letting a
 viewer toggle between World A/B/C and see the consolidated numbers move, without
 opening Excel. Data is generated fresh from the real calibrated model every run, then

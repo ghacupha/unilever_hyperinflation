@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 4 of the equity-report pipeline: per-section report drafting.
 See bizplan/report/drafting.py for the actual logic.
 

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Full equity-report pipeline orchestrator: Stages 1 through 6, plus Stage 5.5.
 
 Given an already-onboarded institution (see `sourcing.py` for Stage 0 — sourcing a new

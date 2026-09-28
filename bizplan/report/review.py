@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 5 of the equity-report pipeline: plagiarism + references review.
 
 One `claude -p` call over the *whole* assembled draft (all Stage 4 section files plus

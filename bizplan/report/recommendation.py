@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 3 of the equity-report pipeline: mechanical earnings-quality / mispricing
 pre-decision.
 

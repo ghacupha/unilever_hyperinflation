@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Pure-Python gate the pipeline runs before anything downstream trusts the numbers.
 
 Unlike the REIT model's Master Check (an independent Balance Sheet / LTV / Income-

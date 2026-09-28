@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 6 of the equity-report pipeline: PDF assembly. Pure Python, no LLM — takes
 Stage 5's `report_reviewed.md` plus the Stage 1/2/3 JSON ground truth and renders the
 final PDF via ReportLab (pure-Python, no system dependencies like Pango/cairo, so

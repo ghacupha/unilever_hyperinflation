@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Repeatable refresh: verify/refresh sourcing, then regenerate the Excel model + equity
 research report end to end, reusing all existing pipeline code (no new calculation or
 rendering logic here — this only orchestrates already-built pieces).

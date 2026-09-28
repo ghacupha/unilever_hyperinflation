@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Formula-linked Excel workbook for the Unilever hyperinflation-accounting model.
 
 Every calculated cell is a live Excel formula, following the same FMI data-provenance

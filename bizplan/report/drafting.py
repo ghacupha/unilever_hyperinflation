@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 4 of the equity-report pipeline: per-section report drafting.
 
 One `claude -p` call per section (see `claude_cli.run_stage`), each pointed at the JSON

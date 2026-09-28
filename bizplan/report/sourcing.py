@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 0 of the equity-report pipeline: model sourcing/verification. Given an
 institution folder name, checks/refreshes examples/<institution>/config.py +
 research_output.md against the institution's real disclosed figures, then

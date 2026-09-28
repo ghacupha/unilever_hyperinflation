@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Entry point: build the Unilever hyperinflation-accounting model workbook.
 
 Usage:

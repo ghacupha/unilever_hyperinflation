@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Load and validate a hyperinflation-model config.py file. Mirrors the load/validate
 pattern used elsewhere in bizplan, adapted to this domain's actual fields."""
 import importlib.util

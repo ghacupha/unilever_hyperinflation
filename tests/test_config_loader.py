@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 import pytest
 
 from bizplan.config_loader import load_and_validate, load_config, validate_config

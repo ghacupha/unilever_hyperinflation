@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Price / consensus research pipeline stage (Stage 2 of the equity-report pipeline).
 See bizplan/report/price_research.py for the actual logic.
 

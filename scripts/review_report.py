@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 5 of the equity-report pipeline: plagiarism + references review.
 See bizplan/report/review.py for the actual logic.
 

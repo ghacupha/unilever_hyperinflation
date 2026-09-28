@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Full equity-report pipeline orchestrator: Stages 1 through 6.
 See bizplan/report/pipeline.py for the actual logic.
 

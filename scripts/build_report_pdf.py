@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 6 CLI: PDF assembly. Pure Python, no LLM.
 
     python scripts/build_report_pdf.py <institution> --output-dir <report_workdir> \\

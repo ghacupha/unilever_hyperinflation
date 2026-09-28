@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Unilever plc — hyperinflation-accounting teaching model (CFA LII Multinational
 Operations). config.py is the single source of truth for every assumption.
 

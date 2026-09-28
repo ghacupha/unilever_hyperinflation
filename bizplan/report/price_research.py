@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 2 of the equity-report pipeline: price / consensus research.
 
 Given an institution + ticker/exchange and a reference date, researches the current (or,

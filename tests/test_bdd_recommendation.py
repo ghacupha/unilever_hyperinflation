@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from bizplan.report import data as report_data, recommendation

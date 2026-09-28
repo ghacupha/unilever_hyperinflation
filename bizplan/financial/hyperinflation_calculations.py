@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Ground-truth Python engine for the Unilever hyperinflation-accounting model
 (CFA LII Multinational Operations, IAS 29 / IAS 21).
 

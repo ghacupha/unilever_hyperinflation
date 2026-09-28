@@ -11,6 +11,18 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — MIT license headers, LICENSE, and a proper commit identity across all history (2026-09-28)
+- Closes `BACKLOG.md` Phase 10. Added `scripts/add_license_headers.py` (idempotent) and
+  applied a one-line MIT header to all 37 first-party `.py` files under `bizplan/`,
+  `scripts/`, `tests/`, and `examples/unilever/config.py`. Added a root `LICENSE` (MIT).
+- Found the Phase 6 commit-identity rewrite hadn't caught every variant — a second
+  local-hostname email and two name-formats of the real Gmail were still in history.
+  Rewrote all 39 commits via `git-filter-repo --mailmap` to one consistent identity
+  (the GitHub noreply address, not the personal Gmail), and set repo-local git config so
+  future commits match. Hit a real hang doing it (an interactive Y/N prompt with no
+  stdin to answer it, backgrounded for over an hour before being killed) — recovered
+  cleanly, verified with `git fsck` before retrying properly.
+
 ### Changed — Refreshed the checked-in sample with a second full live run (2026-09-27)
 - A second `REPORT=1 ./scripts/launch.sh unilever` run, now that `config.py` carries the
   peer-comparison and standard-setting content added earlier the same day — confirmed

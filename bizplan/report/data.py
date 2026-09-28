@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Serializes `hyperinflation_calculations`' output into the JSON the equity-report
 pipeline's later (LLM) stages read instead of re-deriving numbers themselves — the
 anti-hallucination boundary described in the pipeline plan. Every figure a report

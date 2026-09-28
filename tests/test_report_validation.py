@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 from bizplan.financial import hyperinflation_calculations as calc
 from bizplan.report import data as report_data, validation as report_validation
 

@@ -322,3 +322,31 @@ confirming scope first, same as any new phase.
       line-by-line JS read, cross-checked every `DATA.worlds[w].X` access against the
       generator's actual output keys) — no browser tooling was available this session to
       render it directly.
+
+## Phase 10 — Repo hygiene, round 2: license headers + git identity + LICENSE (2026-09-28) — DONE
+
+- [x] **MIT license headers**: `scripts/add_license_headers.py` — idempotent, walks
+      `bizplan/`, `scripts/`, `tests/`, and `examples/unilever/config.py` (deliberately
+      excludes timestamped sample-run directories under `examples/`, since those are
+      frozen output snapshots, not authored source — same reasoning as everywhere else
+      in this repo that snapshots aren't hand-edited). Inserts a one-line
+      `# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).`
+      after any shebang, before any module docstring. Applied to all 37 first-party `.py`
+      files. Caught its own edge case: the script's `HEADER` string constant contains the
+      marker text as data, so on its first run the script mistook itself for
+      already-licensed and skipped itself — fixed by hand-adding its own header rather
+      than complicating the detection logic for one self-referential case.
+- [x] **LICENSE**: added MIT, referenced from `README.md`.
+- [x] **Commit author identity, properly this time**: found the earlier Phase 6 rewrite
+      hadn't covered every identity variant — a second local-hostname email
+      (`edwin@Apples-MacBook-Pro.local`) and two different name-formats of the real Gmail
+      were still scattered across history. Rewrote all 39 commits via `git-filter-repo
+      --mailmap` to one consistent identity (`Edwin Njeru
+      <20181639+ghacupha@users.noreply.github.com>`, GitHub's privacy-preserving noreply
+      address, not the personal Gmail), then set that as this repo's local git config so
+      future commits match automatically. Hit a real snag: `git-filter-repo` prompted an
+      interactive Y/N question about continuing from the prior day's filter-repo run, and
+      the first backgrounded attempt hung over an hour because stdin had nothing to
+      answer it with — killed the hung process, confirmed via `git fsck` and `git status`
+      that nothing was corrupted, then reran it correctly. Verified the final state via
+      the GitHub API, not just local git.

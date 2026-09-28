@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Stage 5.5 of the equity-report pipeline: the coherence gate.
 
 An evaluator-optimizer loop (Stage 5's review as evaluator, a targeted correction pass as

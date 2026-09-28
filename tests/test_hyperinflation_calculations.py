@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 import pytest
 
 from bizplan.financial import hyperinflation_calculations as calc

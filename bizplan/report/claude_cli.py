@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Shared helper for invoking `claude -p` (Claude Code's headless/print mode) as a
 pipeline stage. Every equity-report stage that needs an LLM call (sourcing, price
 research, section drafting, review) goes through this one function instead of each

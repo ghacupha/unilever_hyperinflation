@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Model-sourcing pipeline stage (Stage 0 of the equity-report pipeline): given an
 institution, verifies/refreshes examples/<institution>/config.py + research_output.md
 against its real disclosed figures. See bizplan/report/sourcing.py for the actual logic.
