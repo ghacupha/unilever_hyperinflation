@@ -11,6 +11,17 @@ than rewritten.
 
 ## [Unreleased]
 
+### Changed — Refreshed the checked-in sample with a third full live run (2026-09-29)
+- Closes `BACKLOG.md` Phase 12. `REPORT=1 ./scripts/launch.sh unilever` hit two real
+  interruptions (a subscription session-usage limit mid-drafting, then a transient
+  DNS/connectivity error mid-coherence-gate) — resumed each time from the
+  already-completed stage output on disk rather than restarting, per `AGENTS.md`'s own
+  documented guidance. Coherence gate converged after 8 iterations, 0 unresolved
+  findings. Replaced `examples/2026-09-27_222102/` with `examples/2026-09-28_204838/`,
+  regenerated screenshots, updated doc pointers. Verified against a fresh rebuild: 0
+  cell differences in the Excel workbook — the underlying model data was unchanged since
+  the last run, only documentation/repo-hygiene work had happened in between.
+
 ### Removed — Blu Containers Model reference file (2026-09-28)
 - Closes `BACKLOG.md` Phase 11. `examples/Blu Containers Model - Vertical Complete.xlsx`
   (kept through Phase 6 as the repo owner's own FMI coursework) reconsidered: fine for

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see LICENSE).
+
 """Unilever plc — hyperinflation-accounting teaching model (CFA LII Multinational
 Operations). config.py is the single source of truth for every assumption.
 
@@ -179,8 +181,9 @@ VALIDATION_ACTUALS = {
 # Market-perception angle: does analyst consensus on Unilever price in the
 # Argentina/Türkiye hyperinflation treatment, or does it get overlooked as a "non-cash
 # accounting adjustment"? CONFIRMED by a live Stage 2 research pass (2026-09-27, see
-# examples/2026-09-27_142024/report_workdir/price_consensus_research.json for the full
-# finding with citations) — no longer a placeholder hypothesis.
+# examples/2026-09-27_222102/report_workdir/price_consensus_research.json for the full
+# finding with citations) — no longer a placeholder hypothesis. Reconfirmed on a second
+# live run the same day, after PEER_COMPARISON/STANDARD_SETTING_NOTE were added.
 # ---------------------------------------------------------------------------
 
 CONSENSUS = dict(

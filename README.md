@@ -18,7 +18,7 @@ local-currency inputs (see "Calibration" below for what that means).
   &nbsp;&nbsp;
   <img src="docs/screenshots/report_charts.png" alt="World A/B/C operating-profit comparison and per-subsidiary IAS 29 impact charts" width="420">
 </p>
-<p align="center"><em>The generated equity research report's cover page and chart page — see <a href="examples/2026-09-27_222102/">examples/2026-09-27_222102/</a> for the full workbook, PDF, and every intermediate research file from a real live run.</em></p>
+<p align="center"><em>The generated equity research report's cover page and chart page — see <a href="examples/2026-09-28_204838/">examples/2026-09-28_204838/</a> for the full workbook, PDF, and every intermediate research file from a real live run.</em></p>
 
 ## Quick start
 
@@ -69,7 +69,7 @@ separately metered API) and takes noticeably longer than the Excel-only path.
 
 The pipeline was adapted from its prior REIT-model domain on 2026-09-27 (see
 `BACKLOG.md` Phase 3), then run live end-to-end twice the same day (Phases 4 and 7).
-See `examples/2026-09-27_222102/` for the latest full checked-in run.
+See `examples/2026-09-28_204838/` for the latest full checked-in run.
 
 ## Expected output
 
@@ -164,7 +164,7 @@ unilever_hyperinflation/
 │   ├── unilever/
 │   │   ├── config.py               ← single source of truth for assumptions
 │   │   └── research_output.md     ← calibration derivation, sourced and dated
-│   └── 2026-09-27_222102/          ← a full checked-in sample of a live pipeline run
+│   └── 2026-09-28_204838/          ← a full checked-in sample of a live pipeline run
 ├── docs/
 │   ├── demo/index.html             ← interactive World A/B/C demo (generated, see below)
 │   └── screenshots/                ← images embedded in this README

@@ -6,7 +6,7 @@ have one. Idempotent -- safe to re-run any time new files are added.
 
 Scope: bizplan/, scripts/, tests/, and examples/unilever/config.py (the repo's own
 authored source). Deliberately excludes timestamped sample-run directories under
-examples/ (e.g. examples/2026-09-27_222102/) -- those are frozen output snapshots, not
+examples/ (e.g. examples/2026-09-28_204838/) -- those are frozen output snapshots, not
 source code, the same reason they're never hand-edited elsewhere in this repo.
 
 Usage:

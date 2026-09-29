@@ -360,3 +360,24 @@ confirming scope first, same as any new phase.
       via `git-filter-repo --invert-paths --path-glob '*Blu Containers*'`, then
       force-pushed. Verified via a full tree scan across every rewritten commit and an
       independent check of the pushed remote tree — zero trace anywhere in history.
+
+## Phase 12 — Third full live run; refreshed checked-in sample (2026-09-28/29) — DONE
+
+- [x] `REPORT=1 ./scripts/launch.sh unilever` — hit two real interruptions this time
+      rather than running cleanly end to end: the `claude -p` subscription session-usage
+      limit was reached partway through Stage 4's drafting (after sections 01-07 were
+      already written), and later a transient DNS/connectivity error interrupted the
+      Stage 5.5 coherence gate mid-iteration. Neither restarted the whole pipeline —
+      per `AGENTS.md`'s own documented guidance, resumed each time from the
+      already-completed stage output on disk: drafted only the missing section 08
+      directly, then re-ran just the coherence gate (which re-verifies from the current
+      section files, so no completed work was lost, only one extra review pass).
+      Coherence gate converged after 8 iterations, 0 unresolved findings.
+- [x] Replaced `examples/2026-09-27_222102/` with `examples/2026-09-28_204838/`,
+      regenerated `docs/screenshots/*.png` from the new PDF, and updated every
+      current-state doc pointer (`README.md`, `AGENTS.md`, `research_output.md`,
+      `config.py`). Verified the new artifacts against a fresh rebuild from
+      `examples/unilever/config.py`: 0 cell differences in the Excel workbook (the
+      underlying model data hadn't changed since the last run — only documentation and
+      repo-hygiene work had — so this refresh captures a new drafted report over
+      identical figures, not a data change).

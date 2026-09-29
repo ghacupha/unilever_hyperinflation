@@ -173,12 +173,13 @@ IAS 29 net monetary gain/(loss) from ordinary FX translation. Unilever's own USG
 of the metric entirely** rather than presenting the net monetary line as a distinct
 purchasing-power effect. Limitation, stated plainly by the research itself: paywalled
 broker notes (Deutsche Bank, Barclays, Bernstein) weren't accessible, so this rests on
-public transcripts and aggregator summaries only. Reconfirmed, independently, on the
-second live run (`BACKLOG.md` Phase 7's extension) — that pass additionally found a
-Jefferies analyst using the word "hyperinflation" directly on the Q2 2026 call, but only
-in a question about pricing, never about the monetary line. Full finding with every
-citation: `examples/2026-09-27_222102/report_workdir/price_consensus_research.json`
-(the latest live pipeline run's own output).
+public transcripts and aggregator summaries only. Reconfirmed, independently, on two
+further live runs since (`BACKLOG.md` Phase 7's extension and Phase 12) — the second
+pass additionally found a Jefferies analyst using the word "hyperinflation" directly on
+the Q2 2026 call, but only in a question about pricing, never about the monetary line.
+Full finding with every citation:
+`examples/2026-09-28_204838/report_workdir/price_consensus_research.json` (the latest
+live pipeline run's own output).
 
 ## Peer comparison — this pattern isn't unique to Unilever
 

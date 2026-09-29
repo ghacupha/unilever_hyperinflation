@@ -181,9 +181,10 @@ VALIDATION_ACTUALS = {
 # Market-perception angle: does analyst consensus on Unilever price in the
 # Argentina/Türkiye hyperinflation treatment, or does it get overlooked as a "non-cash
 # accounting adjustment"? CONFIRMED by a live Stage 2 research pass (2026-09-27, see
-# examples/2026-09-27_222102/report_workdir/price_consensus_research.json for the full
-# finding with citations) — no longer a placeholder hypothesis. Reconfirmed on a second
-# live run the same day, after PEER_COMPARISON/STANDARD_SETTING_NOTE were added.
+# examples/2026-09-28_204838/report_workdir/price_consensus_research.json for the full
+# finding with citations) — no longer a placeholder hypothesis. Reconfirmed on two
+# further live runs since (2026-09-27 and 2026-09-28), each finding the same result
+# independently.
 # ---------------------------------------------------------------------------
 
 CONSENSUS = dict(
