@@ -138,8 +138,9 @@ Garanti's own disclosed "Gain/(loss) on net monetary position, net" line. The es
 overstates the real FY2025 loss by roughly 14.5x — `examples/garanti_bbva/
 research_output.md` documents why (a bank's monetary position isn't static across a
 year, and part of its securities book is plausibly inflation-hedged in a way the public
-summary statement doesn't break out) rather than tuning the model until it matches.
-Build it with `.venv/bin/python scripts/build_garanti_model.py`.
+summary statement doesn't break out) rather than tuning the model until it matches. A
+checked-in sample build, `examples/garanti_bbva/Garanti_BBVA_Monetary_Position.xlsx`, is
+included; rebuild it yourself with `.venv/bin/python scripts/build_garanti_model.py`.
 
 ## Running the tests
 
@@ -183,7 +184,8 @@ unilever_hyperinflation/
 │   │   └── research_output.md     ← calibration derivation, sourced and dated
 │   ├── garanti_bbva/
 │   │   ├── config.py               ← Garanti BBVA's own real disclosed balance sheet
-│   │   └── research_output.md     ← reconstruction derivation, sourced and dated
+│   │   ├── research_output.md     ← reconstruction derivation, sourced and dated
+│   │   └── Garanti_BBVA_Monetary_Position.xlsx  ← checked-in sample build
 │   └── 2026-09-28_204838/          ← a full checked-in sample of a live pipeline run
 ├── docs/
 │   ├── demo/index.html             ← interactive World A/B/C demo (generated, see below)

@@ -197,6 +197,10 @@ schedule/valuation work applies to this domain.
       Garanti's config shape (a real bank balance sheet) doesn't fit the Unilever
       schema's `REQUIRED_FIELDS`, and forcing it to would be exactly the kind of
       unwarranted shared abstraction `CLAUDE.md` asks to avoid.
+- [x] Checked in a sample build, `examples/garanti_bbva/Garanti_BBVA_Monetary_
+      Position.xlsx`, re-verified with the `formulas` package after the final doc edits
+      — identical figures to the first verification pass (estimate: −TL 77,209,345
+      thousand, gap 14.49x), zero formula errors.
 
 ### Phase 5b — explicitly still deferred
 

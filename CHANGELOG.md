@@ -11,6 +11,12 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — Checked-in sample build for Garanti BBVA (2026-10-17)
+- `examples/garanti_bbva/Garanti_BBVA_Monetary_Position.xlsx` — a sample build of the
+  Phase 5 workbook, checked in so the model's output is visible without running
+  `scripts/build_garanti_model.py`. Re-verified with the `formulas` package after
+  committing the core model: identical figures, zero formula errors.
+
 ### Added — Garanti BBVA real net-monetary-position reconstruction (2026-10-17)
 - Closes `BACKLOG.md` Phase 5 (core model). Unlike the Unilever model, which solves a
   fictional subsidiary to reproduce real disclosed aggregates, this uses Garanti BBVA's
