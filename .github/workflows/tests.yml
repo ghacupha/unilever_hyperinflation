@@ -23,7 +23,12 @@ jobs:
       - name: Run tests (unit + BDD)
         run: python -m pytest --verbose
 
-      - name: Build the Excel model (smoke test)
+      - name: Build the Unilever Excel model (smoke test)
         run: python scripts/build_unilever_model.py
+        env:
+          OUTPUT_DIR: /tmp/ci_output
+
+      - name: Build the Garanti BBVA Excel model (smoke test)
+        run: python scripts/build_garanti_model.py
         env:
           OUTPUT_DIR: /tmp/ci_output

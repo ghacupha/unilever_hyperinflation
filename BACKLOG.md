@@ -158,15 +158,60 @@ schedule/valuation work applies to this domain.
       ratio's precision. A good example of the coherence gate catching a scope-honesty
       issue the SOPs didn't explicitly anticipate.
 
-## Phase 5 — BBVA/Garanti "advanced case" — NOT STARTED, deferred by design
+## Phase 5 — Garanti BBVA "advanced case": real reconstruction — DONE (core model), 2026-10-17
 
-BBVA applies IAS 29 to both its Türkiye (Garanti BBVA) and Argentina (BBVA Argentina)
-subsidiaries; unlike Unilever, Garanti BBVA separately publishes its own full IFRS
-financial statements, which would let a future pass attempt an **actual** subsidiary-to-
-parent reconstruction rather than a calibrated fictional one. Explicitly out of scope for
-this pass per the user's own sequencing (`Unilever 2024` → learn the mechanics;
-`BBVA/Garanti` → prove they apply to real subsidiary statements) — do not start without
-confirming scope first, same as any new phase.
+- [x] Confirmed Garanti BBVA publishes a dedicated IFRS-basis "IFRS Financial Reports"
+      PDF, separate from its main BRSA-basis report — extracted the full FY2024/FY2025
+      Consolidated Statement of Financial Position and Statement of Profit or Loss
+      (3 pages; no notes) via PyMuPDF on the cached WebFetch binary (WebFetch's own
+      text extraction failed on this PDF, same recurring issue as before). Confirmed
+      a real, explicit **"Gain/(loss) on net monetary position, net"** P&L line:
+      −TL 5,327,505 thousand (2025), −TL 12,278,662 thousand (2024).
+- [x] `examples/garanti_bbva/config.py` — every real balance-sheet line item (both years,
+      TL thousands, as published), flagged monetary/non-monetary, plus TÜİK CPI index
+      values (Dec-2023/2024/2025) and Garanti's own disclosed net-monetary-result line.
+- [x] `bizplan/financial/bank_monetary_position.py` — classification totals, net
+      monetary position, an "un-restate the IAS 29 ¶34 comparative column back to its
+      own period's purchasing power" step, and a single-period opening-NMP × CPI-growth
+      estimate, compared against Garanti's real disclosed figure. 8 new unit tests
+      (`tests/test_bank_monetary_position.py`) — classification sums reconcile to the
+      real published totals exactly, the FY2025 estimate's sign matches intuition, and a
+      pinned-scale test (`gap_multiple > 5`) guards the headline finding below against a
+      silent regression.
+- [x] `bizplan/financial/bank_excel_renderer.py` + `scripts/build_garanti_model.py` — a
+      lean 4-sheet workbook (Cover, Balance_Sheet, Monetary_Position, Sources), live
+      formulas throughout, verified with the `formulas` package: every Monetary_Position
+      cell matches the Python engine's output exactly (estimate: −TL 77,209,345 thousand
+      both ways), zero formula errors.
+- [x] **Finding**: the naive opening-position estimate overstates Garanti's real FY2025
+      monetary loss by **~14.5x** (−TL 77.2bn estimated vs. the real −TL 5.3bn
+      disclosed). `examples/garanti_bbva/research_output.md` documents three honest
+      reasons rather than tuning the classification until it matches: a bank's monetary
+      position isn't static for a year the way the single-snapshot approximation
+      assumes; part of "Investment securities" is plausibly inflation-hedged in a way
+      the summary statement doesn't break out; and unlike Unilever, a bank's business
+      model is actively *managing* monetary-item risk, not just incidentally bearing it.
+      Same "document the gap, don't hide it" convention as this repo's existing
+      Unilever-2025 total-assets limitation.
+- [x] `bizplan/config_loader.py` deliberately **not** extended for this instance —
+      Garanti's config shape (a real bank balance sheet) doesn't fit the Unilever
+      schema's `REQUIRED_FIELDS`, and forcing it to would be exactly the kind of
+      unwarranted shared abstraction `CLAUDE.md` asks to avoid.
+
+### Phase 5b — explicitly still deferred
+
+- [ ] **BBVA Argentina**: its own separate filings follow Argentina's BCRA "Group C"
+      prudential basis (explicitly disabling IFRS 9 §5.5 impairment), not pure IFRS —
+      would need its own basis-reconciliation discussion before any figure could be
+      compared to Garanti's or Unilever's. Not started.
+- [ ] **Report-pipeline integration**: routing this instance through `bizplan/report/*`
+      (the `claude -p`-driven narrative stages) the way `unilever` already is. Not
+      started — this phase was scoped to the core reconstruction (calculation engine +
+      Excel model + tests) only.
+- [ ] **Note-level restatement detail**: Garanti's publicly posted IFRS Financial
+      Reports PDF is a 2-statement summary with no notes — a fuller annual report (the
+      general price index used, item-level acquisition vintages, an inflation-linked-
+      securities breakdown) wasn't located as a public PDF this session.
 
 ## Phase 6 — Repo hygiene: remove personal/third-party content from git history (2026-09-27) — DONE
 

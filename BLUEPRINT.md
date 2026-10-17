@@ -156,10 +156,26 @@ current verification status.
 - **`OTHER_GROUP_OPERATIONS_EUR`** is an illustrative scale, not Unilever's real
   consolidated ex-Argentina/Türkiye figures.
 
-## Follow-up work (not in this pass — see `BACKLOG.md`)
+## Phase 5 — Garanti BBVA: a real (not calibrated) reconstruction
 
-**BBVA/Garanti** (the "advanced" case identified alongside Unilever — a Spanish bank
-applying IAS 29 to both its Türkiye (Garanti BBVA) and Argentina (BBVA Argentina)
-subsidiaries, with Garanti separately publishing its own full IFRS statements, enabling an
-actual subsidiary-to-parent reconstruction rather than a calibrated fictional one) is
-deliberately deferred, not built in this pass.
+Built in `bizplan/financial/bank_monetary_position.py` +
+`bizplan/financial/bank_excel_renderer.py` + `examples/garanti_bbva/`, deliberately
+separate from the modules above — Garanti's config is a real bank balance sheet, a
+structurally different shape from Unilever's fictional-subsidiary schema, so it isn't
+routed through `bizplan/config_loader.py`'s `REQUIRED_FIELDS`.
+
+Where the Unilever model above *solves* a fictional subsidiary's net monetary gain/(loss)
+as the exact plug that reproduces Unilever's real disclosed aggregate impact, this one
+takes Garanti BBVA's own real, as-published IFRS balance sheet (FY2024/FY2025, IAS
+29-restated) and *independently estimates* the monetary result from a monetary/non-
+monetary classification plus a public CPI series — then checks that estimate against
+Garanti's own disclosed "Gain/(loss) on net monetary position, net" line. The estimate
+overstates the real FY2025 loss by ~14x; `examples/garanti_bbva/research_output.md`
+documents why this is a real finding (a bank's monetary position isn't static for a year,
+and part of its real holdings are likely actively hedged against inflation) rather than a
+bug to tune away — same "document the gap" convention as this model's own 2025
+total-assets limitation above.
+
+Explicitly out of scope for this pass (`BACKLOG.md` Phase 5b): BBVA Argentina (files on
+Argentina's BCRA "Group C" basis, not pure IFRS — a different basis-reconciliation
+problem) and routing this instance through the `bizplan/report/*` narrative pipeline.

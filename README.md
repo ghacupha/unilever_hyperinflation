@@ -128,6 +128,19 @@ discussion of where the 2025 roll-forward does and doesn't match. Only the aggre
 impact figures per subsidiary per year are real Unilever disclosures; the subsidiary-level
 line items (revenue, PPE, monetary position, etc.) are this model's own illustration.
 
+## Garanti BBVA — a real (not calibrated) reconstruction
+
+`examples/garanti_bbva/` takes a different approach: instead of a calibrated fictional
+subsidiary, it uses Garanti BBVA's own real, published IFRS balance sheet (FY2024/FY2025,
+IAS 29-restated) and independently *estimates* its monetary gain/(loss) from a monetary/
+non-monetary classification plus a public CPI series, then checks that estimate against
+Garanti's own disclosed "Gain/(loss) on net monetary position, net" line. The estimate
+overstates the real FY2025 loss by roughly 14.5x — `examples/garanti_bbva/
+research_output.md` documents why (a bank's monetary position isn't static across a
+year, and part of its securities book is plausibly inflation-hedged in a way the public
+summary statement doesn't break out) rather than tuning the model until it matches.
+Build it with `.venv/bin/python scripts/build_garanti_model.py`.
+
 ## Running the tests
 
 ```bash
@@ -135,12 +148,14 @@ line items (revenue, PPE, monetary position, etc.) are this model's own illustra
 .venv/bin/python -m pytest
 ```
 
-51 tests: 36 unit tests covering the calculation engine (World A/B/C math, the
+62 tests: 36 unit tests covering the calculation engine (World A/B/C math, the
 monetary-gain/loss balancing-plug identity, a regression test that the model still
 reproduces Unilever's real disclosed 2024 figures), the config schema validator, and
-the pure-Python report stages, plus 15 `pytest-bdd` scenarios (`tests/features/*.feature`)
-expressing the calibration-fidelity and report-generation behavior in Gherkin. Neither
-suite touches the `claude -p`-driven pipeline stages.
+the pure-Python report stages; 8 tests covering the Garanti BBVA net-monetary-position
+reconstruction (classification reconciles to real published totals, the estimate's sign
+and order-of-magnitude gap are pinned); plus 15 `pytest-bdd` scenarios
+(`tests/features/*.feature`) expressing the calibration-fidelity and report-generation
+behavior in Gherkin. None of these touch the `claude -p`-driven pipeline stages.
 
 ## Project structure
 
@@ -155,7 +170,9 @@ unilever_hyperinflation/
 │   ├── financial/
 │   │   ├── xl_helpers.py                      ← formula-capable openpyxl primitives
 │   │   ├── hyperinflation_calculations.py     ← World A/B/C engine, Python ground truth
-│   │   └── hyperinflation_excel_renderer.py   ← builds the live-formula workbook
+│   │   ├── hyperinflation_excel_renderer.py   ← builds the live-formula workbook
+│   │   ├── bank_monetary_position.py          ← Garanti BBVA real reconstruction engine
+│   │   └── bank_excel_renderer.py             ← builds the Garanti BBVA workbook
 │   └── report/                     ← the equity-research-report engine
 │       ├── data.py, validation.py, recommendation.py, pdf.py   ← pure Python, no LLM
 │       ├── claude_cli.py           ← shared `claude -p` invocation helper
@@ -164,6 +181,9 @@ unilever_hyperinflation/
 │   ├── unilever/
 │   │   ├── config.py               ← single source of truth for assumptions
 │   │   └── research_output.md     ← calibration derivation, sourced and dated
+│   ├── garanti_bbva/
+│   │   ├── config.py               ← Garanti BBVA's own real disclosed balance sheet
+│   │   └── research_output.md     ← reconstruction derivation, sourced and dated
 │   └── 2026-09-28_204838/          ← a full checked-in sample of a live pipeline run
 ├── docs/
 │   ├── demo/index.html             ← interactive World A/B/C demo (generated, see below)
@@ -173,6 +193,7 @@ unilever_hyperinflation/
 ├── output/                                              ← gitignored; timestamped run folders
 └── scripts/                         ← thin CLI wrappers only — logic lives in bizplan/
     ├── build_unilever_model.py     ← entry point: --instance/--config → calc → render → save
+    ├── build_garanti_model.py      ← entry point: Garanti BBVA reconstruction → workbook
     ├── build_interactive_demo.py   ← generates docs/demo/index.html from the real model
     ├── source_model.py, research_price_consensus.py, draft_report_sections.py,
     │   review_report.py, build_report_pdf.py, generate_equity_report.py, refresh_report.py
@@ -185,11 +206,13 @@ unilever_hyperinflation/
 
 - **`BLUEPRINT.md`** — the design source of truth: the real-world case, the calculation
   engine's mechanics, the Excel renderer's structure, and known simplifications.
-- **`BACKLOG.md`** — phase-by-phase status and what's next (including the deferred
-  BBVA/Garanti "advanced case").
+- **`BACKLOG.md`** — phase-by-phase status and what's next (including what's still
+  deferred for the Garanti BBVA case — BBVA Argentina, the report pipeline).
 - **`CHANGELOG.md`** — what has actually landed, in order.
 - **`examples/unilever/research_output.md`** — the full calibration derivation and
   citations; read this before treating any subsidiary-level figure as a real disclosure.
+- **`examples/garanti_bbva/research_output.md`** — the real reconstruction's derivation,
+  citations, and the honest ~14.5x estimate-vs-disclosed gap.
 
 ## License
 

@@ -4,10 +4,11 @@
 """Adds an MIT license header to every first-party .py source file that doesn't already
 have one. Idempotent -- safe to re-run any time new files are added.
 
-Scope: bizplan/, scripts/, tests/, and examples/unilever/config.py (the repo's own
-authored source). Deliberately excludes timestamped sample-run directories under
-examples/ (e.g. examples/2026-09-28_204838/) -- those are frozen output snapshots, not
-source code, the same reason they're never hand-edited elsewhere in this repo.
+Scope: bizplan/, scripts/, tests/, and examples/unilever/config.py and
+examples/garanti_bbva/config.py (the repo's own authored source). Deliberately excludes
+timestamped sample-run directories under examples/ (e.g. examples/2026-09-28_204838/) --
+those are frozen output snapshots, not source code, the same reason they're never
+hand-edited elsewhere in this repo.
 
 Usage:
     .venv/bin/python scripts/add_license_headers.py
@@ -20,7 +21,10 @@ HEADER = "# Copyright (c) 2026 Edwin Njeru. Licensed under the MIT License (see 
 MARKER = "Licensed under the MIT License"
 
 TARGET_DIRS = ["bizplan", "scripts", "tests"]
-EXTRA_FILES = [os.path.join("examples", "unilever", "config.py")]
+EXTRA_FILES = [
+    os.path.join("examples", "unilever", "config.py"),
+    os.path.join("examples", "garanti_bbva", "config.py"),
+]
 
 
 def _iter_target_files():

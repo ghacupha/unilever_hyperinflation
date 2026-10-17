@@ -11,6 +11,28 @@ than rewritten.
 
 ## [Unreleased]
 
+### Added — Garanti BBVA real net-monetary-position reconstruction (2026-10-17)
+- Closes `BACKLOG.md` Phase 5 (core model). Unlike the Unilever model, which solves a
+  fictional subsidiary to reproduce real disclosed aggregates, this uses Garanti BBVA's
+  own real published IFRS balance sheet (FY2024/FY2025) and independently *estimates*
+  its monetary gain/(loss), checking the estimate against Garanti's own disclosed
+  "Gain/(loss) on net monetary position, net" line rather than solving to match it.
+  New: `examples/garanti_bbva/{config.py,research_output.md}`,
+  `bizplan/financial/{bank_monetary_position.py,bank_excel_renderer.py}`,
+  `scripts/build_garanti_model.py`, `tests/test_bank_monetary_position.py` (8 tests).
+  Verified: classification sums reconcile exactly to Garanti's real published totals;
+  the rendered workbook's formulas match the Python engine exactly via the `formulas`
+  package, zero errors.
+- **Finding**: the estimate overstates Garanti's real FY2025 monetary loss by ~14.5x
+  (−TL 77.2bn estimated vs. −TL 5.3bn real) — documented, not tuned away, in
+  `research_output.md`: a bank's monetary position isn't static across a year the way
+  a single opening-balance snapshot assumes, and part of its securities book is
+  plausibly inflation-hedged in a way the 3-page public summary statement (no notes)
+  doesn't break out.
+- BBVA Argentina (files on Argentina's BCRA "Group C" basis, not pure IFRS) and routing
+  this instance through the `bizplan/report/*` narrative pipeline are explicitly
+  deferred — `BACKLOG.md` Phase 5b.
+
 ### Changed — Refreshed the checked-in sample with a third full live run (2026-09-29)
 - Closes `BACKLOG.md` Phase 12. `REPORT=1 ./scripts/launch.sh unilever` hit two real
   interruptions (a subscription session-usage limit mid-drafting, then a transient
